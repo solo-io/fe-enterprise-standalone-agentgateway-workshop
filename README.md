@@ -65,16 +65,6 @@ Some labs need a small service next to the gateway, such as a mock LLM or an MCP
 env UID=$(id -u) GID=$(id -g) docker compose --profile <helper> up -d
 ```
 
-## Not covered yet
-
-These Kubernetes workshop topics are not in this workshop yet, because they need Kubernetes or have not been confirmed on the standalone build:
-
-- Eager OAuth for MCP clients (Auth0, Okta, Entra, Keycloak), on-behalf-of token exchange, and Figma MCP with elicitation
-- Composable MCP servers
-- Global (Redis-backed) rate limiting and the WAF
-- Grafana dashboards and the OpenTelemetry pipeline (the UI's Analytics and Logs pages cover LLM traffic)
-- Kubernetes-only topics: OpenShift, air-gapped installs, IRSA and workload identity, Inference Extension, Kyverno, Helm charts for platform teams, and upgrade labs
-
 ## For workshop authors
 
 - [style-guide.md](style-guide.md): how labs are written
