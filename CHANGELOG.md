@@ -1,6 +1,6 @@
 # Changelog
 
-0.1.0 - (10-16-26)
+0.0.0 - (10-16-26)
 ---
 - Add `001-set-up-standalone-agentgateway.md`: start Enterprise agentgateway `2026.10.0` with Docker Compose and tour the UI
 - Add `setup/`: Compose stack (ports `15000`, `4000`, `4001`, `8080` with matching host and container numbers), starting `config.yaml`, `.env.example`, model cost catalog, and helper profiles `mock-llm`, `mcp-everything`, `ext-authz`, `guardrail-webhook`
