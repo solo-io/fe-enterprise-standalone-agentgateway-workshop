@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "use": "sig",
+      "alg": "RS256",
+      "kid": "workshop-1",
+      "n": "7LOYrKKAIul3gtIN3zUtDNzEOaiwPvGE9ZpaQ3JkTIRbBjU2zHMKtS8qxVzDWsvVX2_KP_o6esKT9Chk-B3DOGWmCdVM4N55lxU02pPUsH1J5Et52aFyj9fXErDIDgceWsDR8rPSAqnbNdqJfEm3X3psc3vYQhgLQj9CYv5azHJJYV0ql70urVm8aHOke3mQoPdBcXbhRqJ-ANCk0Z7x_O1CwqqD3IUKnuXFEpQ2RHHAlK72S09zV36ptk3KUz-r_vU5BkGrwy0ZEb4W5wLpqoVR2Nje4SkmBKpiZ-cumo-MNLKuoXl7undKYNtxikBVmuWVFTwCxyGD9ijDUFz6bw",
+      "e": "AQAB"
+    }
+  ]
+}

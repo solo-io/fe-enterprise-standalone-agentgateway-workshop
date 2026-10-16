@@ -1,0 +1,6 @@
+# Test override: publish no host ports. Playwright joins the gateway's network namespace instead,
+# so tests use the real ports and several runs can go in parallel.
+services:
+  agentgateway:
+    ports: !reset []
+    restart: "no"

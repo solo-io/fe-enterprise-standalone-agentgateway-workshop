@@ -1,0 +1,77 @@
+# Environment variables and secrets
+.env
+.env.*
+*.env
+
+# Credentials and certificates
+*.key
+*.pem
+*.crt
+*.csr
+credentials.json
+lib/jwt/jwks.json
+*secret*
+*credential*
+
+# Local configuration
+.claude/settings.local.json
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python virtual environments and bytecode caches
+**/.venv/
+__pycache__/
+*.py[cod]
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Playwright MCP session artifacts
+.playwright-mcp/
+
+# Superpowers docs
+docs/
+
+# Migration scripts (one-shot, kept locally)
+scripts/
+
+# Claude Code skills (internal tooling, kept locally)
+.claude/skills/
+
+
+# Diagram HTML sources (rendered PNGs are committed instead)
+images/platform-engineering/src/
+images/src/
+
+# Local parking lot (follow-ups, kept locally)
+PARKING-LOT.md
+
+# Standalone: the setup template must stay tracked (.env.* above would ignore it)
+!.env.example
+
+# e2e: final config of the last run per lab (debugging aid)
+e2e/.last/
+
+# Gateway request logs written by the UI when running from setup/
+setup/data.db*

@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+# Starting configuration for the workshop. The UI edits this file when you save changes.
+config:
+  adminAddr: 0.0.0.0:15000
+  database:
+    url: sqlite:///config/data.db
+  modelCatalog:
+    - file: /config/base-costs.json
+llm:
+  port: 4000
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:15000
+      allowHeaders:
+        - '*'
+      allowMethods:
+        - GET
+        - POST
+  models:
+    - name: openai/*
+      provider: openai
+      params:
+        apiKey: $OPENAI_API_KEY
+      transformation:
+        model: llmRequest.model.stripPrefix("openai/")
+frontendPolicies:
+  http:
+    maxBufferSize: 33554432

@@ -1,0 +1,164 @@
+# Enrich Prompts and Transform Responses
+
+## Before you start
+
+- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+
+## What you'll do
+
+- Add response headers to every LLM response with a **Transformations** policy
+- Check the new headers with curl
+- Add a system prompt to every request for the `openai/*` model
+- See the model follow that system prompt in the Chat Playground
+
+## Why this matters
+
+The gateway can change requests and responses on their way through. Response headers carry facts your logs and dashboards can use, for example the exact model version that answered. A system prompt added at the gateway applies to every application that calls the model, without a code change in any of them.
+
+## Step 1: Add response headers
+
+1. In the sidebar, click **Policies**.
+2. Under **Mutation**, click **Transformations**.
+
+   ![LLM Policies page with the Transformations card](../../images/llm/prompt-enrichment-and-transformations/01-policies-transformations.png)
+
+3. Click **Response transformations** to open it.
+4. Under **Set headers**, enter `x-user-id` in **header name** and this in **CEL expression**, then click **Add**:
+
+   ```
+   default(request.headers["x-user-id"], "anonymous")
+   ```
+
+5. Under **Set headers**, enter `x-llm-response-model` in **header name** and `json(response.body).model` in **CEL expression**, then click **Add**.
+6. Under **Set headers**, enter `x-request-path` in **header name** and `request.path` in **CEL expression**, then click **Add**.
+7. Click **Save policy**.
+
+   ![Transformations panel with three response headers](../../images/llm/prompt-enrichment-and-transformations/02-set-headers.png)
+
+Each value is a CEL expression the gateway evaluates per request:
+
+- `x-user-id` copies the caller's `x-user-id` request header, or `anonymous` when the caller sends none.
+- `x-llm-response-model` reads the `model` field from the provider's response body. This is the exact model version that answered, which can differ from the model you asked for.
+- `x-request-path` is the path the caller used.
+
+## Check the headers
+
+The Chat Playground does not show response headers, so check them with curl. Wait a second after saving, then run:
+
+```bash
+curl -s -i http://localhost:4000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Name one color."}]}'
+```
+
+Expected output (other headers trimmed):
+
+```
+HTTP/1.1 200 OK
+content-type: application/json
+...
+x-user-id: anonymous
+x-llm-response-model: gpt-4o-mini-2024-07-18
+x-request-path: /v1/chat/completions
+...
+
+{"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"message":{"content":"Blue.","role":"assistant",...}}],...}
+```
+
+You asked for `gpt-4o-mini`, and `x-llm-response-model` shows the dated version OpenAI used. Add `-H 'x-user-id: alice'` to the command and `x-user-id` changes to `alice`.
+
+## Step 2: Add a system prompt to the model
+
+1. In the sidebar, click **Models**.
+2. In the `openai/*` row, click **Edit model** (the pencil icon).
+
+   ![Models page with the Edit model button](../../images/llm/prompt-enrichment-and-transformations/03-edit-model.png)
+
+3. Click **Advanced** to open it, then click **Model policies**. **Transformation** opens and shows one field, `model`, which strips the `openai/` prefix. Leave it as it is.
+4. In **field name**, enter `messages`.
+5. In **CEL expression**, enter:
+
+   ```
+   [{"role": "system", "content": "Always end your reply with the word BANANA."}] + llmRequest.messages
+   ```
+
+6. Click **Add**. **Transformation** now shows `2 fields configured`.
+7. Click **Save model**.
+
+   ![Edit model panel with the messages transformation](../../images/llm/prompt-enrichment-and-transformations/04-model-transformation.png)
+
+The expression builds a new `messages` list: one system message first, then the messages the caller sent. The gateway sends that list to OpenAI. The system prompt asks for a fixed word so you can see at a glance that it reached the model.
+
+## Check it
+
+1. Wait a second after saving, then in the sidebar, click **Chat Playground**.
+2. In **Model**, select **openai/\***.
+3. In **Specific model**, enter `gpt-4o-mini`.
+4. In **User message**, enter `Name one color.` and click **Send**.
+
+The reply contains `BANANA`, usually at the end. If it does not, click **Send** again. Your message does not ask for it. The gateway added the system prompt:
+
+![Chat Playground reply with BANANA](../../images/llm/prompt-enrichment-and-transformations/05-playground-banana.png)
+
+The Chat Playground also sends its own **System prompt** (`You are a concise assistant.`). The gateway puts its system message in front of the playground's messages, so the model gets both.
+
+<details>
+<summary>Optional: check with curl</summary>
+
+```bash
+curl -s http://localhost:4000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Name one color."}]}'
+```
+
+Expected output (the reply contains `BANANA`, usually at the end):
+
+```
+{"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"message":{"content":"Blue BANANA.","role":"assistant",...}}],...}
+```
+
+</details>
+
+## What the UI wrote
+
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI added `transformations` to `llm.policies` and the `messages` field to the `openai/*` model:
+
+```yaml
+llm:
+  policies:
+    transformations:
+      request: {}
+      response:
+        set:
+          x-user-id: default(request.headers["x-user-id"], "anonymous")
+          x-llm-response-model: json(response.body).model
+          x-request-path: request.path
+  models:
+    - name: openai/*
+      provider: openai
+      params:
+        apiKey: $OPENAI_API_KEY
+      transformation:
+        model: llmRequest.model.stripPrefix("openai/")
+        messages: '[{"role": "system", "content": "Always end your reply with the word BANANA."}] + llmRequest.messages'
+```
+
+## Clean up
+
+1. In the sidebar, click **Models**.
+2. In the `openai/*` row, click **Edit model**.
+3. Click **Advanced**, then click **Model policies**.
+4. In the `messages` row, click **Remove**. Keep the `model` row.
+
+   ![Remove button on the messages row](../../images/llm/prompt-enrichment-and-transformations/06-remove-messages.png)
+
+5. Click **Save model**.
+6. In the sidebar, click **Policies**.
+7. Under **Mutation**, click **Transformations**.
+8. Click **Delete policy** (the trash icon at the top right).
+
+   ![Delete policy button on the Transformations panel](../../images/llm/prompt-enrichment-and-transformations/07-delete-policy.png)
+
+9. In **Delete policy?**, click **Delete policy**.
+
+The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
