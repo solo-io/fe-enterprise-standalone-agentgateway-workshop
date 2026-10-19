@@ -7,9 +7,13 @@
   - `load-balancing-and-failover`: a Failover virtual model with `mock-llm` and `mock-llm-503` in the first group and an `openai-backup` model in group 2; the gateway drops the failing mock, stays in group 1, and moves to OpenAI when `mock-llm` is stopped
 - Add MCP track labs:
   - `mcp-external-authorization`: MCP External authz with the `ext-authz-jwt` helper, which allows only tokens with `team: platform`; no token and bob are denied in the Tool Playground, alice connects
+  - `mcp-oauth-keycloak`: MCP authentication with Keycloak's JWKS URL and issuer; MCP Inspector discovers Keycloak from the gateway's metadata, registers itself, signs alice in, and calls a tool
+  - `obo-token-exchange`: a `public` gateway on port `8080` with a route to `procurement-api`; a `backendAuth.oauthTokenExchange` policy exchanges alice's token at Keycloak for one with the audience `procurement-api`
   - `mcp-guardrails`: procurement MCP server behind MCP authentication, an ExtMCP authorization processor (fail closed: tool lists and calls per persona, purchase order limits, email domain allowlist) and a masking processor (fail open: bank account and tax ID); stop each policy server to compare failure modes, and lower a limit by editing `setup/extmcp/authz.yaml`
 - Add helper profiles `ext-authz-jwt` and `mcp-guardrails` (`procurement-mcp`, `extmcp-authz`, `extmcp-redact`), with policy files in `setup/extmcp/`
 - Add helper profile `mock-llm-faults`: `mock-llm-slow` (5s to first token), `mock-llm-flaky` (30% 503) and `mock-llm-503` (every request 503)
+- Add helper profiles `mcp-inspector` (MCP Inspector 2.9.0 in the gateway's network, on port `6274`) and `obo` (`procurement-api`, an echo service that decodes the JWT it receives)
+- Keycloak `workshop` realm: anonymous client registration from `localhost`, `127.0.0.1` and `github.com` (Trusted Hosts), and clients `workshop-cli`, `agentgateway` (standard token exchange) and `procurement-api` for token exchange
 - Add `lib/jwt/tokens/requester.jwt`, `buyer.jwt` and `finance-approver.jwt` with a `persona` claim; `make-tokens.sh` mints them
 - e2e: a spec with `// @docker yes` gets the Docker socket; `helper()` in `lib/lab.ts` stops and starts Compose helpers, and `helperLogs()` reads a helper's log
 

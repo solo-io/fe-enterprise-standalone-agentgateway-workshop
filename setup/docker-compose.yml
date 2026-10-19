@@ -20,6 +20,7 @@ services:
       - "4001:4001"   # MCP and traffic gateway
       - "8080:8080"   # extra traffic gateway
       - "8180:8180"   # Keycloak (keycloak profile), which shares the gateway's network
+      - "6274:6274"   # MCP Inspector (mcp-inspector profile), which shares the gateway's network
 
   # Helper services. Labs that need one start it with: docker compose --profile <name> up -d
 
@@ -114,3 +115,23 @@ services:
     volumes:
       - ./guardrail-webhook:/policy:ro
     entrypoint: ["/bin/sh", "-c", "export REQUEST_GUARDRAIL_PROMPT=\"$$(cat /policy/request-prompt.txt)\" RESPONSE_GUARDRAIL_PROMPT=\"$$(cat /policy/response-prompt.txt)\"; exec python -m uvicorn main:app --host 0.0.0.0 --port 8000"]
+
+  # MCP Inspector runs in the gateway's network, so it reaches the gateway at localhost:4001 and Keycloak
+  # at localhost:8180, and its OAuth callback http://localhost:6274/oauth/callback works from the browser.
+  mcp-inspector:
+    profiles: [mcp-inspector]
+    image: ghcr.io/modelcontextprotocol/inspector:2.9.0
+    network_mode: "service:agentgateway"
+    command: ["--web", "--transport", "http", "--server-url", "http://localhost:4001/mcp"]
+    environment:
+      MCP_INSPECTOR_API_TOKEN: workshop
+      MCP_INSPECTOR_SECRET_STORE: memory
+
+  # obo: an HTTP echo service that stands in for a downstream API. It returns the request it got,
+  # with the decoded JWT from the Authorization header.
+  procurement-api:
+    profiles: [obo]
+    image: mendhak/http-https-echo:37
+    environment:
+      HTTP_PORT: "8000"
+      JWT_HEADER: Authorization

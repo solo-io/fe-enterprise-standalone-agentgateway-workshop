@@ -11,7 +11,7 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 - **Docker Desktop** (macOS, Windows with WSL) or Docker Engine with the Compose plugin (Linux).
 - Optional: an **Anthropic API key**, for the Anthropic steps in [Connect Coding Agents](labs/llm/connect-coding-agents.md).
 
-The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080` and `8180` on your computer.
+The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8180` and `6274` on your computer.
 
 ## Start here
 
@@ -58,6 +58,8 @@ Then do any of these, in any order:
 | [Shrink the Tool List with Search and Code Tool Modes](labs/mcp/mcp-tool-modes.md) | Replace the tool list with `get_tool`/`invoke_tool`, then with a single `run_code` tool | |
 | [Require a Token for MCP and Limit Tools by Team](labs/mcp/mcp-auth-and-tool-authorization.md) | Require a JWT for MCP, then hide a tool from one team | |
 | [Rate Limit MCP Traffic](labs/mcp/mcp-rate-limiting.md) | Limit MCP requests and see the rate limit error on a tool call | |
+| [Sign In to MCP with Keycloak](labs/mcp/mcp-oauth-keycloak.md) | Require a Keycloak token for MCP, then sign in from MCP Inspector and follow the OAuth steps | `keycloak`, `mcp-inspector` |
+| [Call an API on the User's Behalf with Token Exchange](labs/mcp/obo-token-exchange.md) | Have the gateway exchange the user's Keycloak token for one issued to the API it calls | `keycloak`, `obo` |
 | [Let Your Own Service Approve Each MCP Request](labs/mcp/mcp-external-authorization.md) | Send each MCP request to an external authorization service that allows only the `platform` team | `ext-authz-jwt` |
 | [Guard MCP Tool Calls with a Policy Server](labs/mcp/mcp-guardrails.md) | Scope tools per persona, deny purchase orders over a limit, block outside email, mask bank details, compare fail closed with fail open | `mcp-guardrails` |
 
