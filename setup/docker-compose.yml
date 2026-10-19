@@ -9,6 +9,8 @@ services:
       ENTERPRISE_AGENTGATEWAY_LICENSE_KEY: ${ENTERPRISE_AGENTGATEWAY_LICENSE_KEY:?set ENTERPRISE_AGENTGATEWAY_LICENSE_KEY in .env}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Encrypts the UI sign-in cookie for OIDC. Outside the workshop, set your own in .env (openssl rand -hex 32).
+      OIDC_COOKIE_SECRET: ${OIDC_COOKIE_SECRET:-8d1b5c0f6a3e47b2a9c4d7e1f0b3a6c58e2d4f7a1c9b0e3d6f8a2c5b7e4d1f03}
     volumes:
       - .:/config
     # Host and container port numbers must match: the UI playgrounds call the gateway on the container port.
@@ -17,6 +19,7 @@ services:
       - "4000:4000"   # LLM traffic
       - "4001:4001"   # MCP and traffic gateway
       - "8080:8080"   # extra traffic gateway
+      - "8180:8180"   # Keycloak (keycloak profile), which shares the gateway's network
 
   # Helper services. Labs that need one start it with: docker compose --profile <name> up -d
 
@@ -42,6 +45,19 @@ services:
     image: ably7/grpc-ext-authz:0.2.0
     environment:
       PORT: "9000"
+
+  # Keycloak runs in the gateway's network, so the browser and the gateway both reach it at
+  # http://localhost:8180 and agree on the token issuer.
+  keycloak:
+    profiles: [keycloak]
+    image: quay.io/keycloak/keycloak:26.4.0
+    network_mode: "service:agentgateway"
+    command: ["start-dev", "--import-realm", "--http-port=8180", "--http-management-port=9180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
 
   guardrail-webhook:
     profiles: [guardrail-webhook]

@@ -11,7 +11,7 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 - **Docker Desktop** (macOS, Windows with WSL) or Docker Engine with the Compose plugin (Linux).
 - Optional: an **Anthropic API key**, for the Anthropic steps in [Connect Coding Agents](labs/llm/connect-coding-agents.md).
 
-The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001` and `8080` on your computer.
+The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080` and `8180` on your computer.
 
 ## Start here
 
@@ -56,6 +56,15 @@ Then do any of these, in any order:
 | [Shrink the Tool List with Search and Code Tool Modes](labs/mcp/mcp-tool-modes.md) | Replace the tool list with `get_tool`/`invoke_tool`, then with a single `run_code` tool | |
 | [Require a Token for MCP and Limit Tools by Team](labs/mcp/mcp-auth-and-tool-authorization.md) | Require a JWT for MCP, then hide a tool from one team | |
 | [Rate Limit MCP Traffic](labs/mcp/mcp-rate-limiting.md) | Limit MCP requests and see the rate limit error on a tool call | |
+
+## Platform track
+
+These labs start after [Connect LLM Providers](labs/llm/connect-llm-providers.md). Both set up the same roles: the first with passwords, the second with an identity provider. Do either one, or both.
+
+| Lab | What you do | Helper service |
+|---|---|---|
+| [Give Each Person the Right Access to the UI](labs/platform/ui-access-control.md) | Require a password on the UI, then give alice full access, bob read-only access and carol only her own API keys | |
+| [Sign In to the UI with Keycloak and Map Groups to Roles](labs/platform/ui-access-control-oidc.md) | Sign users in through Keycloak, give each Keycloak group a role, and let one user manage one model | `keycloak` |
 
 ## Helper services
 
