@@ -77,6 +77,14 @@ services:
       AUTH_MODE: jwt
       JWT_REQUIRED_CLAIMS: team=platform
 
+  # Open Policy Agent as a gRPC external authorization service. It reads the Rego policy and JWKS in setup/opa/.
+  opa:
+    profiles: [opa]
+    image: openpolicyagent/opa:1.21.0-envoy-static
+    command: ["run", "--server", "--addr=:8181", "--watch", "--config-file=/policy/config.yaml", "/policy/policy.rego", "/policy/data.json"]
+    volumes:
+      - ./opa:/policy:ro
+
   # mcp-guardrails: a procurement MCP server and two ExtMCP policy servers that read setup/extmcp/.
   procurement-mcp:
     profiles: [mcp-guardrails]
@@ -102,9 +110,10 @@ services:
   # http://localhost:8180 and agree on the token issuer.
   keycloak:
     profiles: [keycloak]
-    image: quay.io/keycloak/keycloak:26.4.0
+    image: quay.io/keycloak/keycloak:26.8.1
     network_mode: "service:agentgateway"
-    command: ["start-dev", "--import-realm", "--http-port=8180", "--http-management-port=9180"]
+    # token-exchange-delegation (preview) lets a token exchange carry an actor token, for obo-token-exchange Part B.
+    command: ["start-dev", "--import-realm", "--http-port=8180", "--http-management-port=9180", "--features=token-exchange-delegation,parameterized-scopes"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin

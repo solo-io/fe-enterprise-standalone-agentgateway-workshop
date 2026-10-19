@@ -68,6 +68,12 @@
       "groups": [
         "/developers"
       ]
+    },
+    {
+      "id": "5a1c0e7e-0000-4000-8000-00000000a6e1",
+      "username": "service-account-procurement-agent",
+      "enabled": true,
+      "serviceAccountClientId": "procurement-agent"
     }
   ],
   "clients": [
@@ -158,6 +164,93 @@
           "protocolMapper": "oidc-audience-mapper",
           "config": {
             "included.client.audience": "agentgateway",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "procurement-agent",
+      "name": "Procurement agent (delegation actor)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "workshop-agent-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "standard.token.exchange.enabled": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "aud-procurement-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "procurement-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "aud-procurement-agent",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "procurement-agent",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "agent-cli",
+      "name": "Agent CLI (signs users in for delegation)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "aud-procurement-agent",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "procurement-agent",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "may-act-sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "may_act.sub",
+            "claim.value": "5a1c0e7e-0000-4000-8000-00000000a6e1",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "may-act-client-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "may_act.client_id",
+            "claim.value": "procurement-agent",
+            "jsonType.label": "String",
             "access.token.claim": "true",
             "id.token.claim": "false",
             "introspection.token.claim": "true"
