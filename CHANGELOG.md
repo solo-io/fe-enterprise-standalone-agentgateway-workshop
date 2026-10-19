@@ -1,5 +1,13 @@
 # Changelog
 
+0.0.1 - (10-19-26)
+---
+- Add Platform track:
+  - `ui-access-control`: serve the UI on the `public` gateway (port `8080`) with a Basic auth policy, map `basicAuth.username` to the user with `config.standardAttributes.user`, and add `admin`, `viewer` and `self-service` roles for alice, bob and carol; carol sees only her own virtual key
+  - `ui-access-control-oidc`: OIDC sign-in with Keycloak, roles matched on the `groups` claim, and a custom `manage` grant on the `openai/*` model for `carol@example.com`
+- Add `setup/ui-users.htpasswd`: UI users `alice`, `bob` and `carol` with the password `workshop`
+- Add `keycloak` helper profile and `setup/keycloak/workshop-realm.json`: realm `workshop` with three users in three groups, the `agentgateway-ui` client and a `groups` claim mapper. Keycloak shares the gateway's network on port `8180`, so the browser and the gateway use the same issuer URL
+
 0.0.0 - (10-16-26)
 ---
 - Add `001-set-up-standalone-agentgateway.md`: start Enterprise agentgateway `2026.10.0` with Docker Compose and tour the UI

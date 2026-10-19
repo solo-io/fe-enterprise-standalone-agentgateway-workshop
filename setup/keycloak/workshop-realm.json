@@ -1,0 +1,109 @@
+{
+  "realm": "workshop",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "groups": [
+    {
+      "name": "platform-team"
+    },
+    {
+      "name": "auditors"
+    },
+    {
+      "name": "developers"
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "workshop",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/platform-team"
+      ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.com",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Auditor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "workshop",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/auditors"
+      ]
+    },
+    {
+      "username": "carol",
+      "enabled": true,
+      "email": "carol@example.com",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "Developer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "workshop",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/developers"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "agentgateway-ui",
+      "name": "agentgateway UI",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "workshop-ui-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

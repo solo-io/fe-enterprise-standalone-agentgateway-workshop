@@ -5,18 +5,30 @@ config:
   database:
     url: sqlite:///config/data.db
   modelCatalog:
-    - file: /config/base-costs.json
+  - file: /config/base-costs.json
+  - inline:
+      providers: {}
 llm:
   port: 4000
   policies:
     cors:
       allowOrigins:
-        - http://localhost:15000
+      - http://localhost:15000
       allowHeaders:
-        - '*'
+      - '*'
       allowMethods:
-        - GET
-        - POST
+      - GET
+      - POST
+  models:
+  - name: openai/*
+    provider: openai
+    params:
+      apiKey: $OPENAI_API_KEY
+    transformation:
+      model: llmRequest.model.stripPrefix("openai/")
+  budgets: []
+  virtualModels: []
+  providers: []
 frontendPolicies:
   http:
     maxBufferSize: 33554432

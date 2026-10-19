@@ -7,7 +7,7 @@ These rules apply to every lab in this workshop. Readers are mid-market teams an
 | Path | Contents |
 |---|---|
 | `001-set-up-standalone-agentgateway.md` | Setup lab. Every other lab starts here. |
-| `labs/llm/<slug>.md`, `labs/mcp/<slug>.md` | Track labs. |
+| `labs/llm/<slug>.md`, `labs/mcp/<slug>.md`, `labs/platform/<slug>.md` | Track labs. |
 | `setup/` | The reader's Docker Compose stack, starting `config.yaml`, `.env.example`, helper service files. |
 | `images/<track>/<slug>/NN-<what>.png` | Screenshots, written by the lab's spec. |
 | `lib/jwt/` | Workshop JWKS and pre-made tokens. |

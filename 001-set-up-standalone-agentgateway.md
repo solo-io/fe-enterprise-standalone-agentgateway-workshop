@@ -53,7 +53,7 @@ The gateway reads the keys from `.env`. The keys never appear in `config.yaml` o
 
 ## Step 3: Free the gateway ports
 
-The gateway uses ports `15000`, `4000`, `4001` and `8080` on your computer. If another agentgateway already runs there, stop it first. For example, if you used the `agentgateway-standalone` repo:
+The gateway uses ports `15000`, `4000`, `4001`, `8080` and `8180` on your computer. If another agentgateway already runs there, stop it first. For example, if you used the `agentgateway-standalone` repo:
 
 ```bash
 (cd <path to agentgateway-standalone>/docker && docker compose down)
