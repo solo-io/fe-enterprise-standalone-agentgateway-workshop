@@ -1,5 +1,9 @@
 # Changelog
 
+0.0.2 - (10-19-26)
+---
+- Restore setup/config.yaml to the starting config
+
 0.0.1 - (10-19-26)
 ---
 - Add Platform track:
