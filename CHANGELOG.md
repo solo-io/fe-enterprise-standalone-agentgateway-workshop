@@ -2,12 +2,16 @@
 
 0.0.3 - (10-19-26)
 ---
+- Add LLM track labs:
+  - `timeouts-and-retries`: a 2s `requestTimeout` LLM policy against a slow mock (504 in the Chat Playground and Logs), then a `public` gateway on port `8080` with a `flaky-llm` traffic route and a Retry policy (5 attempts, 100ms backoff, code 503)
+  - `load-balancing-and-failover`: a Failover virtual model with `mock-llm` and `mock-llm-503` in the first group and an `openai-backup` model in group 2; the gateway drops the failing mock, stays in group 1, and moves to OpenAI when `mock-llm` is stopped
 - Add MCP track labs:
   - `mcp-external-authorization`: MCP External authz with the `ext-authz-jwt` helper, which allows only tokens with `team: platform`; no token and bob are denied in the Tool Playground, alice connects
   - `mcp-guardrails`: procurement MCP server behind MCP authentication, an ExtMCP authorization processor (fail closed: tool lists and calls per persona, purchase order limits, email domain allowlist) and a masking processor (fail open: bank account and tax ID); stop each policy server to compare failure modes, and lower a limit by editing `setup/extmcp/authz.yaml`
 - Add helper profiles `ext-authz-jwt` and `mcp-guardrails` (`procurement-mcp`, `extmcp-authz`, `extmcp-redact`), with policy files in `setup/extmcp/`
+- Add helper profile `mock-llm-faults`: `mock-llm-slow` (5s to first token), `mock-llm-flaky` (30% 503) and `mock-llm-503` (every request 503)
 - Add `lib/jwt/tokens/requester.jwt`, `buyer.jwt` and `finance-approver.jwt` with a `persona` claim; `make-tokens.sh` mints them
-- e2e: a spec with `// @docker yes` gets the Docker socket, and `helper()` in `lib/lab.ts` stops and starts Compose helpers
+- e2e: a spec with `// @docker yes` gets the Docker socket; `helper()` in `lib/lab.ts` stops and starts Compose helpers, and `helperLogs()` reads a helper's log
 
 0.0.2 - (10-19-26)
 ---

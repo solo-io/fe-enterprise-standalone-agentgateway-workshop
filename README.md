@@ -39,6 +39,8 @@ Then do any of these, in any order. Each lab cleans up after itself.
 | [Check Prompts and Replies with a Guardrail Webhook](labs/llm/webhook-guardrails.md) | Send prompts and replies to an LLM-based webhook that rejects jailbreaks and masks personal data | `guardrail-webhook` |
 | [Enrich Prompts and Transform Responses](labs/llm/prompt-enrichment-and-transformations.md) | Add a gateway-side system prompt and add response headers | |
 | [Fail Over Between Models](labs/llm/model-failover.md) | Move traffic off a rate-limited backend with a Failover virtual model | `mock-llm` |
+| [Stop Slow Requests and Retry Failed Ones](labs/llm/timeouts-and-retries.md) | End slow LLM requests with a 2 second timeout, then retry `503` errors on a traffic route | `mock-llm-faults` |
+| [Load Balance Models and Fail Over to a Backup](labs/llm/load-balancing-and-failover.md) | Spread requests across two models in one group, drop the failing one, and fail over to OpenAI when the group is down | `mock-llm`, `mock-llm-faults` |
 | [Connect Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | |
 
 ## MCP track

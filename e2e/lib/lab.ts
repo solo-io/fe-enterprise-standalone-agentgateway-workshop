@@ -72,6 +72,12 @@ export function helper(action: 'stop' | 'start', service: string): void {
   if (!['204', '304'].includes(r.stdout.trim())) throw new Error(`docker ${action} ${name}: HTTP ${r.stdout}`);
 }
 
+/** Returns the last log lines of a Compose service of this run. Needs `// @docker yes`. */
+export function helperLogs(service: string, tail = 500): string {
+  const name = `${process.env.COMPOSE_PROJECT}-${service}-1`;
+  return sh(`curl -s --unix-socket /var/run/docker.sock 'http://localhost/containers/${name}/logs?stdout=1&stderr=1&tail=${tail}'`).stdout;
+}
+
 /** Sends an OpenAI-format chat request to the gateway and returns status and body text. */
 export async function chatRequest(
   model: string,
