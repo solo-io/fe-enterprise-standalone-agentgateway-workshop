@@ -5,6 +5,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export const UI = 'http://localhost:15000/ui';
 const UPDATE = process.env.UPDATE_SCREENSHOTS === '1';
 export const HAS_ANTHROPIC = process.env.HAS_ANTHROPIC === '1';
+export const HAS_AWS = process.env.HAS_AWS === '1';
+export const HAS_BEDROCK_KEY = process.env.HAS_BEDROCK_KEY === '1';
 
 /** Navigation and screenshot helpers bound to one lab's image folder. */
 export function lab(track: string, slug: string) {
@@ -60,6 +62,22 @@ export function lab(track: string, slug: string) {
 export function sh(cmd: string): { code: number; stdout: string } {
   const r = spawnSync('bash', ['-c', cmd], { encoding: 'utf8', timeout: 120_000 });
   return { code: r.status ?? -1, stdout: (r.stdout ?? '') + (r.stderr ?? '') };
+}
+
+/**
+ * Stops or starts a Compose helper of this run, as `docker compose stop|start <service>` does.
+ * Needs `// @docker yes` in the spec header, which mounts the Docker socket.
+ */
+export function helper(action: 'stop' | 'start', service: string): void {
+  const name = `${process.env.COMPOSE_PROJECT}-${service}-1`;
+  const r = sh(`curl -s -o /dev/null -w '%{http_code}' --unix-socket /var/run/docker.sock -X POST http://localhost/containers/${name}/${action}`);
+  if (!['204', '304'].includes(r.stdout.trim())) throw new Error(`docker ${action} ${name}: HTTP ${r.stdout}`);
+}
+
+/** Returns the last log lines of a Compose service of this run. Needs `// @docker yes`. */
+export function helperLogs(service: string, tail = 500): string {
+  const name = `${process.env.COMPOSE_PROJECT}-${service}-1`;
+  return sh(`curl -s --unix-socket /var/run/docker.sock 'http://localhost/containers/${name}/logs?stdout=1&stderr=1&tail=${tail}'`).stdout;
 }
 
 /** Sends an OpenAI-format chat request to the gateway and returns status and body text. */

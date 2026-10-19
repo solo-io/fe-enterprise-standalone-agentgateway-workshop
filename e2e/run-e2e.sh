@@ -8,6 +8,7 @@
 #   // @fixture llm-ready              start config (e2e/fixtures/<name>.yaml), default: base
 #   // @expect mcp-ready               config the lab must end in, default: the start fixture
 #   // @profiles mock-llm,ext-authz    Compose helper profiles to start
+#   // @docker yes                     mount the Docker socket, so the spec can stop and start helpers
 #
 # The gateway publishes no host ports. Playwright runs in a container that shares the
 # gateway's network namespace, so specs use http://localhost:15000 and the real gateway ports.
@@ -49,6 +50,8 @@ run_one() {
   fixture=$(header "$spec" fixture base)
   expect=$(header "$spec" expect "$fixture")
   profiles=$(header "$spec" profiles "")
+  local docker_args=()
+  [ "$(header "$spec" docker no)" = yes ] && docker_args=(-v /var/run/docker.sock:/var/run/docker.sock)
 
   local project="agw-e2e-$(echo "$id" | tr '/' '-' | tr -c 'a-z0-9-\n' '-')"
   local work
@@ -78,13 +81,16 @@ run_one() {
   local gw
   gw=$(docker compose -p "$project" --project-directory "$work" -f "$work/docker-compose.yml" ps -q agentgateway)
 
-  local has_anthropic=0
+  local has_anthropic=0 has_aws=0 has_bedrock_key=0
   grep -qE '^ANTHROPIC_API_KEY=.+' "$ROOT/setup/.env" && has_anthropic=1
+  # AWS values exported in the shell take precedence over setup/.env, as in Docker Compose.
+  { [ -n "${AWS_ACCESS_KEY_ID:-}" ] || grep -qE '^AWS_ACCESS_KEY_ID=.+' "$ROOT/setup/.env"; } && has_aws=1
+  { [ -n "${BEDROCK_API_KEY:-}" ] || grep -qE '^BEDROCK_API_KEY=.+' "$ROOT/setup/.env"; } && has_bedrock_key=1
 
   set +e
   docker run --rm --network "container:$gw" \
-    -v "$ROOT:/repo" -v "$work:/work" -w /repo/e2e \
-    -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$has_anthropic" -e LAB_FIXTURE="$fixture" \
+    -v "$ROOT:/repo" -v "$work:/work" ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
+    -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$has_anthropic" -e HAS_AWS="$has_aws" -e HAS_BEDROCK_KEY="$has_bedrock_key" -e LAB_FIXTURE="$fixture" \
     -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \
     "$PW_IMAGE" bash -c "
       for i in \$(seq 1 60); do curl -sf localhost:15000/api/runtime >/dev/null && break; sleep 1; done

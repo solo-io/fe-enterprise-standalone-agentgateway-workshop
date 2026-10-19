@@ -1,0 +1,8 @@
+plugins:
+  envoy_ext_authz_grpc:
+    addr: :9000
+    path: envoy/authz/result
+    dry-run: false
+    enable-reflection: false
+decision_logs:
+  console: true

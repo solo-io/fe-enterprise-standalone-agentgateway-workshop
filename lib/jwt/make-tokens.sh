@@ -28,15 +28,18 @@ u = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()
 print(json.dumps({"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": sys.argv[1], "n": u(n), "e": u(eb)}]}, indent=2))
 PY
 
-mint() { # mint <persona> <team>
+mint() { # mint <file> <sub> <claim> <value>
   local header payload sig
   header=$(printf '{"alg":"RS256","typ":"JWT","kid":"%s"}' "$KID" | b64url)
-  payload=$(printf '{"iss":"%s","aud":"%s","sub":"%s","team":"%s","iat":%s,"exp":%s}' \
-    "$ISS" "$AUD" "$1" "$2" "$(date +%s)" "$EXP" | b64url)
+  payload=$(printf '{"iss":"%s","aud":"%s","sub":"%s","%s":"%s","iat":%s,"exp":%s}' \
+    "$ISS" "$AUD" "$2" "$3" "$4" "$(date +%s)" "$EXP" | b64url)
   sig=$(printf '%s.%s' "$header" "$payload" | openssl dgst -sha256 -sign private.pem -binary | b64url)
   printf '%s.%s.%s\n' "$header" "$payload" "$sig" > "tokens/$1.jwt"
 }
 
-mint alice platform
-mint bob marketing
-echo "wrote public-jwks.json and tokens/{alice,bob}.jwt"
+mint alice alice team platform
+mint bob bob team marketing
+mint requester riley persona requester
+mint buyer bailey persona buyer
+mint finance-approver fran persona finance-approver
+echo "wrote public-jwks.json and tokens/{alice,bob,requester,buyer,finance-approver}.jwt"
