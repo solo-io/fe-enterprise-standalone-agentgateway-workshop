@@ -9,6 +9,11 @@ services:
       ENTERPRISE_AGENTGATEWAY_LICENSE_KEY: ${ENTERPRISE_AGENTGATEWAY_LICENSE_KEY:?set ENTERPRISE_AGENTGATEWAY_LICENSE_KEY in .env}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Amazon Bedrock. Models with Ambient AWS credentials sign requests with these.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      BEDROCK_API_KEY: ${BEDROCK_API_KEY:-}
       # Encrypts the UI sign-in cookie for OIDC. Outside the workshop, set your own in .env (openssl rand -hex 32).
       OIDC_COOKIE_SECRET: ${OIDC_COOKIE_SECRET:-8d1b5c0f6a3e47b2a9c4d7e1f0b3a6c58e2d4f7a1c9b0e3d6f8a2c5b7e4d1f03}
     volumes:

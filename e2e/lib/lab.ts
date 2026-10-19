@@ -5,6 +5,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export const UI = 'http://localhost:15000/ui';
 const UPDATE = process.env.UPDATE_SCREENSHOTS === '1';
 export const HAS_ANTHROPIC = process.env.HAS_ANTHROPIC === '1';
+export const HAS_AWS = process.env.HAS_AWS === '1';
+export const HAS_BEDROCK_KEY = process.env.HAS_BEDROCK_KEY === '1';
 
 /** Navigation and screenshot helpers bound to one lab's image folder. */
 export function lab(track: string, slug: string) {

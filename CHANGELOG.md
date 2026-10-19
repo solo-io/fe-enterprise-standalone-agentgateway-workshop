@@ -3,6 +3,7 @@
 0.0.3 - (10-19-26)
 ---
 - Add LLM track labs:
+  - `connect-amazon-bedrock`: a `bedrock/*` model with Ambient AWS credentials from `setup/.env`, region `us-west-2` and the Prefer Runtime endpoint (the default Prefer Mantle returns 404 for `us.` inference profile IDs); Claude Haiku 4.5 in the Chat Playground and Logs, Claude Sonnet 4.6 by curl; optional `apiKey: $BEDROCK_API_KEY` added in Raw Configuration
   - `timeouts-and-retries`: a 2s `requestTimeout` LLM policy against a slow mock (504 in the Chat Playground and Logs), then a `public` gateway on port `8080` with a `flaky-llm` traffic route and a Retry policy (5 attempts, 100ms backoff, code 503)
   - `load-balancing-and-failover`: a Failover virtual model with `mock-llm` and `mock-llm-503` in the first group and an `openai-backup` model in group 2; the gateway drops the failing mock, stays in group 1, and moves to OpenAI when `mock-llm` is stopped
 - Add MCP track labs:
@@ -11,6 +12,7 @@
   - `obo-token-exchange`: a `public` gateway on port `8080` with a route to `procurement-api`; a `backendAuth.oauthTokenExchange` policy exchanges alice's token at Keycloak for one with the audience `procurement-api`
   - `mcp-guardrails`: procurement MCP server behind MCP authentication, an ExtMCP authorization processor (fail closed: tool lists and calls per persona, purchase order limits, email domain allowlist) and a masking processor (fail open: bank account and tax ID); stop each policy server to compare failure modes, and lower a limit by editing `setup/extmcp/authz.yaml`
 - Add helper profiles `ext-authz-jwt` and `mcp-guardrails` (`procurement-mcp`, `extmcp-authz`, `extmcp-redact`), with policy files in `setup/extmcp/`
+- Pass `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` and `BEDROCK_API_KEY` to the gateway (optional, empty by default) and add them to `setup/.env.example`; `e2e/run-e2e.sh` skips the Bedrock spec when no AWS credentials are set
 - Add helper profile `mock-llm-faults`: `mock-llm-slow` (5s to first token), `mock-llm-flaky` (30% 503) and `mock-llm-503` (every request 503)
 - Add helper profiles `mcp-inspector` (MCP Inspector 2.9.0 in the gateway's network, on port `6274`) and `obo` (`procurement-api`, an echo service that decodes the JWT it receives)
 - Keycloak `workshop` realm: anonymous client registration from `localhost`, `127.0.0.1` and `github.com` (Trusted Hosts), and clients `workshop-cli`, `agentgateway` (standard token exchange) and `procurement-api` for token exchange
