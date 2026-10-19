@@ -34,6 +34,7 @@ Then do any of these, in any order. Each lab cleans up after itself.
 | [Give Each User a Virtual API Key](labs/llm/virtual-api-keys.md) | Issue per-user keys, block requests without a key, see usage per user in Logs and Analytics | |
 | [Require a JWT and Allow Only One Team](labs/llm/jwt-auth-and-authorization.md) | Require a JWT, then allow only callers whose `team` claim is `platform` | |
 | [Let Your Own Service Approve Each Request](labs/llm/external-authorization.md) | Send each request to an external authorization service that allows or denies it | `ext-authz` |
+| [Decide Who Can Use Which Model with Open Policy Agent](labs/llm/opa-authorization.md) | Send each request to OPA, allow one team any model and limit another to one model, change the Rego policy live | `opa` |
 | [Limit LLM Tokens with a Local Rate Limit](labs/llm/local-rate-limiting.md) | Cap tokens per minute and see the 429 | |
 | [Track LLM Cost and Enforce a Budget](labs/llm/budgets-and-cost-tracking.md) | Set a model price, block requests over a token budget, see spend in Analytics | |
 | [Block and Mask Sensitive Data with Built-in Guardrails](labs/llm/builtin-guardrails.md) | Block credit cards, SSNs and AWS keys in prompts, mask email addresses in replies | |

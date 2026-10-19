@@ -4,7 +4,7 @@
 // @docker yes
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'fs';
-import { helperLogs, lab, sh } from '../../lib/lab';
+import { chat, helperLogs, lab, sh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('llm', 'opa-authorization');
@@ -61,6 +61,25 @@ test('the Chat Playground is denied without a token', async ({ page }) => {
   await shot(page, '03-playground-denied', banner);
 });
 
+test('the Chat Playground with bob and alice tokens', async ({ page }) => {
+  await go(page, '/llm/playground');
+  const main = page.locator('main');
+  await main.getByRole('combobox', { name: 'Model' }).click();
+  await page.getByRole('option', { name: 'openai/*' }).first().click();
+  await main.getByPlaceholder('Select or type a model').fill('gpt-4.1-mini');
+  await main.getByPlaceholder('Optional Bearer token').fill(BOB);
+  await main.getByPlaceholder('Ask a test question...').fill(PROMPT);
+  await main.getByRole('button', { name: 'Send' }).click();
+  const banner = main.getByText('Playground request failed').locator('..');
+  await expect(banner).toContainText('denied by OPA: team marketing may not use model openai/gpt-4.1-mini', { timeout: 30_000 });
+  await shot(page, '04-playground-bob-denied', banner);
+
+  await go(page, '/llm/playground');
+  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-4.1-mini', prompt: PROMPT, apiKey: ALICE });
+  expect(reply).toContain('OK');
+  await shot(page, '05-playground-alice-allowed', page.locator('main').locator('.chat-message.assistant').last());
+});
+
 test('curl: tokens and models', async () => {
   const none = curl('gpt-4o-mini');
   expect(none).toMatch(/^HTTP\/1\.1 403 Forbidden/);
@@ -100,7 +119,7 @@ test('clean up: delete the policy', async ({ page }) => {
   const card = await policyCard(page, 'External authz');
   await card.click();
   const del = page.getByRole('dialog').getByRole('button', { name: 'Delete policy' });
-  await shot(page, '04-delete-policy', del);
+  await shot(page, '06-delete-policy', del);
   await del.click();
   await page.getByText('Delete policy?').locator('../..').getByRole('button', { name: 'Delete policy' }).click();
   await expect(page.locator('aside.drawer')).toBeHidden();

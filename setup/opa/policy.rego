@@ -23,8 +23,9 @@ claims := payload if {
 	valid
 }
 
-# The model the client asked for, from the request body. Clients send the provider prefix.
-model := json.unmarshal(input.attributes.request.http.body).model
+# The model the client asked for. OPA parses the JSON request body into parsed_body.
+# Clients send the provider prefix.
+model := input.parsed_body.model
 
 # Models the marketing team may use.
 marketing_models := {"openai/gpt-4o-mini"}
