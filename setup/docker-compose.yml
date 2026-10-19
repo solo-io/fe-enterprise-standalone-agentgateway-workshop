@@ -46,6 +46,36 @@ services:
     environment:
       PORT: "9000"
 
+  # Allows a request only when its JWT has the claim team=platform.
+  ext-authz-jwt:
+    profiles: [ext-authz-jwt]
+    image: ably7/grpc-ext-authz:0.2.0
+    environment:
+      PORT: "9000"
+      AUTH_MODE: jwt
+      JWT_REQUIRED_CLAIMS: team=platform
+
+  # mcp-guardrails: a procurement MCP server and two ExtMCP policy servers that read setup/extmcp/.
+  procurement-mcp:
+    profiles: [mcp-guardrails]
+    image: ably7/procurement-mcp:0.1.1
+
+  extmcp-authz:
+    profiles: [mcp-guardrails]
+    image: ably7/extmcp-guardrails:0.1.1
+    environment:
+      CONFIG_PATH: /etc/extmcp/authz.yaml
+    volumes:
+      - ./extmcp:/etc/extmcp:ro
+
+  extmcp-redact:
+    profiles: [mcp-guardrails]
+    image: ably7/extmcp-guardrails:0.1.1
+    environment:
+      CONFIG_PATH: /etc/extmcp/redact.yaml
+    volumes:
+      - ./extmcp:/etc/extmcp:ro
+
   # Keycloak runs in the gateway's network, so the browser and the gateway both reach it at
   # http://localhost:8180 and agree on the token issuer.
   keycloak:

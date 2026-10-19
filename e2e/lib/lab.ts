@@ -62,6 +62,16 @@ export function sh(cmd: string): { code: number; stdout: string } {
   return { code: r.status ?? -1, stdout: (r.stdout ?? '') + (r.stderr ?? '') };
 }
 
+/**
+ * Stops or starts a Compose helper of this run, as `docker compose stop|start <service>` does.
+ * Needs `// @docker yes` in the spec header, which mounts the Docker socket.
+ */
+export function helper(action: 'stop' | 'start', service: string): void {
+  const name = `${process.env.COMPOSE_PROJECT}-${service}-1`;
+  const r = sh(`curl -s -o /dev/null -w '%{http_code}' --unix-socket /var/run/docker.sock -X POST http://localhost/containers/${name}/${action}`);
+  if (!['204', '304'].includes(r.stdout.trim())) throw new Error(`docker ${action} ${name}: HTTP ${r.stdout}`);
+}
+
 /** Sends an OpenAI-format chat request to the gateway and returns status and body text. */
 export async function chatRequest(
   model: string,

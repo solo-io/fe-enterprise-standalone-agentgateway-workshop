@@ -2,10 +2,13 @@
 
 Labs that use JWT authentication paste `public-jwks.json` into the UI and send these tokens:
 
-| File | `sub` | `team` |
+| File | `sub` | Claim |
 |---|---|---|
-| `tokens/alice.jwt` | `alice` | `platform` |
-| `tokens/bob.jwt` | `bob` | `marketing` |
+| `tokens/alice.jwt` | `alice` | `team: platform` |
+| `tokens/bob.jwt` | `bob` | `team: marketing` |
+| `tokens/requester.jwt` | `riley` | `persona: requester` |
+| `tokens/buyer.jwt` | `bailey` | `persona: buyer` |
+| `tokens/finance-approver.jwt` | `fran` | `persona: finance-approver` |
 
 All tokens have `iss: solo-workshop`, `aud: agentgateway`, and expire on 2036-01-01.
 

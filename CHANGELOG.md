@@ -1,5 +1,14 @@
 # Changelog
 
+0.0.3 - (10-19-26)
+---
+- Add MCP track labs:
+  - `mcp-external-authorization`: MCP External authz with the `ext-authz-jwt` helper, which allows only tokens with `team: platform`; no token and bob are denied in the Tool Playground, alice connects
+  - `mcp-guardrails`: procurement MCP server behind MCP authentication, an ExtMCP authorization processor (fail closed: tool lists and calls per persona, purchase order limits, email domain allowlist) and a masking processor (fail open: bank account and tax ID); stop each policy server to compare failure modes, and lower a limit by editing `setup/extmcp/authz.yaml`
+- Add helper profiles `ext-authz-jwt` and `mcp-guardrails` (`procurement-mcp`, `extmcp-authz`, `extmcp-redact`), with policy files in `setup/extmcp/`
+- Add `lib/jwt/tokens/requester.jwt`, `buyer.jwt` and `finance-approver.jwt` with a `persona` claim; `make-tokens.sh` mints them
+- e2e: a spec with `// @docker yes` gets the Docker socket, and `helper()` in `lib/lab.ts` stops and starts Compose helpers
+
 0.0.2 - (10-19-26)
 ---
 - Restore setup/config.yaml to the starting config

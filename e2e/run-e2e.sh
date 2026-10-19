@@ -8,6 +8,7 @@
 #   // @fixture llm-ready              start config (e2e/fixtures/<name>.yaml), default: base
 #   // @expect mcp-ready               config the lab must end in, default: the start fixture
 #   // @profiles mock-llm,ext-authz    Compose helper profiles to start
+#   // @docker yes                     mount the Docker socket, so the spec can stop and start helpers
 #
 # The gateway publishes no host ports. Playwright runs in a container that shares the
 # gateway's network namespace, so specs use http://localhost:15000 and the real gateway ports.
@@ -49,6 +50,8 @@ run_one() {
   fixture=$(header "$spec" fixture base)
   expect=$(header "$spec" expect "$fixture")
   profiles=$(header "$spec" profiles "")
+  local docker_args=()
+  [ "$(header "$spec" docker no)" = yes ] && docker_args=(-v /var/run/docker.sock:/var/run/docker.sock)
 
   local project="agw-e2e-$(echo "$id" | tr '/' '-' | tr -c 'a-z0-9-\n' '-')"
   local work
@@ -83,7 +86,7 @@ run_one() {
 
   set +e
   docker run --rm --network "container:$gw" \
-    -v "$ROOT:/repo" -v "$work:/work" -w /repo/e2e \
+    -v "$ROOT:/repo" -v "$work:/work" ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
     -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$has_anthropic" -e LAB_FIXTURE="$fixture" \
     -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \
     "$PW_IMAGE" bash -c "

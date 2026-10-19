@@ -56,6 +56,8 @@ Then do any of these, in any order:
 | [Shrink the Tool List with Search and Code Tool Modes](labs/mcp/mcp-tool-modes.md) | Replace the tool list with `get_tool`/`invoke_tool`, then with a single `run_code` tool | |
 | [Require a Token for MCP and Limit Tools by Team](labs/mcp/mcp-auth-and-tool-authorization.md) | Require a JWT for MCP, then hide a tool from one team | |
 | [Rate Limit MCP Traffic](labs/mcp/mcp-rate-limiting.md) | Limit MCP requests and see the rate limit error on a tool call | |
+| [Let Your Own Service Approve Each MCP Request](labs/mcp/mcp-external-authorization.md) | Send each MCP request to an external authorization service that allows only the `platform` team | `ext-authz-jwt` |
+| [Guard MCP Tool Calls with a Policy Server](labs/mcp/mcp-guardrails.md) | Scope tools per persona, deny purchase orders over a limit, block outside email, mask bank details, compare fail closed with fail open | `mcp-guardrails` |
 
 ## Platform track
 
