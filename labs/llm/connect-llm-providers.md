@@ -5,8 +5,6 @@
 - Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Your `OPENAI_API_KEY` is in `setup/.env`.
 
-Every other LLM lab, and the MCP track, starts from the state this lab leaves behind. This lab has no cleanup section.
-
 ## What you'll do
 
 - Add an OpenAI model to the gateway
@@ -107,7 +105,15 @@ llm:
         model: llmRequest.model.stripPrefix("openai/")
 ```
 
+## Clean up
+
+1. In the sidebar, click **Models**.
+2. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+   ![Models page with the trash icon in the openai/* row](../../images/llm/connect-llm-providers/07-delete-model.png)
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.
+
 ## Next
 
-- Pick any lab in the LLM track. Each one starts from the state you have now and returns to it in its cleanup.
-- MCP track: [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md)
+Pick any lab in the LLM track. Labs that use the `openai/*` model add it again in their **Set up** section, with the steps from Step 1.

@@ -1,12 +1,17 @@
 // labs/llm/budgets-and-cost-tracking.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { chat, chatRequest, lab } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
 
 const { go, shot } = lab('llm', 'budgets-and-cost-tracking');
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('add a custom price for gpt-6-luna to the cost catalog', async ({ page }) => {
   await go(page, '/llm/budgets');
@@ -117,5 +122,6 @@ test('clean up: delete the budget and the custom cost', async ({ page }) => {
   await main.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(main).toContainText('No custom costs.');
   await page.waitForTimeout(1000);
-  expectMatchesFixture('llm-ready');
+  await deleteModel(page);
+  expectMatchesFixture('base');
 });

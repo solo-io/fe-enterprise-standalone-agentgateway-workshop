@@ -1,5 +1,5 @@
 // labs/platform/ui-access-control.md
-// @fixture llm-ready
+// @fixture base
 import { expect, type Browser, type Page, test } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
@@ -99,7 +99,7 @@ test('use the Basic auth user name as the user', async ({ page }) => {
   if (await confirm.isVisible().catch(() => false)) await save(page, confirm);
   expect(readConfig().config.standardAttributes).toEqual({ user: 'basicAuth.username' });
   // `llm:` must stay a top-level key, not nest under standardAttributes.
-  expect(readConfig().llm.models).toHaveLength(1);
+  expect(readConfig().llm.port).toBe(4000);
 });
 
 test('enable Traffic to add the public gateway', async ({ page }) => {
@@ -320,5 +320,5 @@ test('clean up: keys, roles, Basic auth, UI gateway, public gateway', async ({ p
   if (await confirm2.isVisible().catch(() => false)) await save(page, confirm2);
   // An empty `gateways: {}` keeps Traffic enabled, so the next lab's "Get started" would be missing.
   expect(readConfig().gateways).toBeUndefined();
-  expectMatchesFixture('llm-ready');
+  expectMatchesFixture('base');
 });

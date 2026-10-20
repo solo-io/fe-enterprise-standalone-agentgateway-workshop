@@ -1,5 +1,5 @@
 // labs/platform/sni-matching.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
@@ -160,5 +160,5 @@ test('clean up', async ({ page }) => {
   const cfg = readConfig();
   expect(cfg.gateways).toBeUndefined();
   expect(cfg.routes).toBeUndefined();
-  expectMatchesFixture('llm-ready');
+  expectMatchesFixture('base');
 });

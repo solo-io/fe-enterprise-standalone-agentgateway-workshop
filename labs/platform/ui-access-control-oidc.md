@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Optional: do [Give Each Person the Right Access to the UI](ui-access-control.md) first. It covers the same roles with passwords instead of an identity provider.
 - Start the Keycloak helper. From the `setup/` folder, run:
 
@@ -32,6 +32,24 @@ The Keycloak helper loads a realm named `workshop` with three users. All three h
 Your company already keeps users and teams in an identity provider (IdP) such as Okta, Entra ID or Keycloak. When the UI signs users in through that IdP, you manage access in one place. A new hire who joins the `developers` group gets developer access to the gateway UI, and someone who leaves the company loses it. Both changes happen in the IdP.
 
 The gateway reads two claims from the IdP's token: `email` becomes the user and `groups` becomes the user's groups. Roles can match either one.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](../llm/connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add a gateway on port 8080
 
@@ -223,7 +241,7 @@ The gateway encrypts the sign-in cookie with the `OIDC_COOKIE_SECRET` variable t
 
 ## Clean up
 
-Do steps 1 to 11 on `http://localhost:15000/ui`.
+Do steps 1 to 13 on `http://localhost:15000/ui`.
 
 1. In the sidebar, click **Settings**, then **Access Control**.
 2. In **Access control**, select **Off** and click **Save**.
@@ -236,9 +254,13 @@ Do steps 1 to 11 on `http://localhost:15000/ui`.
 9. In the **public** card, click the trash icon (**Delete gateway**).
 10. In the sidebar, click **Raw Configuration**.
 11. Delete the line `gateways: {}` and click **Save**. Deleting the gateway leaves this empty line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
-12. Close all private windows.
-13. From the `setup/` folder, stop Keycloak:
+12. In the sidebar, click **Models**.
+13. In the `openai/*` row, click the trash icon, then click **Delete model**.
+14. Close all private windows.
+15. From the `setup/` folder, stop Keycloak:
 
     ```bash
     docker compose stop keycloak
     ```
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

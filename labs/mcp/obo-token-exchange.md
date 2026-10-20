@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md).
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start Keycloak and the example API. From the `setup/` folder, run:
 
   ```bash
@@ -37,13 +37,14 @@ The workshop realm has these clients for this lab:
 | `agent-cli` | The app alice signs in with for delegation. Its tokens have a `may_act` claim that names `procurement-agent`. |
 | `procurement-agent` | The agent. It gets its own token with its secret `workshop-agent-secret`, and it may exchange tokens. |
 
-## Step 1: Add a gateway on port 8080
+## Step 1: Turn on Traffic
 
-1. In the sidebar, under **Traffic**, click **Gateways**.
-2. Click **Add gateway**. The panel fills in **Name** `public` and **Port** `8080`.
-3. Click **Save gateway**.
+1. In the sidebar, under **Traffic**, click **Get started**.
+2. Click **Enable**.
 
-   ![Add gateway panel with name public and port 8080](../../images/mcp/obo-token-exchange/01-add-gateway.png)
+   ![Enable Traffic page](../../images/mcp/obo-token-exchange/01-enable-traffic.png)
+
+The UI creates a gateway named `public` on port `8080`. The sidebar now shows **Gateways** and **Routes** under **Traffic**.
 
 ## Step 2: Route port 8080 to the API
 
@@ -265,7 +266,6 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 
 ```yaml
 gateways:
-  ...
   public:
     port: 8080
 routes:
@@ -300,12 +300,18 @@ The same `backendAuth` policy also works on an MCP server or a model.
 
 ## Clean up
 
-1. In the sidebar, under **Traffic**, click **Routes**.
-2. In the `procurement-api` row, click **Delete route**. The route is deleted right away.
-3. In the sidebar, under **Traffic**, click **Gateways**.
-4. Next to `public`, click **Delete gateway**.
-5. Stop Keycloak and the API. From the `setup/` folder, run:
+1. Stop Keycloak and the API. From the `setup/` folder, run:
 
    ```bash
    docker compose --profile keycloak --profile obo stop keycloak procurement-api
    ```
+
+2. Turn off Traffic. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `public` gateway on port `8080` and the `routes:` section with the `procurement-api` route.
+
+   ![Raw Configuration with the gateways and routes sections selected](../../images/mcp/obo-token-exchange/07-turn-off-traffic.png)
+
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
+
+The sidebar shows **Get started** under **Traffic** again. The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

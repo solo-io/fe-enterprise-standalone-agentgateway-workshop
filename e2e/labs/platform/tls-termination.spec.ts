@@ -1,5 +1,5 @@
 // labs/platform/tls-termination.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm
 import { expect, test, type Page } from '@playwright/test';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
@@ -147,7 +147,8 @@ test('clean up', async ({ page }) => {
   await go(page, '/raw-config');
   const gw = rawLine(page, /^gateways:\s\{\}/);
   await expect(gw).toBeVisible();
-  await shot(page, '07-empty-gateways', gw);
+  // Monaco can replace its line elements right after the page loads; retry the screenshot if it does.
+  await expect(async () => shot(page, '07-empty-gateways', gw)).toPass({ timeout: 15_000 });
   await gw.click({ position: { x: 1, y: 5 } });
   await page.keyboard.press('Home');
   await page.keyboard.press('Home');
@@ -163,5 +164,5 @@ test('clean up', async ({ page }) => {
   console.log(JSON.stringify({ gateways: cfg.gateways, routes: cfg.routes }));
   expect(cfg.gateways).toBeUndefined();
   expect(cfg.routes).toBeUndefined();
-  expectMatchesFixture('llm-ready');
+  expectMatchesFixture('base');
 });

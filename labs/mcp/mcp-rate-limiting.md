@@ -2,7 +2,8 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The gateway serves the `solo-docs` MCP server on port `4001`.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
+- Your computer can reach `https://search.solo.io`.
 
 ## What you'll do
 
@@ -15,6 +16,41 @@
 An AI agent can call tools in a fast loop. A rate limit protects the MCP servers behind the gateway, and the APIs and costs behind them, from a runaway agent. The gateway counts requests and rejects them when the limit is used up, so the MCP server never sees the extra calls.
 
 Every MCP message is one HTTP request to the gateway. When a client connects, it sends 3 requests: `initialize`, `notifications/initialized` and `tools/list`. Each tool call is 1 more request. Size a limit in sessions and calls, not only in tool calls.
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add a local rate limit
 
@@ -100,8 +136,12 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, under **MCP**, click **Policies**.
-2. Click the **Local rate limit** card.
-3. Click the **Delete policy** icon at the top of the panel, then click **Delete policy** to confirm.
+1. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+2. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server, the CORS policy and the rate limit.
 
-The **Local rate limit** card shows **disabled**. MCP requests are no longer limited.
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-rate-limiting/05-turn-off-mcp.png)
+
+3. Press **Delete**.
+4. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

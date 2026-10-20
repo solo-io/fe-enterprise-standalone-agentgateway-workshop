@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the guardrail webhook helper. From the `setup` folder, run:
 
   ```bash
@@ -23,6 +23,24 @@
 Built-in detectors and regular expressions match fixed text. A webhook guard sends the prompt or the reply to a service you run, and that service decides. The helper in this lab uses an LLM to read each message in context, so it catches a jailbreak worded in a new way and lets a harmless question through. The webhook answers with one of three actions: pass the content, mask parts of it, or reject the request with a message.
 
 The helper's rules are plain-English instructions in `setup/guardrail-webhook/request-prompt.txt` and `setup/guardrail-webhook/response-prompt.txt`. To change the rules, edit the files and restart the helper with `docker compose --profile guardrail-webhook restart guardrail-webhook`.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the request webhook
 
@@ -163,4 +181,7 @@ llm:
    docker compose --profile guardrail-webhook stop guardrail-webhook
    ```
 
-Logs keep the requests from this lab.
+5. In the sidebar, click **Models**.
+6. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. Logs keep the requests from this lab.

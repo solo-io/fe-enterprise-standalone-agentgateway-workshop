@@ -2,8 +2,9 @@
 
 ## Before you start
 
-- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md). You can do this lab with or without [Connect LLM Providers](connect-llm-providers.md). If the gateway also has the `openai/*` model, do the optional comparison at the end.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Put your Anthropic API key in `setup/.env` as `ANTHROPIC_API_KEY`, then restart the gateway so it reads the key: from the `setup/` folder, run `env UID=$(id -u) GID=$(id -g) docker compose up -d`. You can get a key from the [Anthropic Console](https://console.anthropic.com/).
+- Optional, for the comparison with GPT at the end: your `OPENAI_API_KEY` is in `setup/.env`.
 
 ## What you'll do
 
@@ -115,7 +116,22 @@ The chart shows the tokens for `anthropic`. The line above the chart shows the t
 
 ## Optional: compare Claude with GPT
 
-Do this part if the gateway has the `openai/*` model from [Connect LLM Providers](connect-llm-providers.md).
+This part adds the `openai/*` model next to `anthropic/*`. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+Add the OpenAI model:
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `anthropic/*` and `openai/*`.
+
+Ask both models the same question:
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***. In **Specific model**, enter `gpt-6-luna`.
@@ -167,11 +183,14 @@ The model points at the provider with `reference`. A second Claude model, for ex
 
 ## Next
 
-To run Claude Code through the gateway with this model, go to [Connect Coding Agents](connect-coding-agents.md) before you clean up.
+[Connect Coding Agents](connect-coding-agents.md) runs Claude Code through the gateway. It adds the same provider and model in its **Set up**.
 
 ## Clean up
 
 1. In the sidebar, click **Models**.
 2. In the `anthropic/*` row, click **Delete model**, then click **Delete model** in the dialog.
-3. In the sidebar, click **Providers**.
-4. In the `anthropic` row, click **Delete provider**, then click **Delete provider** in the dialog.
+3. If you did the optional comparison, in the `openai/*` row, click the trash icon, then click **Delete model**.
+4. In the sidebar, click **Providers**.
+5. In the `anthropic` row, click **Delete provider**, then click **Delete provider** in the dialog.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

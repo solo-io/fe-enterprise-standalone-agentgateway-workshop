@@ -1,9 +1,10 @@
 // labs/mcp/mcp-oauth-keycloak.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles keycloak,mcp-inspector
 import { expect, test, type Page } from '@playwright/test';
 import { lab } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-oauth-keycloak');
 const ISSUER = 'http://localhost:8180/realms/workshop';
@@ -27,6 +28,10 @@ test.beforeAll(async () => {
 function policyCard(page: Page, name: string) {
   return page.locator('main').getByRole('button', { name: new RegExp(`^(enabled|disabled)\\s*${name}`) });
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('turn on MCP authentication with Keycloak', async ({ page }) => {
   await go(page, '/mcp/policies');
@@ -99,12 +104,6 @@ test('sign in through MCP Inspector', async ({ page }) => {
   await shot(page, '10-search-result', result);
 });
 
-test('clean up: delete the policy', async ({ page }) => {
-  await go(page, '/mcp/policies');
-  await policyCard(page, 'MCP authentication').click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Delete policy' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
-  await page.waitForTimeout(1500);
-  await go(page, '/mcp/policies');
-  await expect(policyCard(page, 'MCP authentication')).toContainText('disabled');
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '11-turn-off-mcp', save));
 });

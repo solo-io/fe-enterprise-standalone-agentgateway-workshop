@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md).
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the mock LLM servers that this lab uses. From the `setup/` folder, run:
 
   ```bash
@@ -73,7 +73,7 @@ The reply appears after about 5 seconds. The mock's reply is placeholder text.
 
    ![Timeout panel with requestTimeout: 2s](../../images/llm/timeouts-and-retries/05-timeout-yaml.png)
 
-`requestTimeout` is the longest time the gateway waits for the whole response. The policy is on the **LLM Policies** page, so it applies to every LLM model, including `openai/*`.
+`requestTimeout` is the longest time the gateway waits for the whole response. The policy is on the **LLM Policies** page, so it applies to every LLM model on the gateway.
 
 ## Check the timeout
 
@@ -207,7 +207,6 @@ llm:
     timeout:
       requestTimeout: 2s
   models:
-    ...
     - name: mock-llm-slow
       provider:
         custom:
@@ -253,4 +252,4 @@ routes:
    docker compose --profile mock-llm-faults stop mock-llm-slow mock-llm-flaky mock-llm-503
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

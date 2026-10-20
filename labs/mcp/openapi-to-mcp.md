@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The `solo-docs` server is on the **MCP Servers** page.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Your computer can reach `https://api.open-meteo.com`. [Open-Meteo](https://open-meteo.com/) is a free weather API. It needs no account or API key.
 
 ## What you'll do
@@ -14,6 +14,29 @@
 ## Why this matters
 
 Many companies already describe their REST APIs with OpenAPI. The gateway reads the OpenAPI schema and makes one MCP tool for each API operation, so agents can call the API without a new MCP server. The `operationId` of each operation becomes the tool name.
+
+## Set up
+
+This lab turns on MCP. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add the Open-Meteo API as an MCP server
 
@@ -127,8 +150,8 @@ The list shows `open-meteo` with the type **OpenAPI** and the state **ready**.
 ## Step 2: Call the generated tool
 
 1. In the sidebar, click **Tool Playground**.
-2. Click **Initialize**. The **Result** panel lists **4 tools discovered**: the 3 `solo-docs` tools and `open-meteo_getWeatherForecast`. With more than one server, the gateway puts the server name in front of each tool name.
-3. In **Tool**, select **open-meteo_getWeatherForecast**.
+2. Click **Initialize**. The **Result** panel lists **1 tools discovered**: `getWeatherForecast`. The tool has the name of the `operationId` in the schema.
+3. In **Tool**, select **getWeatherForecast**.
 4. The gateway puts all query parameters of the operation into one **query** object. Click in **query**, select all the text, and paste:
 
    ```json
@@ -137,7 +160,7 @@ The list shows `open-meteo` with the type **OpenAPI** and the state **ready**.
 
 5. Click **Call tool**.
 
-   ![open-meteo_getWeatherForecast with the query filled in](../../images/mcp/openapi-to-mcp/04-call-tool.png)
+   ![getWeatherForecast with the query filled in](../../images/mcp/openapi-to-mcp/04-call-tool.png)
 
 ## Check it
 
@@ -162,7 +185,7 @@ curl -s http://localhost:4001/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Session-Id: $SESSION" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"open-meteo_getWeatherForecast","arguments":{"query":{"latitude":51.5072,"longitude":-0.1276,"current":"temperature_2m"}}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"getWeatherForecast","arguments":{"query":{"latitude":51.5072,"longitude":-0.1276,"current":"temperature_2m"}}}}'
 ```
 
 Expected output (your time and temperature differ):
@@ -181,9 +204,6 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 mcp:
   targets:
-  - name: solo-docs
-    mcp:
-      host: https://search.solo.io/mcp
   - name: open-meteo
     openapi:
       host: https://api.open-meteo.com
@@ -196,7 +216,12 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, click **Servers**.
-2. In the `open-meteo` row, click the delete icon, then click **Delete server**.
+1. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+2. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `open-meteo` server and the CORS policy.
 
-   ![Delete MCP server confirmation](../../images/mcp/openapi-to-mcp/06-delete-server.png)
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/openapi-to-mcp/06-turn-off-mcp.png)
+
+3. Press **Delete**.
+4. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

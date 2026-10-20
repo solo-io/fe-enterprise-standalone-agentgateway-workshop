@@ -1,5 +1,5 @@
 // labs/llm/timeouts-and-retries.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm-faults
 // @docker yes
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -126,7 +126,7 @@ test('check it: the request times out after 2 seconds', async ({ page }) => {
 
 test('add the public traffic gateway', async ({ page }) => {
   await go(page, '/');
-  // With llm-ready, the Traffic section of the sidebar has only Get started.
+  // With base, the Traffic section of the sidebar has only Get started.
   const start = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' }).nth(1);
   await start.click();
   const enable = page.locator('main').getByRole('button', { name: 'Enable' });

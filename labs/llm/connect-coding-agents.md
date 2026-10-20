@@ -2,9 +2,9 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - For Codex: the [Codex CLI](https://github.com/openai/codex) on your machine.
-- Optional, for Claude Code: complete Steps 1 and 2 of [Connect Anthropic](connect-anthropic.md) and skip its cleanup, so the gateway has the `anthropic/*` model. You also need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) on your machine. Skip the Claude Code steps if you have no Anthropic key.
+- Optional, for Claude Code: [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) on your machine, and your Anthropic API key in `setup/.env` as `ANTHROPIC_API_KEY`. After you add the key, restart the gateway so it reads the key: from the `setup/` folder, run `env UID=$(id -u) GID=$(id -g) docker compose up -d`. Skip the Claude Code steps if you have no Anthropic key.
 
 ## What you'll do
 
@@ -15,6 +15,47 @@
 ## Why this matters
 
 Coding agents send a lot of LLM traffic. When they go through the gateway, the gateway holds the provider keys, and you see every request, its tokens and its cost in Logs and Analytics. Developers use a placeholder key on their machines. The gateway speaks each agent's own API: Codex uses the OpenAI Responses API (`/v1/responses`), and Claude Code uses the Anthropic Messages API (`/v1/messages`).
+
+## Set up
+
+Codex uses the `openai/*` model, and Claude Code uses the `anthropic/*` model. [Connect LLM Providers](connect-llm-providers.md) and [Connect Anthropic](connect-anthropic.md) explain these steps.
+
+Add the OpenAI model:
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
+
+Optional, for Claude Code: add the Anthropic provider and model:
+
+1. In the sidebar, click **Providers**.
+2. Click **Add provider**.
+3. In **Provider name**, enter `anthropic`.
+4. In **Provider**, select **Anthropic**.
+5. Next to **Provider API key**, click **Env var** and enter `ANTHROPIC_API_KEY`.
+6. Click **Save provider**.
+
+   ![Add provider panel for Anthropic](../../images/llm/connect-anthropic/02-add-provider.png)
+
+7. In the sidebar, click **Models**.
+8. Click **Add model**.
+9. In **Provider**, select **anthropic** (marked **configured**). The UI fills **Incoming model match** with `anthropic/*`.
+10. Under **Outgoing model**, click **Strip anthropic/**.
+11. Click **Save model**.
+
+    ![Add model panel for anthropic/*](../../images/llm/connect-anthropic/03-add-model.png)
+
+The **Models** page lists `openai/*` and `anthropic/*`.
 
 ## Step 1: Get the Codex snippet
 
@@ -119,11 +160,14 @@ In the sidebar, click **Logs**. You should see `anthropic/claude-haiku-5-5` rows
 
 ## What the UI wrote
 
-Client Setup only builds snippets, so `config.yaml` stays the same. The `anthropic` provider and the `anthropic/*` model come from [Connect Anthropic](connect-anthropic.md).
+Client Setup only builds snippets. The only changes to `config.yaml` are the models and the provider from **Set up**. [Connect Anthropic](connect-anthropic.md) shows the YAML for the `anthropic` provider and model.
 
 ## Clean up
 
 1. Close Codex and Claude Code. If you used the `CODEX_HOME` line, delete that folder: `rm -rf /tmp/codex-gateway-home`.
-2. If you did the Claude Code steps, follow the Clean up section of [Connect Anthropic](connect-anthropic.md).
+2. In the sidebar, click **Models**.
+3. If you did the Claude Code steps, in the `anthropic/*` row, click **Delete model**, then click **Delete model** in the dialog.
+4. In the `openai/*` row, click the trash icon, then click **Delete model**.
+5. If you did the Claude Code steps, in the sidebar, click **Providers**. In the `anthropic` row, click **Delete provider**, then click **Delete provider** in the dialog.
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

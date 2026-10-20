@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The gateway serves the `solo-docs` MCP server on port `4001`.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the workshop's authorization service. From the `setup/` folder, run:
 
   ```bash
@@ -30,6 +30,41 @@ The lab uses the workshop tokens in `lib/jwt/`:
 |---|---|---|
 | `lib/jwt/tokens/alice.jwt` | `alice` | `platform` |
 | `lib/jwt/tokens/bob.jwt` | `bob` | `marketing` |
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add the External authz policy
 
@@ -151,15 +186,18 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, under **MCP**, click **Policies**.
-2. Click the **External authz** card.
-3. Click **Delete policy** (the trash icon at the top of the panel).
-
-   ![External authz panel with the Delete policy button](../../images/mcp/mcp-external-authorization/07-delete-policy.png)
-
-4. Click **Delete policy** to confirm. The card shows **disabled**.
-5. From the `setup/` folder, stop the authorization service:
+1. From the `setup/` folder, stop the authorization service:
 
    ```bash
    docker compose --profile ext-authz-jwt stop ext-authz-jwt
    ```
+
+2. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server, the CORS policy and the External authz policy.
+
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-external-authorization/07-turn-off-mcp.png)
+
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

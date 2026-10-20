@@ -2,7 +2,8 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). [Serve Traffic over HTTPS and Require Client Certificates](tls-termination.md) explains the HTTPS basics this lab builds on.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
+- [Serve Traffic over HTTPS and Require Client Certificates](tls-termination.md) explains the HTTPS basics this lab builds on. You do not need to do it first.
 - Pull the latest workshop files. The `setup/tls/` folder holds a workshop certificate authority (CA) and certificates for `foo.example.com` and `bar.example.com`. The gateway reads them at `/config/tls/`, because the `setup/` folder is mounted at `/config`.
 - Start the mock LLM server that this lab sends requests to. From the `setup/` folder, run:
 
@@ -215,4 +216,4 @@ The listeners have no `protocol: HTTPS` line, because a listener with `tls` uses
    docker compose --profile mock-llm stop mock-llm mock-llm-429
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

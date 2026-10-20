@@ -1,5 +1,5 @@
 // labs/mcp/mcp-opa-authorization.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles opa
 // @docker yes
 import { readFileSync } from 'node:fs';
@@ -7,6 +7,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { helperLogs, lab, sh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 import { mcpConnect } from '../../lib/mcp';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-opa-authorization');
 const MCP = 'http://localhost:4001/mcp';
@@ -74,6 +75,10 @@ async function callTool(page: Page, tool: string, fill: (page: Page) => Promise<
 
   return { status: r.status(), text };
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('add the External authz policy', async ({ page }) => {
   await go(page, '/mcp/policies');
@@ -168,15 +173,6 @@ test('optional curl: bob calls get_full_page', async () => {
   expect(out.trimEnd().endsWith(BOB_DENIED)).toBeTruthy();
 });
 
-test('clean up: delete the policy', async ({ page }) => {
-  await go(page, '/mcp/policies');
-  await policyCard(page, 'External authz').click();
-  const del = page.getByRole('dialog').getByRole('button', { name: 'Delete policy' });
-  await shot(page, '09-delete-policy', del);
-  await del.click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
-  await page.waitForTimeout(1500);
-  await go(page, '/mcp/policies');
-  await expect(policyCard(page, 'External authz')).toContainText('disabled');
-  expect(readConfig().mcp.policies.extAuthz).toBeUndefined();
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '09-turn-off-mcp', save));
 });

@@ -2,7 +2,8 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The `solo-docs` server is on the **MCP Servers** page.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
+- Your computer can reach `https://search.solo.io`.
 - Start the local MCP server that this lab uses. From the `setup/` folder, run:
 
   ```bash
@@ -33,6 +34,41 @@
 ## Why this matters
 
 Your agents should not need one connection for each MCP server. The gateway joins the tools of all servers into one list on one URL (federation). When one server goes down, you choose: stop the whole session, or keep serving the tools of the servers that still work.
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add the local MCP server
 
@@ -189,38 +225,18 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, click **Servers**.
-2. In the `broken` row, click the delete icon, then click **Delete server**.
+1. Stop the local MCP server. From the `setup/` folder, run:
 
-   ![Delete MCP server confirmation](../../images/mcp/local-mcp-and-federation/13-delete-server.png)
-
-3. In the `everything` row, click the delete icon, then click **Delete server**.
-4. Click **Settings**.
-5. In **Prefix mode**, select **None**.
-6. In **Failure mode**, select **Fail closed**.
-7. Click **Save settings**.
-
-   ![Settings panel back on the defaults](../../images/mcp/local-mcp-and-federation/14-settings-defaults.png)
-
-The settings now behave as before, but the UI wrote the default values into the configuration. Remove them so the configuration is the same as when you started:
-
-8. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-9. At the end of the file, select these three lines and press **Delete**:
-
-   ```yaml
-     statefulMode: stateless
-     failureMode: failClosed
-     toolMode: standard
+   ```bash
+   docker compose --profile mcp-everything stop mcp-everything
    ```
 
-   ![The three lines selected in Raw Configuration](../../images/mcp/local-mcp-and-federation/15-raw-config-lines.png)
+2. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the three servers, the CORS policy and the settings.
 
-10. Click **Save**.
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/local-mcp-and-federation/13-turn-off-mcp.png)
 
-    ![Raw Configuration without the three lines](../../images/mcp/local-mcp-and-federation/16-raw-config-save.png)
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
 
-11. Stop the local MCP server. From the `setup/` folder, run:
-
-    ```bash
-    docker compose --profile mcp-everything stop mcp-everything
-    ```
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

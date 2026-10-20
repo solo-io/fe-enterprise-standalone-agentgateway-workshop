@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 
 ## What you'll do
 
@@ -13,6 +13,24 @@
 ## Why this matters
 
 LLM providers charge per token, and one busy client can use up your provider quota for everyone. A token-based rate limit caps how many tokens pass through the gateway in a time period. The gateway enforces a local rate limit by itself, with no extra service, so it is a simple first line of defense.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the rate limit
 
@@ -103,6 +121,8 @@ llm:
 1. In the sidebar, click **Policies**.
 2. Click the **Local rate limit** card.
 3. In the top right of the panel, click the trash icon (**Delete policy**).
-4. Click **Delete policy** to confirm.
+4. Click **Delete policy** to confirm. The **Local rate limit** card shows **disabled** again.
+5. In the sidebar, click **Models**.
+6. In the `openai/*` row, click the trash icon, then click **Delete model**.
 
-The **Local rate limit** card shows **disabled** again.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

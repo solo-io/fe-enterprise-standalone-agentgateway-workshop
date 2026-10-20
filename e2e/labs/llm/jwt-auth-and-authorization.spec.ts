@@ -1,8 +1,9 @@
 // labs/llm/jwt-auth-and-authorization.md
-// @fixture llm-ready
+// @fixture base
 import { readFileSync } from 'node:fs';
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { chat, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('llm', 'jwt-auth-and-authorization');
@@ -15,6 +16,10 @@ const PROMPT = 'Reply with the single word: pong';
 const RULE = 'jwt.team == "platform"';
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 /** Runs the lab's curl from the repo root, optionally with a token file. Returns the full response with headers. */
 function curl(tokenFile?: string): string {
@@ -155,4 +160,8 @@ test('clean up: delete both policies', async ({ page }) => {
   const p = readConfig().llm.policies;
   expect(p.jwtAuth).toBeUndefined();
   expect(p.authorization).toBeUndefined();
+});
+
+test('clean up: delete the model', async ({ page }) => {
+  await deleteModel(page);
 });

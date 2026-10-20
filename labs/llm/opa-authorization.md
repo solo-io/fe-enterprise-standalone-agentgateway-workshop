@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start Open Policy Agent (OPA) with the workshop policy. From the `setup/` folder, run:
 
   ```bash
@@ -88,6 +88,24 @@ result := {
 	not model in marketing_models
 }
 ```
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the External authz policy
 
@@ -277,5 +295,10 @@ llm:
    ```bash
    docker compose --profile opa stop opa
    ```
+
+7. In the sidebar, click **Models**.
+8. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.
 
 `setup/opa/policy.rego` also has rules for MCP tool calls, below the rules this lab shows. To protect your MCP servers with the same OPA service, see [Decide Who Can Call Which MCP Tool with Open Policy Agent](../mcp/mcp-opa-authorization.md).

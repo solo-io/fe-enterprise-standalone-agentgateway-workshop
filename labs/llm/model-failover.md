@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md).
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the two mock LLM servers. From the `setup/` folder, run:
 
   ```bash
@@ -182,4 +182,4 @@ Lower `priority` values are tried first.
    docker compose --profile mock-llm stop mock-llm mock-llm-429
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

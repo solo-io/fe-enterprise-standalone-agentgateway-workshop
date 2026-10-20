@@ -2,8 +2,9 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). This lab uses your OpenAI key for the backup model.
-- Do [Fail Over Between Models](model-failover.md) first if you are new to virtual models.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
+- Your `OPENAI_API_KEY` is in `setup/.env`. This lab uses it for the backup model.
+- [Fail Over Between Models](model-failover.md) explains virtual models with one model in each group. Read it first if virtual models are new to you.
 - Start the mock LLM servers that this lab uses. From the `setup/` folder, run:
 
   ```bash
@@ -66,7 +67,7 @@ With **Unhealthy expression** empty, the gateway uses its default: a `5xx` respo
 
    ![Add model panel for openai-backup](../../images/llm/load-balancing-and-failover/04-add-openai-backup.png)
 
-The virtual model needs a model that always sends `gpt-6-luna` to OpenAI. The `openai/*` model sends whatever model name the caller used, which here would be the virtual model's name.
+The virtual model needs a model that always sends `gpt-6-luna` to OpenAI. A wildcard model such as `openai/*` sends whatever model name the caller used, which here would be the virtual model's name.
 
 ## Step 4: Add the virtual model
 
@@ -139,7 +140,6 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 llm:
   models:
-    ...
     - name: mock-llm
       provider:
         custom:
@@ -191,4 +191,4 @@ Targets with the same `priority` form one group. Lower `priority` values are tri
    docker compose --profile mock-llm --profile mock-llm-faults stop mock-llm mock-llm-503
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

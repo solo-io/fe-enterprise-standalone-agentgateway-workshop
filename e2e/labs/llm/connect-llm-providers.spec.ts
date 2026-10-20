@@ -1,8 +1,8 @@
-// labs/llm/connect-llm-providers.md (foundation lab: ends in llm-ready)
+// labs/llm/connect-llm-providers.md
 // @fixture base
-// @expect llm-ready
 import { expect, test } from '@playwright/test';
 import { chat, lab, sh } from '../../lib/lab';
+import { deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-llm-providers');
 
@@ -54,4 +54,8 @@ test('curl from Client Setup works', async ({ page }) => {
     -H 'Content-Type: application/json' \\
     -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'`);
   expect(r.stdout).toBe('200');
+});
+
+test('clean up: delete the model', async ({ page }) => {
+  await deleteModel(page, 'openai/*', (del) => shot(page, '07-delete-model', del));
 });

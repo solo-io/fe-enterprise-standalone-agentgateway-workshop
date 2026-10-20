@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Your OpenAI API key in `setup/.env` needs access to the Decisions API (`POST /v1/decisions`, in public beta). The adapter uses the same `OPENAI_API_KEY` as the gateway.
 - Start the routing adapter. From the `setup` folder, run:
 
@@ -69,6 +69,24 @@ The tiers and the question are in `setup/semantic-router-openai/profile.json`. T
 | `question` | a `choice` question with a description and examples for each tier | What the model reads to decide |
 
 The gateway also has a **Callout** routing strategy for virtual models, which asks an HTTP service for the model name. The 2026.10.0 UI has no form for it, and the adapter in this lab speaks the External processor protocol (gRPC), so this lab uses the External processor policy.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](../llm/connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the auto_model virtual model
 
@@ -303,4 +321,7 @@ llm:
    docker compose --profile semantic-router-openai stop semantic-router-openai
    ```
 
-Logs keep the requests from this lab.
+8. In the sidebar, click **Models**.
+9. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. Logs keep the requests from this lab.

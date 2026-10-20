@@ -2,7 +2,8 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The `solo-docs` server is on the **MCP Servers** page.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
+- Your computer can reach `https://search.solo.io`.
 
 ## What you'll do
 
@@ -21,6 +22,41 @@ An agent sends the name, description and input schema of every tool to the model
 | **Code** | One tool: `run_code` runs JavaScript that calls the real tools as functions |
 
 The tools behind the gateway do not change. Only the list the agent gets is different.
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Turn on Search mode
 
@@ -116,24 +152,12 @@ In Search mode, `toolMode` is `search`.
 
 ## Clean up
 
-1. In the sidebar, click **Servers**.
-2. Click **Settings**.
-3. In **Tool mode**, select **Standard**.
-4. Click **Save settings**.
+1. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+2. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server, the CORS policy and the tool mode settings.
 
-   ![Settings panel with Tool mode set to Standard](../../images/mcp/mcp-tool-modes/10-tool-mode-standard.png)
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-tool-modes/10-turn-off-mcp.png)
 
-The gateway now behaves as before, but the UI wrote the default values into the configuration. Remove them so the configuration is the same as when you started:
+3. Press **Delete**.
+4. Click **Save**. If a confirmation appears, click **Save** again.
 
-5. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-6. At the end of the file, select these three lines and press **Delete**:
-
-   ```yaml
-     statefulMode: stateless
-     failureMode: failClosed
-     toolMode: standard
-   ```
-
-   ![The three lines selected in Raw Configuration](../../images/mcp/mcp-tool-modes/11-raw-config-lines.png)
-
-7. Click **Save**.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

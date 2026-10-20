@@ -1,9 +1,10 @@
 // labs/llm/webhook-guardrails.md
-// @fixture llm-ready
+// @fixture base
 // @profiles guardrail-webhook
 import { expect, test, type Page } from '@playwright/test';
 import { chatRequest, lab } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'webhook-guardrails');
 
@@ -59,6 +60,10 @@ async function send(page: Page, prompt: string): Promise<{ failed: boolean; text
   }
   return { failed: false, text: await reply.innerText() };
 }
+
+test('set up: add the OpenAI model', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('add webhook guards for requests and responses', async ({ page }) => {
   await go(page, '/llm/guardrails');
@@ -132,4 +137,5 @@ test('clean up: remove the guards', async ({ page }) => {
   await confirm.getByRole('button', { name: 'Remove guardrails' }).click();
   await expect(confirm).toBeHidden();
   await expect(main.getByText('No guards configured.')).toHaveCount(2);
+  await deleteModel(page);
 });

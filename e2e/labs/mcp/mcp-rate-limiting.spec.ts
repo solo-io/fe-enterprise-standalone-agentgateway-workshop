@@ -1,7 +1,8 @@
 // labs/mcp/mcp-rate-limiting.md
-// @fixture mcp-ready
+// @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-rate-limiting');
 
@@ -10,6 +11,10 @@ test.describe.configure({ mode: 'serial' });
 function policyCard(page: Page, name: string) {
   return page.locator('main').getByRole('button', { name: new RegExp(`^(enabled|disabled)\\s*${name}`) });
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('add a local rate limit', async ({ page }) => {
   await go(page, '/mcp/policies');
@@ -85,12 +90,6 @@ test('optional curl check', async () => {
   expect(r.stdout).toContain('"code":-32003,"message":"rate limit exceeded"');
 });
 
-test('clean up: delete the policy', async ({ page }) => {
-  await go(page, '/mcp/policies');
-  await policyCard(page, 'Local rate limit').click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Delete policy' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
-  await page.waitForTimeout(1500);
-  await go(page, '/mcp/policies');
-  await expect(policyCard(page, 'Local rate limit')).toContainText('disabled');
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '05-turn-off-mcp', save));
 });

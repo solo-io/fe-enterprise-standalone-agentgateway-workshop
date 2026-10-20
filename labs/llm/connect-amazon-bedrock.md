@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - An AWS account with Amazon Bedrock access to Claude Haiku 4.5 and Claude Sonnet 4.6 in `us-west-2`.
 - AWS credentials for that account: an access key ID and a secret access key, plus a session token if the credentials are temporary (for example, from AWS SSO).
 
@@ -42,7 +42,7 @@ Temporary credentials expire. When they do, Bedrock rejects requests through the
 1. In the sidebar, click **Models**.
 2. Click **Add model**.
 
-   ![Models page with the openai/* model](../../images/llm/connect-amazon-bedrock/01-models.png)
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
 
 3. In **Provider**, select **Amazon Bedrock**. The UI fills **Incoming model match** with `bedrock/*`.
 4. Under **AWS credentials**, click **Ambient**.
@@ -167,4 +167,4 @@ With **Ambient**, the gateway reads `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
    ![Delete button on the bedrock/* row](../../images/llm/connect-amazon-bedrock/07-delete-model.png)
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in. The AWS values in `setup/.env` stay in the gateway's environment until you remove them and restart the gateway.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. The AWS values in `setup/.env` stay in the gateway's environment until you remove them and restart the gateway.

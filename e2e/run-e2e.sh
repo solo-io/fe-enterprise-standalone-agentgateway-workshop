@@ -5,8 +5,8 @@
 #
 # <id> is a spec path under e2e/labs without the suffix: 001, llm/virtual-api-keys, mcp/openapi-to-mcp.
 # A spec declares what it needs in header comments:
-#   // @fixture llm-ready              start config (e2e/fixtures/<name>.yaml), default: base
-#   // @expect mcp-ready               config the lab must end in, default: the start fixture
+#   // @fixture base                   start config (e2e/fixtures/<name>.yaml), default: base
+#   // @expect base                    config the lab must end in, default: the start fixture
 #   // @profiles mock-llm,ext-authz    Compose helper profiles to start
 #   // @docker yes                     mount the Docker socket, so the spec can stop and start helpers
 #
@@ -111,7 +111,7 @@ run_one() {
 }
 
 if [ "$TARGET" = "all" ]; then
-  # Foundation labs first, then the rest in name order.
+  # 001 and the intro labs first, then the rest in name order.
   ids=(001 llm/connect-llm-providers mcp/connect-remote-mcp-server)
   while IFS= read -r f; do
     id="${f#$ROOT/e2e/labs/}"; id="${id%.spec.ts}"

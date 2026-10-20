@@ -1,5 +1,18 @@
 # Changelog
 
+0.0.6 - (10-20-26)
+---
+- `README.md`: reorder the Providers and clients and Routing and resilience tables
+- `README.md`: move Connect a Remote MCP Server from the MCP track intro into the MCP servers and tools table as its first row, and reorder that table
+- Make every lab standalone: each lab needs only `001`, adds what it uses in a new **Set up** section (the `openai/*` model, or MCP with its servers and the Tool Playground CORS policy, with the intro labs' screenshots), and its cleanup returns the gateway to `base`
+  - `connect-llm-providers` and `connect-remote-mcp-server` get cleanup sections; MCP labs turn off MCP in Raw Configuration (delete from `gateways:` to the end of the file)
+  - `openapi-to-mcp`, `openapi-to-mcp-local-service` and `mcp-guardrails` no longer add `solo-docs`
+  - `connect-coding-agents` adds the Anthropic provider and model itself for Claude Code
+  - `obo-token-exchange` turns Traffic on with **Get started** and turns it off in cleanup
+- `e2e`: shared set up and cleanup steps in `e2e/lib/setup.ts`; every spec starts from `base`
+- `README.md`: Start here lists only 001; add Connect LLM Providers as the OpenAI row in Providers and clients
+- `style-guide.md`: replace Start states with Standalone labs
+
 0.0.5 - (10-20-26)
 ---
 - Add LLM track labs:

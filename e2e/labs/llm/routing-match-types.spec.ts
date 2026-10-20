@@ -1,5 +1,5 @@
 // labs/llm/routing-match-types.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm-routing
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -92,7 +92,7 @@ test('add the two model backends in Raw Configuration', async ({ page }) => {
 
 test('add the public gateway on port 8080', async ({ page }) => {
   await go(page, '/');
-  // With llm-ready, the Traffic section of the sidebar has only Get started.
+  // With base, the Traffic section of the sidebar has only Get started.
   const start = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' }).nth(1);
   await start.click();
   const enable = page.locator('main').getByRole('button', { name: 'Enable' });

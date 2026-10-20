@@ -1,9 +1,10 @@
 // labs/platform/ui-access-control-oidc.md
-// @fixture llm-ready
+// @fixture base
 // @profiles keycloak
 import { expect, type Browser, type Page, test } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('platform', 'ui-access-control-oidc');
 
@@ -50,6 +51,10 @@ async function signIn(browser: Browser, user: string, opts: { path?: string; sho
   await expect(page.locator('main')).not.toContainText('Loading permissions');
   return page;
 }
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('enable Traffic to add the public gateway', async ({ page }) => {
   await go(page, '/');
@@ -226,5 +231,7 @@ test('clean up: roles, OIDC, UI gateway, public gateway', async ({ page }) => {
   const confirm = page.getByRole('dialog').getByRole('button', { name: /Save/ });
   if (await confirm.isVisible().catch(() => false)) await save(page, confirm);
   expect(readConfig().gateways).toBeUndefined();
-  expectMatchesFixture('llm-ready');
+
+  await deleteModel(page);
+  expectMatchesFixture('base');
 });
