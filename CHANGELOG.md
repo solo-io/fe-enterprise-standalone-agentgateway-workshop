@@ -1,9 +1,10 @@
 # Changelog
 
-0.0.5 - (10-19-26)
+0.0.5 - (10-20-26)
 ---
-- Add LLM track lab:
+- Add LLM track labs:
   - `connect-anthropic`: an `anthropic` shared provider and an `anthropic/*` models
+  - `streaming-and-embeddings`: a streamed chat reply (the gateway adds usage to the stream) and an `openai/text-embedding-3-small` embedding through the `openai/*` model, both in Logs with tokens and cost; no config changes
 - `connect-coding-agents`: split anthropic instructions into separate lab
 - `setup/base-costs.json`: add Anthropic prices for `claude-haiku-5-5` and `claude-sonnet-5-5`
 

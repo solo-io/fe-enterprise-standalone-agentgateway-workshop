@@ -31,6 +31,7 @@ Then do any of these, in any order. Each lab cleans up after itself.
 
 | Lab | What you do | Helper service |
 |---|---|---|
+| [Stream Replies and Create Embeddings](labs/llm/streaming-and-embeddings.md) | Stream a chat reply, turn a sentence into an embedding, find both in Logs with their tokens and cost | |
 | [Connect Anthropic Next to OpenAI](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, ask GPT and Claude the same question, call Claude in OpenAI and Anthropic format, compare providers in Logs and Analytics | |
 | [Connect Amazon Bedrock](labs/llm/connect-amazon-bedrock.md) | Add a Bedrock model that signs requests with your AWS credentials, chat with Claude Haiku, optionally switch to a Bedrock API key | |
 | [Give Each User a Virtual API Key](labs/llm/virtual-api-keys.md) | Issue per-user keys, block requests without a key, see usage per user in Logs and Analytics | |
