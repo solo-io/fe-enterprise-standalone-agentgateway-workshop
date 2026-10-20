@@ -46,7 +46,7 @@ async function send(page: Page, prompt: string): Promise<{ failed: boolean; text
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill(prompt);
   await main.getByRole('button', { name: 'Send' }).click();
   const banner = main.getByText('Playground request failed', { exact: true });
@@ -87,7 +87,7 @@ test('a jailbreak prompt is rejected with the webhook message', async ({ page })
   await shot(page, '04-jailbreak-blocked');
 
   let c = { status: 0, text: '' };
-  for (let i = 0; i < 3 && c.status !== 403; i++) c = await chatRequest('openai/gpt-4o-mini', JAILBREAK);
+  for (let i = 0; i < 3 && c.status !== 403; i++) c = await chatRequest('openai/gpt-6-luna', JAILBREAK);
   expect(c).toEqual({ status: 403, text: BODY });
 });
 
@@ -108,7 +108,7 @@ test('an email address is masked', async ({ page }) => {
   // Logs do not keep prompts by default, so the lab does not claim which webhook masked the address.
   // The gateway marks the request's row with a "Guardrail masked content" icon, as the lab says.
   await go(page, '/llm/logs');
-  const row = page.locator('main tbody tr').filter({ hasText: 'openai/gpt-4o-mini' }).first();
+  const row = page.locator('main tbody tr').filter({ hasText: 'openai/gpt-6-luna' }).first();
   await expect(row).toContainText('200', { timeout: 30_000 });
   await expect(row.getByRole('img', { name: 'Guardrail masked content' })).toBeVisible();
 });

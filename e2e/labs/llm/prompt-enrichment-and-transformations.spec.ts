@@ -17,7 +17,7 @@ const HEADERS: [string, string][] = [
 
 const CURL = `curl -s -i http://localhost:4000/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Name one color."}]}'`;
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Name one color."}]}'`;
 
 /** Opens the openai/* model's Edit model panel with Advanced > Model policies > Transformation expanded. */
 async function openModelTransformation(page: Page) {
@@ -62,7 +62,7 @@ test('the response carries the new headers', async () => {
   const r = sh(CURL);
   expect(r.stdout).toMatch(/^HTTP\/1\.1 200/);
   expect(r.stdout).toMatch(/^x-user-id: anonymous$/m);
-  expect(r.stdout).toMatch(/^x-llm-response-model: gpt-4o-mini-\d{4}-\d{2}-\d{2}$/m);
+  expect(r.stdout).toMatch(/^x-llm-response-model: gpt-6-luna\r?$/m);
   expect(r.stdout).toMatch(/^x-request-path: \/v1\/chat\/completions$/m);
 });
 
@@ -90,7 +90,7 @@ test('the Chat Playground reply contains BANANA', async ({ page }) => {
   // The lab says "contains BANANA, usually at the end. If it does not, click Send again"; up to 3 sends.
   let reply = '';
   for (let i = 0; i < 3; i++) {
-    reply = await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: 'Name one color.' });
+    reply = await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Name one color.' });
     if (/BANANA/.test(reply)) break;
   }
   expect(reply).toMatch(/BANANA/);

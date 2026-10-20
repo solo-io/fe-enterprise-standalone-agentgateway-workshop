@@ -42,7 +42,7 @@ The service in this lab is a small example. It allows a request only when the re
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
 The playground does not send the `x-ext-authz` header, so the service denies the request. The playground shows **Playground request failed** with the service's reason:
@@ -60,7 +60,7 @@ The Chat Playground cannot add custom headers, so use curl to send a request wit
    ```bash
    curl -si http://localhost:4000/v1/chat/completions \
      -H "Content-Type: application/json" \
-     -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+     -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
    ```
 
    Expected output:
@@ -81,7 +81,7 @@ The Chat Playground cannot add custom headers, so use curl to send a request wit
    curl -si http://localhost:4000/v1/chat/completions \
      -H "Content-Type: application/json" \
      -H "x-ext-authz: allow" \
-     -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+     -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
    ```
 
    Expected output:
@@ -91,7 +91,7 @@ The Chat Playground cannot add custom headers, so use curl to send a request wit
    content-type: application/json
    ...
 
-   {"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"index":0,"message":{"role":"assistant","content":"Pong"},...}],...}
+   {"model":"gpt-6-luna",...,"choices":[{"index":0,"message":{"role":"assistant","content":"Pong"},...}],...}
    ```
 
    The service allowed the request, so the gateway sent it on to OpenAI.

@@ -61,12 +61,12 @@ With **Unhealthy expression** empty, the gateway uses its default: a `5xx` respo
 2. In **Provider**, select **OpenAI**.
 3. In **Incoming model match**, replace `openai/*` with `openai-backup`.
 4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
-5. Under **Outgoing model**, click **Explicit**, enter `gpt-4o-mini` in **Explicit outgoing model**, and click the **Add model** title to close the suggestion list.
+5. Under **Outgoing model**, click **Explicit**, enter `gpt-6-luna` in **Explicit outgoing model**, and click the **Add model** title to close the suggestion list.
 6. Click **Save model**.
 
    ![Add model panel for openai-backup](../../images/llm/load-balancing-and-failover/04-add-openai-backup.png)
 
-The virtual model needs a model that always sends `gpt-4o-mini` to OpenAI. The `openai/*` model sends whatever model name the caller used, which here would be the virtual model's name.
+The virtual model needs a model that always sends `gpt-6-luna` to OpenAI. The `openai/*` model sends whatever model name the caller used, which here would be the virtual model's name.
 
 ## Step 4: Add the virtual model
 
@@ -126,7 +126,7 @@ The reply is `Pong`, from OpenAI.
 
 6. In the sidebar, click **Logs**.
 
-The newest `resilient` row shows the provider **OpenAI** and the model `gpt-4o-mini-2024-07-18`. Further down, a `503` row with a duration of about 11 seconds is the request that tried `mock-llm`.
+The newest `resilient` row shows the provider **OpenAI** and the model `gpt-6-luna`. Further down, a `503` row with a duration of about 11 seconds is the request that tried `mock-llm`.
 
 ![Logs with the OpenAI row and the 503 row](../../images/llm/load-balancing-and-failover/10-logs-openai.png)
 
@@ -163,7 +163,7 @@ llm:
     - name: openai-backup
       provider: openai
       params:
-        model: gpt-4o-mini
+        model: gpt-6-luna
         apiKey: $OPENAI_API_KEY
   virtualModels:
     - name: resilient

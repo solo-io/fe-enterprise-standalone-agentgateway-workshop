@@ -1,0 +1,47 @@
+# Alert rules from the Kubernetes workshop's production observability lab, for a standalone gateway.
+# The workshop waits 30s before an alert fires (for: 30s) so you see it quickly. In production, use 5m or more.
+groups:
+  - name: agentgateway
+    rules:
+      # More than 5% of requests return a 5xx error.
+      - alert: AgentGatewayHighErrorRate
+        expr: |
+          (
+            sum(rate(agentgateway_requests_total{status=~"5.."}[5m])) by (gateway)
+            /
+            sum(rate(agentgateway_requests_total[5m])) by (gateway)
+          ) > 0.05
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "AgentGateway {{ $labels.gateway }} has >5% error rate"
+          description: "{{ $value | humanizePercentage }} of requests are returning 5xx errors."
+
+      # The gateway rate-limits more than 10% of requests.
+      - alert: AgentGatewayHighRateLimitRate
+        expr: |
+          (
+            sum(rate(agentgateway_requests_total{reason="RateLimit"}[5m])) by (gateway)
+            /
+            sum(rate(agentgateway_requests_total[5m])) by (gateway)
+          ) > 0.10
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "AgentGateway {{ $labels.gateway }} is rate-limiting >10% of requests"
+          description: "Consider increasing rate limits."
+
+      # LLM p99 latency is over 30 seconds.
+      - alert: AgentGatewaySlowLLMResponses
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(agentgateway_gen_ai_server_request_duration_bucket[5m])) by (le, gen_ai_system, gen_ai_request_model)
+          ) > 30
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM p99 latency >30s for {{ $labels.gen_ai_system }}/{{ $labels.gen_ai_request_model }}"
+          description: "p99 LLM response time is {{ $value | humanizeDuration }}. Check provider health."

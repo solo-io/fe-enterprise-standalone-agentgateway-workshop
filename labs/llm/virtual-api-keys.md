@@ -65,7 +65,7 @@ The list shows both keys. The **Key** column shows only the start and the last f
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. Leave **Raw API key** empty.
 5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
@@ -89,7 +89,7 @@ The reply appears with the status **OK**:
 
    ![Logs filtered to the user alice](../../images/llm/virtual-api-keys/09-logs-alice.png)
 
-3. Click the `openai/gpt-4o-mini` row. In the details, **User** shows `alice`.
+3. Click the `openai/gpt-6-luna` row. In the details, **User** shows `alice`.
 
    ![Log details with User alice](../../images/llm/virtual-api-keys/10-log-detail.png)
 
@@ -110,7 +110,7 @@ Without a key:
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
 ```
 
 Expected output:
@@ -125,7 +125,7 @@ With bob's key (replace `<bob's key>` with the key you copied in Step 3):
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <bob's key>" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
 ```
 
 Expected output:

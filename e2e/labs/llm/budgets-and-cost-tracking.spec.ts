@@ -8,7 +8,7 @@ const { go, shot } = lab('llm', 'budgets-and-cost-tracking');
 
 test.describe.configure({ mode: 'serial' });
 
-test('add a custom price for gpt-4o-mini to the cost catalog', async ({ page }) => {
+test('add a custom price for gpt-6-luna to the cost catalog', async ({ page }) => {
   await go(page, '/llm/budgets');
   const main = page.locator('main');
   const tab = main.getByRole('tab', { name: 'Cost catalog' });
@@ -22,17 +22,17 @@ test('add a custom price for gpt-4o-mini to the cost catalog', async ({ page }) 
   await edit.click();
   await main.getByRole('button', { name: 'Add model cost' }).click();
   await main.getByPlaceholder('openai', { exact: true }).fill('openai');
-  await main.getByPlaceholder('gpt-5-mini').fill('gpt-4o-mini');
-  await main.getByPlaceholder('0.25').fill('0.15');
-  await main.getByPlaceholder('2.00').fill('0.60');
+  await main.getByPlaceholder('gpt-5-mini').fill('gpt-6-luna');
+  await main.getByPlaceholder('0.25').fill('0.10');
+  await main.getByPlaceholder('2.00').fill('0.50');
   const save = main.getByRole('button', { name: 'Save', exact: true });
   await shot(page, '03-add-model-cost', save);
   await save.click();
   await expect(main.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
-  await expect(main.getByRole('row', { name: /gpt-4o-mini/ })).toContainText('0.15');
+  await expect(main.getByRole('row', { name: /gpt-6-luna/ })).toContainText('0.10');
   await page.waitForTimeout(1000);
-  expect(JSON.stringify(readConfig())).toContain('gpt-4o-mini');
-  await shot(page, '04-custom-cost-saved', main.getByRole('cell', { name: 'gpt-4o-mini', exact: true }));
+  expect(JSON.stringify(readConfig())).toContain('gpt-6-luna');
+  await shot(page, '04-custom-cost-saved', main.getByRole('cell', { name: 'gpt-6-luna', exact: true }));
 });
 
 test('create a 10-token budget that blocks', async ({ page }) => {
@@ -60,7 +60,7 @@ test('create a 10-token budget that blocks', async ({ page }) => {
 test('the first request passes, the next one gets 429', async ({ page }) => {
   await go(page, '/llm/playground');
   const main = page.locator('main');
-  await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: 'Reply with the single word: pong' });
+  await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Reply with the single word: pong' });
   // The status chip, not the reply text, so a model reply that says "OK" cannot pass.
   await expect(main.locator('.chat-message.assistant').last().locator('.message-meta-chip', { hasText: /^OK$/ })).toHaveCount(1);
   await main.getByPlaceholder('Ask a test question...').fill('Reply with the single word: pong');
@@ -82,7 +82,7 @@ test('see usage on the budget and spend in Analytics', async ({ page }) => {
   await go(page, '/llm/logs');
   // Only the two playground requests, newest first: the 429, then the 200 that reached OpenAI.
   // The browser's preflight shows as a separate "unknown model" row, which the lab says to ignore.
-  const rows = main.locator('tbody tr').filter({ hasText: 'openai/gpt-4o-mini' });
+  const rows = main.locator('tbody tr').filter({ hasText: 'openai/gpt-6-luna' });
   await expect(rows).toHaveCount(2, { timeout: 30_000 });
   await expect(rows.nth(0)).toContainText('429');
   await expect(rows.nth(0)).toContainText('Budget exceeded');
@@ -98,7 +98,7 @@ test('see usage on the budget and spend in Analytics', async ({ page }) => {
   await shot(page, '10-analytics-cost', summary);
 
   // The optional curl, after the screenshots so it does not change them.
-  const r = await chatRequest('openai/gpt-4o-mini', 'Hello from agentgateway');
+  const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway');
   expect(r.status).toBe(429);
   expect(r.text).toContain('budget_exceeded');
 });

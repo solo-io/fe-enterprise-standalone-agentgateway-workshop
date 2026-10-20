@@ -41,7 +41,7 @@ To limit the number of requests instead of tokens, select **Requests** in **Limi
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `Reply with the single word: pong` and click **Send**. The reply comes back with the status **OK**.
 5. In **User message**, enter `Reply with the single word: pong` again and click **Send**.
 
@@ -68,7 +68,7 @@ Within a minute of Step 2:
 ```bash
 curl -s -w '\n%{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
 ```
 
 Expected output:

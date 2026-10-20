@@ -6,7 +6,7 @@
 
 ## What you'll do
 
-- Set your own price for `gpt-4o-mini` in the cost catalog
+- Set your own price for `gpt-6-luna` in the cost catalog
 - Create a 10-token budget that blocks requests when it runs out
 - Send one request that passes and one that gets HTTP `429`
 - See the budget usage, the blocked request in Logs, and the spend in Analytics
@@ -17,7 +17,7 @@ The gateway counts the tokens of every LLM request and turns them into US dollar
 
 ## Step 1: Set a price in the cost catalog
 
-The gateway already knows the published prices of common models from the file `/config/base-costs.json`. You add your own price when you pay a different rate, for example a negotiated discount. Here you enter the published `gpt-4o-mini` price, so the costs you see stay the same.
+The gateway already knows the published prices of common models from the file `/config/base-costs.json`. You add your own price when you pay a different rate, for example a negotiated discount. Here you enter the published `gpt-6-luna` price, so the costs you see stay the same.
 
 1. In the sidebar, click **Budgets**. The page opens on the **Budgets** tab, which shows **No budgets configured**.
 2. Click the **Cost catalog** tab.
@@ -30,16 +30,16 @@ The gateway already knows the published prices of common models from the file `/
 
 4. Click **Add model cost**.
 5. In **Provider**, enter `openai`.
-6. In **Model**, enter `gpt-4o-mini`.
-7. In **Input**, enter `0.15`.
-8. In **Output**, enter `0.60`.
+6. In **Model**, enter `gpt-6-luna`.
+7. In **Input**, enter `0.10`.
+8. In **Output**, enter `0.50`.
 9. Click **Save**.
 
-   ![Custom cost row for gpt-4o-mini](../../images/llm/budgets-and-cost-tracking/03-add-model-cost.png)
+   ![Custom cost row for gpt-6-luna](../../images/llm/budgets-and-cost-tracking/03-add-model-cost.png)
 
-Prices are US dollars per 1 million tokens. **Custom costs** now shows the `gpt-4o-mini` row, and **Catalog sources** has a second source, **Custom inline overlay**. Later sources override earlier ones, so your price wins.
+Prices are US dollars per 1 million tokens. **Custom costs** now shows the `gpt-6-luna` row, and **Catalog sources** has a second source, **Custom inline overlay**. Later sources override earlier ones, so your price wins.
 
-![Cost catalog with the custom gpt-4o-mini price](../../images/llm/budgets-and-cost-tracking/04-custom-cost-saved.png)
+![Cost catalog with the custom gpt-6-luna price](../../images/llm/budgets-and-cost-tracking/04-custom-cost-saved.png)
 
 ## Step 2: Create a budget
 
@@ -65,7 +65,7 @@ Ten tokens is far less than one request uses. That is on purpose, so you hit the
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `Reply with the single word: pong` and click **Send**. The reply comes back with the status **OK**.
 5. In **User message**, enter `Reply with the single word: pong` again and click **Send**.
 
@@ -108,7 +108,7 @@ While the budget is used up:
 ```bash
 curl -s -w '\n%{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'
 ```
 
 Expected output:
@@ -136,10 +136,10 @@ config:
       providers:
         openai:
           models:
-            gpt-4o-mini:
+            gpt-6-luna:
               rates:
-                input: '0.15'
-                output: '0.60'
+                input: '0.10'
+                output: '0.50'
 ```
 
 The budget went into the `llm` section:
@@ -162,5 +162,5 @@ llm:
 2. In the `workshop` row, click **Delete**, then click **Delete budget** to confirm.
 3. Click the **Cost catalog** tab.
 4. Next to **Custom costs**, click **Edit**.
-5. In the `gpt-4o-mini` row, click the trash icon.
+5. In the `gpt-6-luna` row, click the trash icon.
 6. Click **Save**. **Custom costs** shows **No custom costs.**

@@ -15,7 +15,7 @@ test.describe.configure({ mode: 'serial' });
 function curl(header = ''): string {
   return sh(`curl -si http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  ${header ? `-H "${header}" ` : ''}-d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
+  ${header ? `-H "${header}" ` : ''}-d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
 }
 
 async function policyCard(page: Page, title: string): Promise<Locator> {
@@ -47,7 +47,7 @@ test('the Chat Playground is denied without the header', async ({ page }) => {
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill(PROMPT);
   await main.getByRole('button', { name: 'Send' }).click();
   const banner = main.getByText('Playground request failed').locator('..');

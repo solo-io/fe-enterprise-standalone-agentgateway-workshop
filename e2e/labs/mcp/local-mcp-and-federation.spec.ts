@@ -55,6 +55,9 @@ async function addServer(page: Page, name: string, url: string, shotName: string
 }
 
 test('add the local MCP server', async ({ page }) => {
+  // The lab's readiness check: npx downloads the server when the container starts.
+  await expect.poll(() => sh(`curl -s -o /dev/null -w '%{http_code}' http://mcp-everything:3001/mcp`).stdout.trim(),
+    { timeout: 180_000, intervals: [2000] }).not.toBe('000');
   const row = await addServer(page, 'everything', 'http://mcp-everything:3001/mcp', '01-add-server');
   await expect(row).toContainText('ready', { timeout: 30_000 });
   await shot(page, '02-two-servers');

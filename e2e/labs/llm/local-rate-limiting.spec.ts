@@ -37,7 +37,7 @@ test('add a local token rate limit', async ({ page }) => {
 test('the first request passes, the second gets 429', async ({ page }) => {
   await go(page, '/llm/playground');
   const main = page.locator('main');
-  await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: 'Reply with the single word: pong' });
+  await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Reply with the single word: pong' });
   // The status chip, not the reply text, so a model reply that says "OK" cannot pass.
   await expect(main.locator('.chat-message.assistant').last().locator('.message-meta-chip', { hasText: /^OK$/ })).toHaveCount(1);
   await main.getByPlaceholder('Ask a test question...').fill('Reply with the single word: pong');
@@ -53,7 +53,7 @@ test('see the 429 in Logs', async ({ page }) => {
   const main = page.locator('main');
   // Only the two playground requests, newest first: the 429, then the 200 that reached OpenAI.
   // The browser's preflight shows as a separate "unknown model" row, which the lab says to ignore.
-  const rows = main.locator('tbody tr').filter({ hasText: 'openai/gpt-4o-mini' });
+  const rows = main.locator('tbody tr').filter({ hasText: 'openai/gpt-6-luna' });
   await expect(rows).toHaveCount(2, { timeout: 30_000 });
   await expect(rows.nth(0)).toContainText('429');
   await expect(rows.nth(0)).toContainText('rate limit exceeded');
@@ -62,7 +62,7 @@ test('see the 429 in Logs', async ({ page }) => {
   await shot(page, '05-logs-429', rows.nth(0).getByText('rate limit exceeded'));
 
   // The optional curl, after the screenshot so its row does not show in it. Still within a minute of Step 2.
-  const r = await chatRequest('openai/gpt-4o-mini', 'Hello from agentgateway');
+  const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway');
   expect(r.status).toBe(429);
   expect(r.text).toContain('rate limit exceeded');
 });

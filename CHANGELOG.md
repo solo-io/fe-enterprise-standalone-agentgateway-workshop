@@ -1,5 +1,29 @@
 # Changelog
 
+0.0.4 - (10-19-26)
+---
+- Add LLM track labs:
+  - `routing-match-types`: a `public` gateway with a default route and three routes to a second model server, one each on a path prefix (with a URL rewrite), the header `x-model: nano` and the query `model=nano`
+  - `body-based-routing`: a Conditional virtual model `router` that sends requests with `metadata.app == "support"` to `mock-nano` and all others to `mock-mini`
+  - `semantic-routing-jev` and `semantic-routing-openai-decisions`: clients send `auto_model`; an External processor adapter (fail open) asks Jev or the OpenAI Decisions API for the tier and rewrites the model to the tiers of the Kubernetes labs, `openai/gpt-5-nano`, `gpt-5.6-luna` or `gpt-5.6-terra`
+  - `webhook-guardrails-jev`: request and response Webhook guards backed by Jev
+- Add MCP track labs:
+  - `openapi-to-mcp-local-service`: three stripe-mock operations as MCP tools from an inline OpenAPI schema, including a path parameter
+  - `mcp-opa-authorization`: the MCP External authz policy example
+- Add Platform track labs:
+  - `tls-termination`: an HTTPS gateway on port `8443` with the workshop-provided certificates
+  - `sni-matching`: one port with listeners for `foo.example.com` and `bar.example.com`, each with its own certificate
+  - `metrics-and-tracing`: Prometheus scrapes `agentgateway:15020`, the agentgateway Grafana dashboard shows requests and tokens, tracing to Tempo from **Settings > Observability**
+- `timeouts-and-retries`: added steps and screenshots
+- `local-mcp-and-federation`: added steps and screenshots
+- `mcp-everything` helper: version updated to `1.0.0`
+- Default model `gpt-4o-mini` to `gpt-6-luna` in every lab
+- `setup/base-costs.json`: add OpenAI prices for `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-6-luna` and `gpt-6.1-sol`
+- Add helper profiles `mock-llm-routing` (`mock-llm-mini`, `mock-llm-nano`), `stripe-mock` (`stripe/stripe-mock:v0.206.0`), `semantic-router-jev`, `semantic-router-openai` and `guardrail-jev` (`python:3.12.14-slim`, code in `setup/<profile>/`), and `observability` (`prom/prometheus:v3.8.1`, `grafana/tempo:2.9.0`, `grafana/grafana:12.3.0`, settings and dashboard in `setup/observability/`)
+- Add `setup/tls/`: workshop CA, server certificates for `localhost`, `foo.example.com` and `bar.example.com`, a client certificate, and `make-certs.sh`
+- Gateway port `8443` (HTTPS traffic gateway); optional `TYPESAFE_AI_API_KEY` in `setup/.env.example`
+- e2e: the test override also clears the Prometheus and Grafana host ports; `check-ports.sh` expects `8443`
+
 0.0.3 - (10-19-26)
 ---
 - Add LLM track labs:

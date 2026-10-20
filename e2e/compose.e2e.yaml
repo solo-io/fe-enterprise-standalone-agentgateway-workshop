@@ -4,3 +4,8 @@ services:
   agentgateway:
     ports: !reset []
     restart: "no"
+  # Helpers that publish their own host ports. The test browser reaches them by service name.
+  prometheus:
+    ports: !reset []
+  grafana:
+    ports: !reset []

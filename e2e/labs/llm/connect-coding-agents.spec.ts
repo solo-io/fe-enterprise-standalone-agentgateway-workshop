@@ -26,11 +26,11 @@ async function integration(page: Page, name: string) {
 test('Codex: snippet in Client Setup', async ({ page }) => {
   await go(page, '/llm/client-setup');
   const main = page.locator('main');
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByRole('combobox', { name: 'Integration' }).click();
   await shot(page, '01-integration-list', page.getByRole('option', { name: 'Codex CLI', exact: true }));
   await page.getByRole('option', { name: 'Codex CLI', exact: true }).click();
-  await expect(main).toContainText('codex --model "openai/gpt-4o-mini"');
+  await expect(main).toContainText('codex --model "openai/gpt-6-luna"');
   await expect(main).toContainText(`model_providers.gateway.base_url="http://localhost:4000/v1"`);
   await shot(page, '02-codex-snippet', main.getByRole('button', { name: 'Copy' }));
 });
@@ -38,7 +38,7 @@ test('Codex: snippet in Client Setup', async ({ page }) => {
 test('Codex: the Responses API answers through the gateway', async () => {
   const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/responses \\
     -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-4o-mini","input":"Reply with the single word: ready"}'`);
+    -d '{"model":"openai/gpt-6-luna","input":"Reply with the single word: ready"}'`);
   expect(r.stdout).toMatch(/\nHTTP 200$/);
   const body = JSON.parse(r.stdout.replace(/\nHTTP \d+$/, ''));
   expect(body.object).toBe('response');
