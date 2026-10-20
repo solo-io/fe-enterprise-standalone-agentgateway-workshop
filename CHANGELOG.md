@@ -1,5 +1,9 @@
 # Changelog
 
+0.0.6 - (10-20-26)
+---
+- `README.md`: reorder the Providers and clients and Routing and resilience tables
+
 0.0.5 - (10-20-26)
 ---
 - Add LLM track labs:

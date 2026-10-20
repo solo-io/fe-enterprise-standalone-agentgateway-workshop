@@ -32,10 +32,10 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 
 | Lab | What you do | Needs |
 |---|---|---|
-| [Streaming and Embeddings](labs/llm/streaming-and-embeddings.md) | Stream a chat reply, turn a sentence into an embedding, find both in Logs with their tokens and cost | |
 | [Anthropic](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, call Claude in OpenAI and Anthropic format, find tokens and cost in Logs and Analytics, optionally compare with GPT. Needs only 001 | Anthropic key |
 | [Amazon Bedrock](labs/llm/connect-amazon-bedrock.md) | Add a Bedrock model that signs requests with your AWS credentials, chat with Claude Haiku, optionally switch to a Bedrock API key | AWS credentials with Bedrock access |
 | [Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | For Claude Code: Anthropic key and the model from Connect Anthropic |
+| [Streaming and Embeddings](labs/llm/streaming-and-embeddings.md) | Stream a chat reply, turn a sentence into an embedding, find both in Logs with their tokens and cost | |
 
 ### Model access control
 
@@ -72,13 +72,13 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 
 | Lab | What you do | Needs |
 |---|---|---|
-| [Model Failover](labs/llm/model-failover.md) | Move traffic off a rate-limited backend with a Failover virtual model | `mock-llm` |
-| [Timeouts and Retries](labs/llm/timeouts-and-retries.md) | End slow LLM requests with a 2 second timeout, then retry `503` errors on a traffic route | `mock-llm-faults` |
-| [Load Balancing and Failover](labs/llm/load-balancing-and-failover.md) | Spread requests across two models in one group, drop the failing one, and fail over to OpenAI when the group is down | `mock-llm`, `mock-llm-faults` |
 | [Path, Header and Query Routing](labs/llm/routing-match-types.md) | Send requests to two model servers by URL path, header or query parameter on a traffic gateway | `mock-llm-routing` |
+| [Timeouts and Retries](labs/llm/timeouts-and-retries.md) | End slow LLM requests with a 2 second timeout, then retry `503` errors on a traffic route | `mock-llm-faults` |
+| [Model Failover](labs/llm/model-failover.md) | Move traffic off a rate-limited backend with a Failover virtual model | `mock-llm` |
+| [Load Balancing and Failover](labs/llm/load-balancing-and-failover.md) | Spread requests across two models in one group, drop the failing one, and fail over to OpenAI when the group is down | `mock-llm`, `mock-llm-faults` |
+| [Semantic Routing with OpenAI Decisions](labs/llm/semantic-routing-openai-decisions.md) | Give clients one model name, `auto_model`, and let the OpenAI Decisions API pick the cheapest of three price tiers that can answer each prompt | `semantic-router-openai`, OpenAI key with access to `/v1/decisions` |
+| [Semantic Routing with Jev](labs/llm/semantic-routing-jev.md) | The same router, with Jev as the classifier | `semantic-router-jev`, TypeSafe key |
 | [Body-Based Routing](labs/llm/body-based-routing.md) | Send requests tagged `metadata.app: support` to a smaller model with a Conditional virtual model | `mock-llm-routing` |
-| [Semantic Routing with Jev](labs/llm/semantic-routing-jev.md) | Give clients one model name, `auto_model`, and let Jev pick the cheapest of three price tiers that can answer each prompt | `semantic-router-jev`, TypeSafe key |
-| [Semantic Routing with OpenAI Decisions](labs/llm/semantic-routing-openai-decisions.md) | The same router, with OpenAI's Decisions API as the classifier | `semantic-router-openai`, OpenAI key with access to `/v1/decisions` |
 
 ## MCP track
 
