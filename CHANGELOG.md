@@ -6,7 +6,9 @@
   - `connect-anthropic`: an `anthropic` shared provider and an `anthropic/*` models
   - `streaming-and-embeddings`: a streamed chat reply (the gateway adds usage to the stream) and an `openai/text-embedding-3-small` embedding through the `openai/*` model, both in Logs with tokens and cost; no config changes
 - `connect-coding-agents`: split anthropic instructions into separate lab
+- `connect-anthropic`: renamed Connect Anthropic and starts from `base` (only 001 needed); the comparison with `openai/*` moved to an optional section, validated by a second spec `connect-anthropic-with-openai` from `llm-ready`
 - `setup/base-costs.json`: add Anthropic prices for `claude-haiku-5-5` and `claude-sonnet-5-5`
+- `README.md`: group LLM and MCP labs by topic (Prompt Enrichment in its own Request processing group), add a track and topic map under Start here, shorten lab names in the tables, and replace the Helper service column with a Needs column that also lists extra API keys
 
 0.0.4 - (10-19-26)
 ---

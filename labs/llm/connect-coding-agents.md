@@ -4,7 +4,7 @@
 
 - Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
 - For Codex: the [Codex CLI](https://github.com/openai/codex) on your machine.
-- Optional, for Claude Code: complete Steps 1 and 2 of [Connect Anthropic Next to OpenAI](connect-anthropic.md) and skip its cleanup, so the gateway has the `anthropic/*` model. You also need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) on your machine. Skip the Claude Code steps if you have no Anthropic key.
+- Optional, for Claude Code: complete Steps 1 and 2 of [Connect Anthropic](connect-anthropic.md) and skip its cleanup, so the gateway has the `anthropic/*` model. You also need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) on your machine. Skip the Claude Code steps if you have no Anthropic key.
 
 ## What you'll do
 
@@ -119,11 +119,11 @@ In the sidebar, click **Logs**. You should see `anthropic/claude-haiku-5-5` rows
 
 ## What the UI wrote
 
-Client Setup only builds snippets, so `config.yaml` stays the same. The `anthropic` provider and the `anthropic/*` model come from [Connect Anthropic Next to OpenAI](connect-anthropic.md).
+Client Setup only builds snippets, so `config.yaml` stays the same. The `anthropic` provider and the `anthropic/*` model come from [Connect Anthropic](connect-anthropic.md).
 
 ## Clean up
 
 1. Close Codex and Claude Code. If you used the `CODEX_HOME` line, delete that folder: `rm -rf /tmp/codex-gateway-home`.
-2. If you did the Claude Code steps, follow the Clean up section of [Connect Anthropic Next to OpenAI](connect-anthropic.md).
+2. If you did the Claude Code steps, follow the Clean up section of [Connect Anthropic](connect-anthropic.md).
 
 The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.

@@ -1,5 +1,5 @@
 // labs/llm/connect-anthropic.md
-// @fixture llm-ready
+// Main path, from base. The optional OpenAI comparison runs in connect-anthropic-with-openai.spec.ts.
 // Needs ANTHROPIC_API_KEY in setup/.env; every test is skipped without it.
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
@@ -11,7 +11,6 @@ const { go, shot, save } = lab('llm', 'connect-anthropic');
 test.describe.configure({ mode: 'serial' });
 
 const CLAUDE = 'anthropic/claude-haiku-5-5';
-const GPT = 'openai/gpt-6-luna';
 const NO_KEY = 'ANTHROPIC_API_KEY is not set in setup/.env';
 
 test.beforeEach(() => test.skip(!HAS_ANTHROPIC, NO_KEY));
@@ -63,28 +62,21 @@ test('add the anthropic/* wildcard model', async ({ page }) => {
   });
 });
 
-test('ask GPT and Claude in the Chat Playground', async ({ page }) => {
+test('chat with Claude in the Chat Playground', async ({ page }) => {
   await go(page, '/llm/playground');
-  const gpt = await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Reply with the single word: pong' });
-  expect(gpt).toMatch(/pong/i);
-  expect(gpt).toContain('OK');
   const claude = await chat(page, { model: 'anthropic/*', specific: 'claude-haiku-5-5', prompt: 'Reply with the single word: pong' });
   expect(claude).toMatch(/pong/i);
   expect(claude).toContain('OK');
   await shot(page, '05-playground-claude', page.locator('.chat-message.assistant').last());
 });
 
-test('the same OpenAI-format curl reaches both providers', async () => {
-  const a = chatCompletions(GPT);
-  expect(a.status).toBe('200');
-  expect(a.body.object).toBe('chat.completion');
-  expect(a.body.model).toMatch(/^gpt-6-luna/);
-
+test('the OpenAI-format curl reaches Claude', async () => {
   const b = chatCompletions(CLAUDE);
   expect(b.status).toBe('200');
   expect(b.body.object).toBe('chat.completion');
   expect(b.body.model).toMatch(/^claude-haiku-5-5/);
-  writeFileSync('/repo/e2e/.last/connect-anthropic-curl.json', JSON.stringify({ gpt: a.body, claude: b.body }, null, 2));
+  expect(b.body.id).toMatch(/^msg_/);
+  writeFileSync('/repo/e2e/.last/connect-anthropic-curl.json', JSON.stringify(b.body, null, 2));
 });
 
 test('the Anthropic Messages API answers through the gateway', async () => {
@@ -100,13 +92,11 @@ test('the Anthropic Messages API answers through the gateway', async () => {
   writeFileSync('/repo/e2e/.last/connect-anthropic-messages.json', JSON.stringify(body, null, 2));
 });
 
-test('see both providers in Logs and Analytics', async ({ page }) => {
+test('see the Anthropic requests in Logs and Analytics', async ({ page }) => {
   await go(page, '/llm/logs');
   const main = page.locator('main');
   const claude = main.locator('tbody tr').filter({ hasText: CLAUDE }).first();
-  const gpt = main.locator('tbody tr').filter({ hasText: GPT }).first();
   await expect(claude).toBeVisible({ timeout: 30_000 });
-  await expect(gpt).toBeVisible();
   await expect(claude).toContainText('200');
   await shot(page, '06-logs', claude);
 
@@ -117,7 +107,6 @@ test('see both providers in Logs and Analytics', async ({ page }) => {
   await page.keyboard.press('Escape');
   const legend = main.getByText('anthropic', { exact: true }).first();
   await expect(legend).toBeVisible();
-  await expect(main.getByText('openai', { exact: true }).first()).toBeVisible();
   await page.waitForTimeout(1000);
   writeFileSync('/repo/e2e/.last/connect-anthropic-analytics.txt', await main.innerText());
   await shot(page, '07-analytics', legend);
@@ -140,5 +129,5 @@ test('clean up: delete the model and the provider', async ({ page }) => {
 
   const cfg = readConfig();
   expect(cfg.llm.providers ?? []).toEqual([]);
-  expect(cfg.llm.models.map((m: any) => m.name)).toEqual(['openai/*']);
+  expect(cfg.llm.models ?? []).toEqual([]);
 });

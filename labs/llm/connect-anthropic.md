@@ -1,21 +1,22 @@
-# Connect Anthropic Next to OpenAI
+# Connect Anthropic
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md). You can do this lab with or without [Connect LLM Providers](connect-llm-providers.md). If the gateway also has the `openai/*` model, do the optional comparison at the end.
 - Put your Anthropic API key in `setup/.env` as `ANTHROPIC_API_KEY`, then restart the gateway so it reads the key: from the `setup/` folder, run `env UID=$(id -u) GID=$(id -g) docker compose up -d`. You can get a key from the [Anthropic Console](https://console.anthropic.com/).
 
 ## What you'll do
 
 - Add Anthropic as a shared provider
-- Add an `anthropic/*` model next to `openai/*`
-- Ask GPT and Claude the same question in the Chat Playground
+- Add an `anthropic/*` model
+- Chat with Claude in the Chat Playground
 - Call Claude in OpenAI format and in Anthropic format
-- Compare the two providers in Logs and Analytics
+- Find the requests, tokens and cost in Logs and Analytics
+- Optional: ask GPT and Claude the same question and compare the providers
 
 ## Why this matters
 
-Your applications already send OpenAI-format requests to port `4000`. With a second provider on the same gateway, a client switches to Claude by changing the model name. The gateway translates the request, adds the Anthropic key, and records tokens and cost for both providers in one place.
+Clients reach Claude through port `4000` in OpenAI format or in Anthropic format. The gateway translates the request, adds the Anthropic key, and records tokens and cost. When the gateway also has OpenAI, a client switches providers by changing the model name.
 
 ## Step 1: Add the Anthropic provider
 
@@ -43,33 +44,25 @@ A shared provider holds a credential once. Every model that references it uses t
 
    ![Add model panel for anthropic/*](../../images/llm/connect-anthropic/03-add-model.png)
 
-Like `openai/*`, the model matches any name that starts with `anthropic/`, for example `anthropic/claude-haiku-5-5`, and **Strip anthropic/** sends `claude-haiku-5-5` to Anthropic.
+The model matches any name that starts with `anthropic/`, for example `anthropic/claude-haiku-5-5`, and **Strip anthropic/** sends `claude-haiku-5-5` to Anthropic.
 
-The Models page now lists both models:
+The Models page now lists `anthropic/*`:
 
-![Models page with openai/* and anthropic/*](../../images/llm/connect-anthropic/04-models.png)
+![Models page with anthropic/*](../../images/llm/connect-anthropic/04-models.png)
 
-## Step 3: Ask GPT and Claude the same question
+## Step 3: Chat with Claude
 
 1. In the sidebar, click **Chat Playground**.
-2. In **Model**, select **openai/\***. In **Specific model**, enter `gpt-6-luna`.
+2. In **Model**, select **anthropic/\***. In **Specific model**, enter `claude-haiku-5-5`.
 3. In **User message**, enter `Reply with the single word: pong` and click **Send**.
-4. In **Model**, select **anthropic/\***. In **Specific model**, enter `claude-haiku-5-5`.
-5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
-Both replies are in the same conversation. The chips under each reply name the provider (`openai` or `anthropic`) and the model:
+The chips under the reply name the provider, `anthropic`, and the model:
 
-![Chat Playground with replies from gpt-6-luna and claude-haiku-5-5](../../images/llm/connect-anthropic/05-playground-claude.png)
+![Chat Playground with a reply from claude-haiku-5-5](../../images/llm/connect-anthropic/05-playground-claude.png)
 
 ## Step 4: Call Claude in OpenAI format
 
-Send the same OpenAI-format request twice. Only the model name changes.
-
-```bash
-curl -s http://localhost:4000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
-```
+Clients built for OpenAI send the OpenAI Chat Completions format to `/v1/chat/completions`. Send that format with a Claude model name:
 
 ```bash
 curl -s http://localhost:4000/v1/chat/completions \
@@ -77,13 +70,13 @@ curl -s http://localhost:4000/v1/chat/completions \
   -d '{"model":"anthropic/claude-haiku-5-5","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
 ```
 
-Expected output, for the second command:
+Expected output:
 
 ```
 {"model":"claude-haiku-5-5",...,"usage":{"prompt_tokens":18,"completion_tokens":4,...},"choices":[{"message":{"content":"pong","role":"assistant"},"index":0,"finish_reason":"stop"}],"id":"msg_...","object":"chat.completion",...}
 ```
 
-Both answers come back as `chat.completion` objects. The gateway translated the second request to the Anthropic Messages API and translated Claude's answer back to OpenAI format. The `msg_` ID shows that Anthropic answered.
+The answer is a `chat.completion` object. The gateway translated the request to the Anthropic Messages API and translated Claude's answer back to OpenAI format. The `msg_` ID shows that Anthropic answered.
 
 ## Step 5: Call Claude in Anthropic format
 
@@ -107,18 +100,49 @@ Neither request carries an Anthropic key. The gateway adds it from the `anthropi
 ## Check it
 
 1. In the sidebar, click **Logs**.
-2. Find the rows for `anthropic/claude-haiku-5-5` and `openai/gpt-6-luna`, all with status `200`. Each row shows the provider, the model the provider received, the tokens and the cost.
+2. Find the rows for `anthropic/claude-haiku-5-5`, all with status `200`. Each row shows the provider, the model Anthropic received, the tokens and the cost.
 
-![Logs page with requests to both providers](../../images/llm/connect-anthropic/06-logs.png)
+![Logs page with requests to Anthropic](../../images/llm/connect-anthropic/06-logs.png)
 
 You may also see a row named `unknown model`. That is the browser's preflight check from the Chat Playground; you can ignore it.
 
 3. In the sidebar, click **Analytics**.
 4. In **Group by**, select **Provider**, then click outside the list to close it.
 
-The chart splits the tokens between `anthropic` and `openai`. The line above the chart shows the total cost, tokens and calls for both providers:
+The chart shows the tokens for `anthropic`. The line above the chart shows the total cost, tokens and calls:
 
 ![Analytics with tokens grouped by provider](../../images/llm/connect-anthropic/07-analytics.png)
+
+## Optional: compare Claude with GPT
+
+Do this part if the gateway has the `openai/*` model from [Connect LLM Providers](connect-llm-providers.md).
+
+1. In the sidebar, click **Chat Playground**.
+2. In **Model**, select **openai/\***. In **Specific model**, enter `gpt-6-luna`.
+3. In **User message**, enter `Reply with the single word: pong` and click **Send**.
+4. In **Model**, select **anthropic/\***. In **Specific model**, enter `claude-haiku-5-5`.
+5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
+
+Both replies are in the same conversation. The chips under each reply name the provider (`openai` or `anthropic`) and the model:
+
+![Chat Playground with replies from gpt-6-luna and claude-haiku-5-5](../../images/llm/connect-anthropic/08-playground-gpt-and-claude.png)
+
+Send the OpenAI-format request from Step 4 with the GPT model name. Only the model name changes:
+
+```bash
+curl -s http://localhost:4000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+```
+
+The answer is also a `chat.completion` object, with `"model":"gpt-6-luna"`.
+
+6. In the sidebar, click **Analytics**.
+7. In **Group by**, select **Provider**, then click outside the list to close it.
+
+The chart splits the tokens between `anthropic` and `openai`. The line above the chart shows the total cost, tokens and calls for both providers:
+
+![Analytics with tokens for anthropic and openai](../../images/llm/connect-anthropic/09-analytics-both.png)
 
 ## What the UI wrote
 
