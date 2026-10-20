@@ -79,13 +79,13 @@ test('add the OpenAI backup model', async ({ page }) => {
   await d.getByPlaceholder('ENV_VAR_NAME').fill('OPENAI_API_KEY');
   await d.getByRole('button', { name: 'Explicit', exact: true }).click();
   await d.getByRole('combobox', { name: 'Explicit outgoing model' })
-    .or(d.getByRole('textbox', { name: 'Explicit outgoing model' })).first().fill('gpt-4o-mini');
+    .or(d.getByRole('textbox', { name: 'Explicit outgoing model' })).first().fill('gpt-6-luna');
   await d.getByRole('heading', { name: 'Add model' }).click();
   await shot(page, '04-add-openai-backup', d.getByRole('button', { name: 'Save model' }));
   await save(page, 'Save model');
   const m = readConfig().llm.models.find((x: any) => x.name === 'openai-backup');
   console.log(JSON.stringify(m));
-  expect(m.params.model).toBe('gpt-4o-mini');
+  expect(m.params.model).toBe('gpt-6-luna');
 });
 
 test('add the resilient virtual model', async ({ page }) => {
@@ -151,7 +151,7 @@ test('fail over to OpenAI when the first group is down', async ({ page }) => {
   const row = page.locator('main tbody tr').filter({ hasText: 'resilient' }).first();
   await expect(row).toContainText('200', { timeout: 30_000 });
   console.log(await row.innerText());
-  await expect(row).toContainText(/gpt-4o-mini|openai/i);
+  await expect(row).toContainText(/gpt-6-luna|openai/i);
   // The request that tried the stopped mock: a 503 that took about 11 seconds.
   const failed = page.locator('main tbody tr').filter({ hasText: 'resilient' }).filter({ hasText: '503' }).first();
   await expect(failed).toContainText(/1\d\.\d s/);

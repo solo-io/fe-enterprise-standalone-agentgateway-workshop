@@ -48,7 +48,7 @@ The Chat Playground does not show response headers, so check them with curl. Wai
 ```bash
 curl -s -i http://localhost:4000/v1/chat/completions \
   -H 'Content-Type: application/json' \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Name one color."}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Name one color."}]}'
 ```
 
 Expected output (other headers trimmed):
@@ -58,14 +58,14 @@ HTTP/1.1 200 OK
 content-type: application/json
 ...
 x-user-id: anonymous
-x-llm-response-model: gpt-4o-mini-2024-07-18
+x-llm-response-model: gpt-6-luna
 x-request-path: /v1/chat/completions
 ...
 
-{"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"message":{"content":"Blue.","role":"assistant",...}}],...}
+{"model":"gpt-6-luna",...,"choices":[{"message":{"content":"Blue.","role":"assistant",...}}],...}
 ```
 
-You asked for `gpt-4o-mini`, and `x-llm-response-model` shows the dated version OpenAI used. Add `-H 'x-user-id: alice'` to the command and `x-user-id` changes to `alice`.
+You asked for `gpt-6-luna`, and `x-llm-response-model` shows the model that answered. For a model with dated versions, such as `gpt-5-nano`, it shows the dated name, for example `gpt-5-nano-2025-08-07`. Add `-H 'x-user-id: alice'` to the command and `x-user-id` changes to `alice`.
 
 ## Step 2: Add a system prompt to the model
 
@@ -93,7 +93,7 @@ The expression builds a new `messages` list: one system message first, then the 
 
 1. Wait a second after saving, then in the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `Name one color.` and click **Send**.
 
 The reply contains `BANANA`, usually at the end. If it does not, click **Send** again. Your message does not ask for it. The gateway added the system prompt:
@@ -108,13 +108,13 @@ The Chat Playground also sends its own **System prompt** (`You are a concise ass
 ```bash
 curl -s http://localhost:4000/v1/chat/completions \
   -H 'Content-Type: application/json' \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Name one color."}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Name one color."}]}'
 ```
 
 Expected output (the reply contains `BANANA`, usually at the end):
 
 ```
-{"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"message":{"content":"Blue BANANA.","role":"assistant",...}}],...}
+{"model":"gpt-6-luna",...,"choices":[{"message":{"content":"Blue BANANA.","role":"assistant",...}}],...}
 ```
 
 </details>

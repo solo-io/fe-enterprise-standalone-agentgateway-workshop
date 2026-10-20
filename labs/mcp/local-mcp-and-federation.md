@@ -11,6 +11,18 @@
 
   This starts the `mcp-everything` container: the MCP "everything" reference server, which offers 13 test tools such as `echo` and `get-sum`. The gateway reaches it at `http://mcp-everything:3001/mcp`.
 
+  The container downloads the server when it starts, which can take a minute. Check that it is ready:
+
+  ```bash
+  docker compose logs mcp-everything | grep listening
+  ```
+
+  Expected output:
+
+  ```
+  mcp-everything-1  | MCP Streamable HTTP Server listening on port 3001
+  ```
+
 ## What you'll do
 
 - Add a second MCP server that runs next to the gateway

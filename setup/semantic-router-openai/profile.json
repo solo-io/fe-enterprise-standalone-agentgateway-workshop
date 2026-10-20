@@ -1,0 +1,33 @@
+{
+  "virtualModel": "auto_model",
+  "decisionsModel": "gpt-6-luna",
+  "requestTimeoutMs": 2000,
+  "maxPromptChars": 20000,
+  "minConfidence": 0.5,
+  "minMargin": 0.2,
+  "fallbackTier": "mid",
+  "tiers": {
+    "economy": "openai/gpt-5-nano",
+    "mid": "openai/gpt-5.6-luna",
+    "high": "openai/gpt-5.6-terra"
+  },
+  "question": {
+    "type": "choice",
+    "name": "tier",
+    "instructions": "Choose the least expensive model tier that can fully answer this request.",
+    "choices": [
+      {
+        "value": "economy",
+        "description": "Everyday language tasks that need no technical expertise. Examples: summarize or rewrite text, answer a simple factual question, translate a phrase, brainstorm names or ideas, free-form writing."
+      },
+      {
+        "value": "mid",
+        "description": "Routine software or technical work a competent engineer finishes quickly. Examples: write or fix a short function or script, explain or refactor code, write a config file or query."
+      },
+      {
+        "value": "high",
+        "description": "Tasks that need rigorous multi-step reasoning, even when the prompt is short. Examples: prove a mathematical statement, derive a formula from first principles, diagnose a subtle concurrency or race-condition bug, design and justify a correct concurrent algorithm."
+      }
+    ]
+  }
+}

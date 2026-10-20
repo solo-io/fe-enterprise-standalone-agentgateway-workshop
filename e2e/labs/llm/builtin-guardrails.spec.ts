@@ -32,7 +32,7 @@ async function sendBlocked(page: Page, prompt: string, body: string) {
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill(prompt);
   await main.getByRole('button', { name: 'Send' }).click();
   await expect(main.getByText('Playground request failed')).toBeVisible({ timeout: 30_000 });
@@ -102,9 +102,9 @@ test('the gateway blocks a credit card and an AWS key', async ({ page }) => {
   await sendBlocked(page, KEY_PROMPT, KEY_BODY);
   await shot(page, '08-blocked-aws-key');
 
-  const card = await chatRequest('openai/gpt-4o-mini', CARD_PROMPT);
+  const card = await chatRequest('openai/gpt-6-luna', CARD_PROMPT);
   expect(card).toEqual({ status: 422, text: PII_BODY });
-  const key = await chatRequest('openai/gpt-4o-mini', KEY_PROMPT);
+  const key = await chatRequest('openai/gpt-6-luna', KEY_PROMPT);
   expect(key).toEqual({ status: 403, text: KEY_BODY });
 });
 
@@ -112,7 +112,7 @@ test('the gateway masks an email address in the reply', async ({ page }) => {
   await go(page, '/llm/playground');
   let reply = '';
   for (let i = 0; i < 3; i++) {
-    reply = await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: EMAIL_PROMPT });
+    reply = await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: EMAIL_PROMPT });
     if (reply.includes('<EMAIL_ADDRESS>')) break;
   }
   expect(reply).toContain('<EMAIL_ADDRESS>');
@@ -137,6 +137,6 @@ test('clean up: remove the guards', async ({ page }) => {
   await expect(main.getByText('No guards configured.')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Save guardrails' })).toBeHidden();
   await page.waitForTimeout(2000);
-  const r = await chatRequest('openai/gpt-4o-mini', CARD_PROMPT);
+  const r = await chatRequest('openai/gpt-6-luna', CARD_PROMPT);
   expect(r.status).toBe(200);
 });

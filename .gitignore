@@ -67,6 +67,9 @@ images/src/
 # Local parking lot (follow-ups, kept locally)
 PARKING-LOT.md
 
+# Draft product/engineering issues found while validating labs (kept locally, filed by hand)
+issues/
+
 # Standalone: the setup template must stay tracked (.env.* above would ignore it)
 !.env.example
 
@@ -75,3 +78,7 @@ e2e/.last/
 
 # Gateway request logs written by the UI when running from setup/
 setup/data.db*
+
+# Workshop TLS files (tls-termination, sni-matching): made by setup/tls/make-certs.sh, shipped on purpose
+!setup/tls/*.crt
+!setup/tls/*.key

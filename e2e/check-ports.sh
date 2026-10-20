@@ -12,7 +12,7 @@ for p in $ports; do
   host=${p%%:*}; ctr=${p##*:}
   if [ "$host" != "$ctr" ]; then echo "port mismatch: $p" >&2; fail=1; fi
 done
-for want in 15000 4000 4001 8080 8180 6274; do
+for want in 15000 4000 4001 8080 8180 6274 8443; do
   echo "$ports" | grep -qx "$want:$want" || { echo "missing port $want:$want" >&2; fail=1; }
 done
 exit $fail

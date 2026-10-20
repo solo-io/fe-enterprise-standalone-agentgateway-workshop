@@ -76,7 +76,7 @@ The gateway reloads its configuration within a second or two.
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `My card number is 4111 1111 1111 1111. Is it valid?` and click **Send**.
 
 The playground shows **Playground request failed** with your rejection body:
@@ -112,7 +112,7 @@ The model decides what it writes. If the reply does not contain the email addres
 curl -s -w '\nHTTP %{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4o-mini",
+    "model": "openai/gpt-6-luna",
     "messages": [{ "role": "user", "content": "My card number is 4111 1111 1111 1111. Is it valid?" }]
   }'
 ```
@@ -128,7 +128,7 @@ HTTP 422
 curl -s -w '\nHTTP %{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4o-mini",
+    "model": "openai/gpt-6-luna",
     "messages": [{ "role": "user", "content": "Here is my AWS key AKIAIOSFODNN7EXAMPLE. Is the format right?" }]
   }'
 ```

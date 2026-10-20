@@ -10,7 +10,7 @@ const { go, shot, save } = lab('llm', 'jwt-auth-and-authorization');
 const JWKS = readFileSync('/repo/lib/jwt/public-jwks.json', 'utf8').trim();
 const ALICE = readFileSync('/repo/lib/jwt/tokens/alice.jwt', 'utf8').trim();
 const BOB = readFileSync('/repo/lib/jwt/tokens/bob.jwt', 'utf8').trim();
-const MODEL = { model: 'openai/*', specific: 'gpt-4o-mini' };
+const MODEL = { model: 'openai/*', specific: 'gpt-6-luna' };
 const PROMPT = 'Reply with the single word: pong';
 const RULE = 'jwt.team == "platform"';
 
@@ -21,7 +21,7 @@ function curl(tokenFile?: string): string {
   const auth = tokenFile ? `-H "Authorization: Bearer $(cat lib/jwt/tokens/${tokenFile})" ` : '';
   return sh(`cd /repo && curl -si http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  ${auth}-d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout;
+  ${auth}-d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout;
 }
 
 /** Replaces the text of a code editor field the way a reader does: select all, then paste. */

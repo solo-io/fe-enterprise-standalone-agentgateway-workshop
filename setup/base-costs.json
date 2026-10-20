@@ -3478,6 +3478,34 @@
             }
           ]
         },
+        "gpt-5.6-luna": {
+          "rates": {
+            "input": "0.2",
+            "output": "1.2",
+            "cacheRead": "0.02"
+          }
+        },
+        "gpt-5.6-terra": {
+          "rates": {
+            "input": "2",
+            "output": "12",
+            "cacheRead": "0.2"
+          }
+        },
+        "gpt-6-luna": {
+          "rates": {
+            "input": "0.1",
+            "output": "0.5",
+            "cacheRead": "0.01"
+          }
+        },
+        "gpt-6.1-sol": {
+          "rates": {
+            "input": "2",
+            "output": "10",
+            "cacheRead": "0.1"
+          }
+        },
         "gpt-image-2": {
           "rates": {
             "input": "5",

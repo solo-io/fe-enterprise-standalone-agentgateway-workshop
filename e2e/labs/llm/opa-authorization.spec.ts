@@ -53,7 +53,7 @@ test('the Chat Playground is denied without a token', async ({ page }) => {
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill(PROMPT);
   await main.getByRole('button', { name: 'Send' }).click();
   const banner = main.getByText('Playground request failed').locator('..');
@@ -66,33 +66,33 @@ test('the Chat Playground with bob and alice tokens', async ({ page }) => {
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4.1-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6.1-sol');
   await main.getByPlaceholder('Optional Bearer token').fill(BOB);
   await main.getByPlaceholder('Ask a test question...').fill(PROMPT);
   await main.getByRole('button', { name: 'Send' }).click();
   const banner = main.getByText('Playground request failed').locator('..');
-  await expect(banner).toContainText('denied by OPA: team marketing may not use model openai/gpt-4.1-mini', { timeout: 30_000 });
+  await expect(banner).toContainText('denied by OPA: team marketing may not use model openai/gpt-6.1-sol', { timeout: 30_000 });
   await shot(page, '04-playground-bob-denied', banner);
 
   await go(page, '/llm/playground');
-  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-4.1-mini', prompt: PROMPT, apiKey: ALICE });
+  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-6.1-sol', prompt: PROMPT, apiKey: ALICE });
   expect(reply).toContain('OK');
   await shot(page, '05-playground-alice-allowed', page.locator('main').locator('.chat-message.assistant').last());
 });
 
 test('curl: tokens and models', async () => {
-  const none = curl('gpt-4o-mini');
+  const none = curl('gpt-6-luna');
   expect(none).toMatch(/^HTTP\/1\.1 403 Forbidden/);
   expect(none.trimEnd().endsWith('denied by OPA: send a valid workshop token')).toBeTruthy();
 
-  const bobMini = curl('gpt-4o-mini', BOB);
+  const bobMini = curl('gpt-6-luna', BOB);
   expect(bobMini).toMatch(/^HTTP\/1\.1 200 OK/);
 
-  const bobOther = curl('gpt-4.1-mini', BOB);
+  const bobOther = curl('gpt-6.1-sol', BOB);
   expect(bobOther).toMatch(/^HTTP\/1\.1 403 Forbidden/);
-  expect(bobOther.trimEnd().endsWith('denied by OPA: team marketing may not use model openai/gpt-4.1-mini')).toBeTruthy();
+  expect(bobOther.trimEnd().endsWith('denied by OPA: team marketing may not use model openai/gpt-6.1-sol')).toBeTruthy();
 
-  const alice = curl('gpt-4.1-mini', ALICE);
+  const alice = curl('gpt-6.1-sol', ALICE);
   expect(alice).toMatch(/^HTTP\/1\.1 200 OK/);
 });
 
@@ -105,15 +105,15 @@ test('the OPA decision log', async () => {
 
 test('change the policy without touching the gateway', async () => {
   const orig = readFileSync(POLICY, 'utf8');
-  const edited = orig.replace('{"openai/gpt-4o-mini"}', '{"openai/gpt-4o-mini", "openai/gpt-4.1-mini"}');
+  const edited = orig.replace('{"openai/gpt-6-luna"}', '{"openai/gpt-6-luna", "openai/gpt-6.1-sol"}');
   expect(edited).not.toBe(orig);
   writeFileSync(POLICY, edited);
   await new Promise((r) => setTimeout(r, 5000));
-  expect(curl('gpt-4.1-mini', BOB)).toMatch(/^HTTP\/1\.1 200 OK/);
+  expect(curl('gpt-6.1-sol', BOB)).toMatch(/^HTTP\/1\.1 200 OK/);
 });
 
 test('clean up: delete the policy', async ({ page }) => {
-  writeFileSync(POLICY, readFileSync(POLICY, 'utf8').replace('{"openai/gpt-4o-mini", "openai/gpt-4.1-mini"}', '{"openai/gpt-4o-mini"}'));
+  writeFileSync(POLICY, readFileSync(POLICY, 'utf8').replace('{"openai/gpt-6-luna", "openai/gpt-6.1-sol"}', '{"openai/gpt-6-luna"}'));
   expect(readFileSync(POLICY, 'utf8')).toBe(readFileSync('/repo/setup/opa/policy.rego', 'utf8'));
 
   const card = await policyCard(page, 'External authz');
@@ -126,5 +126,5 @@ test('clean up: delete the policy', async ({ page }) => {
   await page.waitForTimeout(1000);
   await expect(card).toContainText('disabled');
   expect(readConfig().llm.policies.extAuthz).toBeUndefined();
-  expect(curl('gpt-4o-mini')).toMatch(/^HTTP\/1\.1 200 OK/);
+  expect(curl('gpt-6-luna')).toMatch(/^HTTP\/1\.1 200 OK/);
 });

@@ -35,6 +35,17 @@ async function pasteInto(page: Page, editor: Locator, text: string) {
   await page.getByText('Policy YAML', { exact: true }).last().click();
 }
 
+/** The first Raw Configuration editor line that contains `text`. */
+function rawLine(page: Page, text: string | RegExp) {
+  return page.locator('main .monaco-editor .view-line').filter({ hasText: text }).first();
+}
+
+async function saveRaw(page: Page) {
+  await save(page, page.locator('main').getByRole('button', { name: 'Save', exact: true }));
+  const confirm = page.getByRole('dialog').getByRole('button', { name: /Save/ });
+  if (await confirm.isVisible().catch(() => false)) await save(page, confirm);
+}
+
 function policyCard(page: Page, name: string) {
   return page.locator('main').getByRole('button', { name: new RegExp(`^(enabled|disabled)\\s*${name}`) });
 }
@@ -114,15 +125,16 @@ test('check it: the request times out after 2 seconds', async ({ page }) => {
 });
 
 test('add the public traffic gateway', async ({ page }) => {
-  await go(page, '/traffic/gateways');
-  await page.locator('main').getByRole('button', { name: 'Add gateway' }).first().click();
-  const d = page.getByRole('dialog');
-  await expect(d.getByRole('textbox', { name: /^Name/ })).toHaveValue('public');
-  await expect(d.getByRole('textbox', { name: /^Port/ })).toHaveValue('8080');
-  await shot(page, '08-add-gateway', d.getByRole('button', { name: 'Save gateway' }));
-  await save(page, 'Save gateway');
+  await go(page, '/');
+  // With llm-ready, the Traffic section of the sidebar has only Get started.
+  const start = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' }).nth(1);
+  await start.click();
+  const enable = page.locator('main').getByRole('button', { name: 'Enable' });
+  await shot(page, '08-add-gateway', enable);
+  await enable.click();
+  await expect(page.locator('main').getByRole('heading', { name: 'public' })).toBeVisible();
   console.log(JSON.stringify(readConfig().gateways));
-  expect(readConfig().gateways.public.port).toBe(8080);
+  expect(readConfig().gateways).toEqual({ public: { port: 8080 } });
 });
 
 test('add a route to the flaky mock', async ({ page }) => {
@@ -213,6 +225,23 @@ test('clean up', async ({ page }) => {
   await page.getByRole('alertdialog').getByRole('button', { name: /^Delete model$/ }).click();
   await expect(m).toHaveCount(0);
   await page.waitForTimeout(1000);
+
+  // Deleting the last gateway leaves `gateways: {}` and `routes: []`; remove both lines.
+  await go(page, '/raw-config');
+  const gwLine = rawLine(page, /^gateways:\s\{\}/);
+  await expect(gwLine).toBeVisible();
+  await expect(rawLine(page, /^routes:\s\[\]/)).toBeVisible();
+  await gwLine.click({ position: { x: 1, y: 5 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Delete');
+  await expect(rawLine(page, /^gateways:/)).toHaveCount(0);
+  await expect(rawLine(page, /^routes:/)).toHaveCount(0);
+  await saveRaw(page);
   const cfg = readConfig();
   console.log(JSON.stringify({ gateways: cfg.gateways, routes: cfg.routes, timeout: cfg.llm.policies.timeout }));
+  expect(cfg.gateways).toBeUndefined();
+  expect(cfg.routes).toBeUndefined();
 });

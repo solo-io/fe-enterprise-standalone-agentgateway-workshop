@@ -38,7 +38,7 @@ test('add the OpenAI Moderation request guard', async ({ page }) => {
 
   // The lab says: until Step 2, every LLM request fails with "prompt guard failed".
   await page.waitForTimeout(2000);
-  const r = await chatRequest('openai/gpt-4o-mini', BENIGN);
+  const r = await chatRequest('openai/gpt-6-luna', BENIGN);
   expect(r.status).not.toBe(200);
   expect(r.text).toContain('prompt guard failed');
 });
@@ -75,7 +75,7 @@ test('a violent prompt is blocked, a normal prompt passes', async ({ page }) => 
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill(VIOLENT);
   await main.getByRole('button', { name: 'Send' }).click();
   await expect(main.getByText('Playground request failed')).toBeVisible({ timeout: 30_000 });
@@ -83,14 +83,14 @@ test('a violent prompt is blocked, a normal prompt passes', async ({ page }) => 
   await shot(page, '06-blocked');
 
   await go(page, '/llm/playground');
-  await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: BENIGN });
+  await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: BENIGN });
   // The status chip, not the reply text, so a model reply that says "OK" cannot pass.
   await expect(main.locator('.chat-message.assistant').last().locator('.message-meta-chip', { hasText: /^OK$/ })).toHaveCount(1);
   await expect(main.getByText('Playground request failed')).toHaveCount(0);
   await shot(page, '07-benign-ok', page.locator('.chat-message.assistant').last());
 
-  expect(await chatRequest('openai/gpt-4o-mini', VIOLENT)).toEqual({ status: 403, text: BODY });
-  expect((await chatRequest('openai/gpt-4o-mini', BENIGN)).status).toBe(200);
+  expect(await chatRequest('openai/gpt-6-luna', VIOLENT)).toEqual({ status: 403, text: BODY });
+  expect((await chatRequest('openai/gpt-6-luna', BENIGN)).status).toBe(200);
 });
 
 test('clean up: remove the guard', async ({ page }) => {
@@ -105,5 +105,5 @@ test('clean up: remove the guard', async ({ page }) => {
   await expect(confirm).toBeHidden();
   await expect(main.getByText('No guards configured.')).toHaveCount(2);
   await page.waitForTimeout(2000);
-  expect((await chatRequest('openai/gpt-4o-mini', VIOLENT)).status).toBe(200);
+  expect((await chatRequest('openai/gpt-6-luna', VIOLENT)).status).toBe(200);
 });

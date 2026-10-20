@@ -63,7 +63,7 @@ The JWKS (JSON Web Key Set) is the public half of the key that signed the tokens
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. Leave **Raw API key** empty.
 5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
@@ -126,7 +126,7 @@ You can try an expression before you save it.
 ## Check it
 
 1. In the sidebar, click **Chat Playground**.
-2. In **Model**, select **openai/\***, and in **Specific model**, enter `gpt-4o-mini`.
+2. In **Model**, select **openai/\***, and in **Specific model**, enter `gpt-6-luna`.
 3. In **Raw API key**, paste bob's token:
 
    ```
@@ -158,7 +158,7 @@ Without a token:
 ```bash
 curl -si http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
 ```
 
 Expected output:
@@ -176,7 +176,7 @@ With bob's token:
 curl -si http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(cat ../lib/jwt/tokens/bob.jwt)" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
 ```
 
 Expected output:
@@ -194,7 +194,7 @@ With alice's token:
 curl -si http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(cat ../lib/jwt/tokens/alice.jwt)" \
-  -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
 ```
 
 Expected output:
@@ -203,7 +203,7 @@ Expected output:
 HTTP/1.1 200 OK
 ...
 
-{"model":"gpt-4o-mini-2024-07-18",...,"choices":[{"index":0,"message":{"role":"assistant","content":"Pong"},...}],...}
+{"model":"gpt-6-luna",...,"choices":[{"index":0,"message":{"role":"assistant","content":"Pong"},...}],...}
 ```
 
 </details>

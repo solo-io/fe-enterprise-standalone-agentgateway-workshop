@@ -30,7 +30,7 @@ test('add the OpenAI wildcard model', async ({ page }) => {
 
 test('chat in the Chat Playground', async ({ page }) => {
   await go(page, '/llm/playground');
-  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: 'Reply with the single word: pong' });
+  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Reply with the single word: pong' });
   expect(reply).toMatch(/pong/i);
   expect(reply).toContain('OK');
   await shot(page, '04-playground-reply', page.locator('.chat-message.assistant').last());
@@ -38,7 +38,7 @@ test('chat in the Chat Playground', async ({ page }) => {
 
 test('see the request in Logs', async ({ page }) => {
   await go(page, '/llm/logs');
-  const row = page.locator('main tbody tr').filter({ hasText: 'openai/gpt-4o-mini' }).first();
+  const row = page.locator('main tbody tr').filter({ hasText: 'openai/gpt-6-luna' }).first();
   await expect(row).toBeVisible({ timeout: 30_000 });
   await expect(row).toContainText('200');
   await shot(page, '05-logs');
@@ -46,12 +46,12 @@ test('see the request in Logs', async ({ page }) => {
 
 test('curl from Client Setup works', async ({ page }) => {
   await go(page, '/llm/client-setup');
-  await page.locator('main').getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await page.locator('main').getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await page.locator('main').getByRole('heading', { name: 'Client Setup' }).click(); // close the suggestion list
-  await expect(page.locator('main')).toContainText('"model": "openai/gpt-4o-mini"');
+  await expect(page.locator('main')).toContainText('"model": "openai/gpt-6-luna"');
   await shot(page, '06-client-setup', page.locator('main').getByRole('button', { name: 'Copy' }));
   const r = sh(`curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/v1/chat/completions \\
     -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Hello from agentgateway"}]}'`);
+    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'`);
   expect(r.stdout).toBe('200');
 });

@@ -20,14 +20,14 @@ Coding agents send a lot of LLM traffic. When they go through the gateway, the g
 ## Step 1: Get the Codex snippet
 
 1. In the sidebar, click **Client Setup**.
-2. In **Specific model**, enter `gpt-4o-mini`.
+2. In **Specific model**, enter `gpt-6-luna`.
 3. In **Integration**, select **Codex CLI**.
 
    ![Integration list in Client Setup](../../images/llm/connect-coding-agents/01-integration-list.png)
 
 4. Click **Copy**.
 
-   ![Codex CLI snippet for openai/gpt-4o-mini](../../images/llm/connect-coding-agents/02-codex-snippet.png)
+   ![Codex CLI snippet for openai/gpt-6-luna](../../images/llm/connect-coding-agents/02-codex-snippet.png)
 
 The snippet is:
 
@@ -38,7 +38,7 @@ export OPENAI_API_KEY="dummy_key"
 export CODEX_HOME=/tmp/codex-gateway-home && mkdir -p $CODEX_HOME # optional
 codex login --with-api-key <<<"$OPENAI_API_KEY"
 
-codex --model "openai/gpt-4o-mini" \
+codex --model "openai/gpt-6-luna" \
   -c 'model_provider="gateway"' \
   -c 'model_providers.gateway.name="Local gateway"' \
   -c 'model_providers.gateway.base_url="http://localhost:4000/v1"'
@@ -55,22 +55,22 @@ Codex sends its requests in the OpenAI Responses format. Check that the gateway 
 ```bash
 curl -s http://localhost:4000/v1/responses \
   -H 'Content-Type: application/json' \
-  -d '{"model":"openai/gpt-4o-mini","input":"Reply with the single word: ready"}'
+  -d '{"model":"openai/gpt-6-luna","input":"Reply with the single word: ready"}'
 ```
 
 Expected output:
 
 ```
-{"id":"resp_...","status":"completed","output":[{"type":"message","content":[{"type":"output_text",...,"text":"Ready"}],...}],"model":"gpt-4o-mini-2024-07-18",...,"object":"response",...}
+{"id":"resp_...","status":"completed","output":[{"type":"message","content":[{"type":"output_text",...,"text":"Ready"}],...}],"model":"gpt-6-luna",...,"object":"response",...}
 ```
 
 ## Step 2: Run Codex through the gateway
 
 The workshop's automated check does not cover this step. It checks only the Responses API call above.
 
-Paste the snippet from Step 1 into a terminal. You should see Codex start with `openai/gpt-4o-mini`. Give it a task, for example `Reply with exactly: hello from agentgateway`.
+Paste the snippet from Step 1 into a terminal. You should see Codex start with `openai/gpt-6-luna`. Give it a task, for example `Reply with exactly: hello from agentgateway`.
 
-To check that the request went through the gateway, in the sidebar, click **Logs**. You should see `openai/gpt-4o-mini` rows for the Codex requests.
+To check that the request went through the gateway, in the sidebar, click **Logs**. You should see `openai/gpt-6-luna` rows for the Codex requests.
 
 ## Step 3 (optional): Add the Anthropic provider
 

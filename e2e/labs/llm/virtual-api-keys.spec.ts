@@ -57,25 +57,25 @@ test('a request without a key is rejected', async ({ page }) => {
   const main = page.locator('main');
   await main.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'openai/*' }).first().click();
-  await main.getByPlaceholder('Select or type a model').fill('gpt-4o-mini');
+  await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill('Reply with the single word: pong');
   await main.getByRole('button', { name: 'Send' }).click();
   await expect(main).toContainText('api key authentication failure: no API Key found', { timeout: 30_000 });
   await shot(page, '07-no-key-rejected', main.getByPlaceholder('Optional Bearer token'));
 
-  const r = await chatRequest('openai/gpt-4o-mini', 'Hello from agentgateway');
+  const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway');
   expect(r.status).toBe(401);
 });
 
 test("alice's key is accepted", async ({ page }) => {
   await go(page, '/llm/playground');
-  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-4o-mini', prompt: 'Reply with the single word: pong', apiKey: keys.alice });
+  const reply = await chat(page, { model: 'openai/*', specific: 'gpt-6-luna', prompt: 'Reply with the single word: pong', apiKey: keys.alice });
   expect(reply).toContain('OK');
   await shot(page, '08-alice-ok', page.locator('.chat-message.assistant').last());
 
-  const r = await chatRequest('openai/gpt-4o-mini', 'Hello from agentgateway', { authorization: `Bearer ${keys.bob}` });
+  const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway', { authorization: `Bearer ${keys.bob}` });
   expect(r.status).toBe(200);
-  const bad = await chatRequest('openai/gpt-4o-mini', 'Hello from agentgateway', { authorization: 'Bearer agw_sk_not-a-real-key' });
+  const bad = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway', { authorization: 'Bearer agw_sk_not-a-real-key' });
   expect(bad.status).toBe(401);
 });
 
@@ -88,7 +88,7 @@ test('Logs and Analytics show the user', async ({ page }) => {
   await expect(page.getByRole('checkbox', { name: 'bob' })).toBeVisible();
   await alice.check();
   await page.keyboard.press('Escape');
-  const row = main.getByText('openai/gpt-4o-mini').first();
+  const row = main.getByText('openai/gpt-6-luna').first();
   await expect(row).toBeVisible();
   await expect(main).toContainText('Showing 1 recent calls');
   await shot(page, '09-logs-alice', row);

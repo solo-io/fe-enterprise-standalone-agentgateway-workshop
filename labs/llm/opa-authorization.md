@@ -16,26 +16,26 @@
 - Point the gateway at OPA with the External authz policy
 - Send the request body to OPA, so the policy can see the model
 - See a request without a token denied in the Chat Playground
-- Let alice use any model and limit bob to `openai/gpt-4o-mini`
+- Let alice use any model and limit bob to `openai/gpt-6-luna`
 - Read OPA's decision log
 - Change the policy file and see the new rule apply within seconds
 
 ## Why this matters
 
-If your company writes access rules in Rego, those rules work as written. [OPA](https://www.openpolicyagent.org/) answers the gateway's External authz call directly. The gateway asks OPA about every request before it calls OpenAI. OPA returns allow or deny, and for a denial it can also return the message the caller sees.
+If your company already writes access rules in Rego, the gateway can use them: [OPA](https://www.openpolicyagent.org/) answers the gateway's External authz call. The gateway asks OPA about every request before it calls OpenAI. OPA returns allow or deny, and for a denial it can also return the message the caller sees.
 
-The policy in `setup/opa/policy.rego` does three things:
+How the policy in `setup/opa/policy.rego` decides:
 
 1. It checks the token in the `Authorization` header against the workshop's public key, and checks the issuer and audience. OPA verifies the token itself, so the lab adds no JWT policy to the gateway.
 2. It reads the `team` claim. Callers in `platform` can use any model.
-3. Callers in `marketing` can use only `openai/gpt-4o-mini`. The policy reads the model from the request body, which is why you turn on **Include request body** in Step 1.
+3. Callers in `marketing` can use only `openai/gpt-6-luna`. The policy reads the model from the request body, which is why you turn on **Include request body** in Step 1.
 
 The lab uses the workshop tokens in `lib/jwt/`:
 
 | Token | `sub` | `team` | Allowed models |
 |---|---|---|---|
 | `lib/jwt/tokens/alice.jwt` | `alice` | `platform` | any |
-| `lib/jwt/tokens/bob.jwt` | `bob` | `marketing` | `openai/gpt-4o-mini` |
+| `lib/jwt/tokens/bob.jwt` | `bob` | `marketing` | `openai/gpt-6-luna` |
 
 Here is the policy:
 
@@ -70,7 +70,7 @@ claims := payload if {
 model := input.parsed_body.model
 
 # Models the marketing team may use.
-marketing_models := {"openai/gpt-4o-mini"}
+marketing_models := {"openai/gpt-6-luna"}
 
 result := {"allowed": true} if claims.team == "platform"
 
@@ -111,7 +111,7 @@ result := {
 1. Wait two seconds for the gateway to load the policy.
 2. In the sidebar, click **Chat Playground**.
 3. In **Model**, select **openai/\***.
-4. In **Specific model**, enter `gpt-4o-mini`.
+4. In **Specific model**, enter `gpt-6-luna`.
 5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
 The playground shows **Playground request failed** with the message from the policy:
@@ -124,7 +124,7 @@ If you see a reply instead, the gateway has not loaded the policy yet. Wait two 
 
 The Chat Playground sends the **Raw API key** field as a bearer token.
 
-1. In **Specific model**, enter `gpt-4.1-mini`.
+1. In **Specific model**, enter `gpt-6.1-sol`.
 2. In **Raw API key**, paste bob's token. Paste only the token, without `Bearer`.
 
    ```
@@ -133,15 +133,15 @@ The Chat Playground sends the **Raw API key** field as a bearer token.
 
 3. Click **Send**.
 
-The policy reads `team: marketing` from the token. Bob may use only `openai/gpt-4o-mini`, so OPA denies the request:
+The policy reads `team: marketing` from the token. Bob may use only `openai/gpt-6-luna`, so OPA denies the request:
 
-![Chat Playground showing OPA denying bob the model openai/gpt-4.1-mini](../../images/llm/opa-authorization/04-playground-bob-denied.png)
+![Chat Playground showing OPA denying bob the model openai/gpt-6.1-sol](../../images/llm/opa-authorization/04-playground-bob-denied.png)
 
 ## Step 4: Send alice's token
 
 1. Reload the page.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4.1-mini`.
+3. In **Specific model**, enter `gpt-6.1-sol`.
 4. In **Raw API key**, paste alice's token.
 
    ```
@@ -166,7 +166,7 @@ Expected output, one line for each request:
 
 ```
 "result":{"allowed":false,"body":"denied by OPA: send a valid workshop token\n","http_status":403}
-"result":{"allowed":false,"body":"denied by OPA: team marketing may not use model openai/gpt-4.1-mini\n","http_status":403}
+"result":{"allowed":false,"body":"denied by OPA: team marketing may not use model openai/gpt-6.1-sol\n","http_status":403}
 "result":{"allowed":true}
 ```
 
@@ -178,7 +178,7 @@ Expected output, one line for each request:
    ```bash
    curl -si http://localhost:4000/v1/chat/completions \
      -H "Content-Type: application/json" \
-     -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+     -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
    ```
 
    Expected output:
@@ -190,13 +190,13 @@ Expected output, one line for each request:
    denied by OPA: send a valid workshop token
    ```
 
-2. Send bob's token with `openai/gpt-4o-mini`. OPA allows it:
+2. Send bob's token with `openai/gpt-6-luna`. OPA allows it:
 
    ```bash
    curl -si http://localhost:4000/v1/chat/completions \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer $(cat ../lib/jwt/tokens/bob.jwt)" \
-     -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+     -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
    ```
 
    Expected output:
@@ -206,13 +206,13 @@ Expected output, one line for each request:
    ...
    ```
 
-3. Send bob's token with `openai/gpt-4.1-mini`. OPA denies it:
+3. Send bob's token with `openai/gpt-6.1-sol`. OPA denies it:
 
    ```bash
    curl -si http://localhost:4000/v1/chat/completions \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer $(cat ../lib/jwt/tokens/bob.jwt)" \
-     -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
+     -d '{"model":"openai/gpt-6.1-sol","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'
    ```
 
    Expected output:
@@ -221,7 +221,7 @@ Expected output, one line for each request:
    HTTP/1.1 403 Forbidden
    ...
 
-   denied by OPA: team marketing may not use model openai/gpt-4.1-mini
+   denied by OPA: team marketing may not use model openai/gpt-6.1-sol
    ```
 
    Run the same request with `alice.jwt` and you get `HTTP/1.1 200 OK`.
@@ -233,16 +233,16 @@ Expected output, one line for each request:
 The policy lives in a file. Editing the file changes who is allowed, and the gateway keeps running as it is.
 
 1. Open `setup/opa/policy.rego` in a text editor.
-2. Find the line `marketing_models := {"openai/gpt-4o-mini"}` and change it to:
+2. Find the line `marketing_models := {"openai/gpt-6-luna"}` and change it to:
 
    ```rego
-   marketing_models := {"openai/gpt-4o-mini", "openai/gpt-4.1-mini"}
+   marketing_models := {"openai/gpt-6-luna", "openai/gpt-6.1-sol"}
    ```
 
 3. Save the file. OPA reloads it within a few seconds. If the request below is still denied after 10 seconds, run `docker compose restart opa` from the `setup/` folder.
-4. In the Chat Playground, paste bob's token in **Raw API key**, set **Specific model** to `gpt-4.1-mini`, and click **Send**.
+4. In the Chat Playground, paste bob's token in **Raw API key**, set **Specific model** to `gpt-6.1-sol`, and click **Send**.
 
-Bob now gets a reply. One edit to one file changed the rule.
+Bob now gets a reply.
 
 ## What the UI wrote
 
@@ -264,7 +264,7 @@ llm:
 
 ## Clean up
 
-1. In `setup/opa/policy.rego`, change the `marketing_models` line back to `marketing_models := {"openai/gpt-4o-mini"}` and save the file.
+1. In `setup/opa/policy.rego`, change the `marketing_models` line back to `marketing_models := {"openai/gpt-6-luna"}` and save the file.
 2. In the sidebar, click **Policies**.
 3. Click the **External authz** card.
 4. Click **Delete policy** (the trash icon at the top of the panel).
@@ -277,3 +277,5 @@ llm:
    ```bash
    docker compose --profile opa stop opa
    ```
+
+`setup/opa/policy.rego` also has rules for MCP tool calls, below the rules this lab shows. To protect your MCP servers with the same OPA service, see [Decide Who Can Call Which MCP Tool with Open Policy Agent](../mcp/mcp-opa-authorization.md).

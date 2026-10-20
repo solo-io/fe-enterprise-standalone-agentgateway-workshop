@@ -95,11 +95,10 @@ The newest `mock-llm-slow` row has status `504` and a duration of about 2 second
 
 Retries are a route policy. You add them to a traffic route, a plain HTTP route from a gateway port to a server. Send the requests to the flaky model server through a new gateway on port `8080`.
 
-1. In the sidebar, under **Traffic**, click **Gateways**.
-2. Click **Add gateway**. The panel fills in **Name** `public` and **Port** `8080`.
-3. Click **Save gateway**.
+1. In the sidebar, under **Traffic**, click **Get started**.
+2. Click **Enable**. The UI adds a gateway named `public` on port `8080` and opens **Traffic Gateways**.
 
-   ![Add gateway panel with name public and port 8080](../../images/llm/timeouts-and-retries/08-add-gateway.png)
+   ![Traffic Get started page with the Enable button](../../images/llm/timeouts-and-retries/08-add-gateway.png)
 
 ## Step 5: Route port 8080 to the flaky model server
 
@@ -246,7 +245,9 @@ routes:
 6. Click the **Timeout** card. Click the **Delete policy** icon at the top of the panel, then click **Delete policy** to confirm.
 7. In the sidebar, click **Models**.
 8. In the `mock-llm-slow` row, click the trash icon, then click **Delete model**.
-9. Stop the mock servers. From the `setup/` folder, run:
+9. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+10. Delete the two lines `gateways: {}` and `routes: []` near the end, then click **Save**. If a confirmation appears, click **Save** again. While `gateways: {}` is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
+11. Stop the mock servers. From the `setup/` folder, run:
 
    ```bash
    docker compose --profile mock-llm-faults stop mock-llm-slow mock-llm-flaky mock-llm-503

@@ -64,7 +64,7 @@ The guard has no field for the OpenAI key yet, so the gateway calls the moderati
 
 1. In the sidebar, click **Chat Playground**.
 2. In **Model**, select **openai/\***.
-3. In **Specific model**, enter `gpt-4o-mini`.
+3. In **Specific model**, enter `gpt-6-luna`.
 4. In **User message**, enter `I am going to kill my neighbor tonight with a knife and hide the body.` and click **Send**.
 
 The playground shows **Playground request failed** with your rejection body:
@@ -89,7 +89,7 @@ The reply arrives with the status **OK**:
 curl -s -w '\nHTTP %{http_code}\n' http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4o-mini",
+    "model": "openai/gpt-6-luna",
     "messages": [{ "role": "user", "content": "I am going to kill my neighbor tonight with a knife and hide the body." }]
   }'
 ```

@@ -24,6 +24,7 @@ services:
       - "4000:4000"   # LLM traffic
       - "4001:4001"   # MCP and traffic gateway
       - "8080:8080"   # extra traffic gateway
+      - "8443:8443"   # HTTPS traffic gateway (tls-termination, sni-matching), with the files in setup/tls/
       - "8180:8180"   # Keycloak (keycloak profile), which shares the gateway's network
       - "6274:6274"   # MCP Inspector (mcp-inspector profile), which shares the gateway's network
 
@@ -58,7 +59,7 @@ services:
   mcp-everything:
     profiles: [mcp-everything]
     image: node:22-alpine
-    command: ["npx", "-y", "@modelcontextprotocol/server-everything@2026.8.31", "streamableHttp"]
+    command: ["npx", "-y", "@modelcontextprotocol/server-everything@1.0.0", "streamableHttp"]
     environment:
       PORT: "3001"
 
@@ -125,7 +126,7 @@ services:
     image: ably7/ai-guardrail-webhook-server:0.1.2
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
-      OPENAI_MODEL: gpt-4o-mini
+      OPENAI_MODEL: gpt-6-luna
     volumes:
       - ./guardrail-webhook:/policy:ro
     entrypoint: ["/bin/sh", "-c", "export REQUEST_GUARDRAIL_PROMPT=\"$$(cat /policy/request-prompt.txt)\" RESPONSE_GUARDRAIL_PROMPT=\"$$(cat /policy/response-prompt.txt)\"; exec python -m uvicorn main:app --host 0.0.0.0 --port 8000"]
@@ -149,3 +150,96 @@ services:
     environment:
       HTTP_PORT: "8000"
       JWT_HEADER: Authorization
+
+  # stripe-mock: the Stripe API mock, which stands in for a REST API you run yourself. It answers on
+  # port 12111 with sample Stripe objects and rejects requests that have no Authorization header.
+  stripe-mock:
+    profiles: [stripe-mock]
+    image: stripe/stripe-mock:v0.206.0
+
+  # observability: Prometheus scrapes the gateway's metrics on port 15020, Tempo receives its traces
+  # on port 4317, and Grafana shows both with the agentgateway dashboard. Files are in setup/observability/.
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v3.8.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+
+  tempo:
+    profiles: [observability]
+    image: grafana/tempo:2.9.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:12.3.0
+    environment:
+      # Workshop only: anyone who opens Grafana is an admin, with no sign-in.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_USERS_DEFAULT_THEME: system
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+
+  # mock-llm-routing: two mock LLMs that each serve a different model name, so a reply shows which one answered.
+  mock-llm-mini:
+    profiles: [mock-llm-routing]
+    image: ghcr.io/llm-d/llm-d-inference-sim:v1.0.0
+    command: ["--model", "mock-mini", "--port", "8000"]
+
+  mock-llm-nano:
+    profiles: [mock-llm-routing]
+    image: ghcr.io/llm-d/llm-d-inference-sim:v1.0.0
+    command: ["--model", "mock-nano", "--port", "8000"]
+
+  # semantic-router-jev: an ExtProc adapter that asks Jev (TypeSafe) which price tier a prompt needs and
+  # rewrites the model name auto_model to that tier. Code and routing profile are in setup/semantic-router-jev/.
+  semantic-router-jev:
+    profiles: [semantic-router-jev]
+    image: python:3.12.14-slim
+    init: true
+    command: ["sh", "-c", "pip install --quiet --no-cache-dir --root-user-action=ignore grpcio==1.84.0 xds-protos==1.84.0 && exec python -u /app/adapter.py"]
+    environment:
+      TYPESAFE_AI_API_KEY: ${TYPESAFE_AI_API_KEY:-}
+      JEV_PROFILE_PATH: /app/profile.json
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    volumes:
+      - ./semantic-router-jev:/app:ro
+
+  # semantic-router-openai: the same ExtProc adapter, with the OpenAI Decisions API as the classifier.
+  # Code and routing profile are in setup/semantic-router-openai/.
+  semantic-router-openai:
+    profiles: [semantic-router-openai]
+    image: python:3.12.14-slim
+    init: true
+    command: ["sh", "-c", "pip install --quiet --no-cache-dir --root-user-action=ignore grpcio==1.84.0 xds-protos==1.84.0 && exec python -u /app/adapter.py"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
+      DECISIONS_PROFILE_PATH: /app/profile.json
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    volumes:
+      - ./semantic-router-openai:/app:ro
+
+  # guardrail-jev: a guardrail webhook that asks Jev (TypeSafe) to score each rule and each personal value.
+  # Code and policy are in setup/guardrail-jev/.
+  guardrail-jev:
+    profiles: [guardrail-jev]
+    image: python:3.12.14-slim
+    init: true
+    command: ["python", "-u", "/app/webhook.py"]
+    environment:
+      TYPESAFE_AI_API_KEY: ${TYPESAFE_AI_API_KEY:-}
+      GUARDRAIL_POLICY_PATH: /app/policy.json
+    volumes:
+      - ./guardrail-jev:/app:ro

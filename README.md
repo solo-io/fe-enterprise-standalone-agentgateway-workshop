@@ -7,12 +7,13 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 ## Prerequisites
 
 - **Solo Enterprise for agentgateway license key.** Ask your Solo.io contact for a trial key.
-- **OpenAI API key.** The labs use `gpt-4o-mini` to keep costs low.
+- **OpenAI API key.** The labs use `gpt-6-luna` to keep costs low.
 - **Docker Desktop** (macOS, Windows with WSL) or Docker Engine with the Compose plugin (Linux).
 - Optional: an **Anthropic API key**, for the Anthropic steps in [Connect Coding Agents](labs/llm/connect-coding-agents.md).
 - Optional: **AWS credentials** with Amazon Bedrock access, for [Connect Amazon Bedrock](labs/llm/connect-amazon-bedrock.md).
+- Optional: a **TypeSafe API key**, for the two Jev labs. The [OpenAI Decisions API](labs/llm/semantic-routing-openai-decisions.md) lab needs an OpenAI key with access to `/v1/decisions`.
 
-The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8180` and `6274` on your computer.
+The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab.
 
 ## Start here
 
@@ -40,10 +41,15 @@ Then do any of these, in any order. Each lab cleans up after itself.
 | [Block and Mask Sensitive Data with Built-in Guardrails](labs/llm/builtin-guardrails.md) | Block credit cards, SSNs and AWS keys in prompts, mask email addresses in replies | |
 | [Block Harmful Prompts with OpenAI Moderation](labs/llm/moderation-guardrails.md) | Reject violent or hateful prompts before they reach the model | |
 | [Check Prompts and Replies with a Guardrail Webhook](labs/llm/webhook-guardrails.md) | Send prompts and replies to an LLM-based webhook that rejects jailbreaks and masks personal data | `guardrail-webhook` |
+| [Judge Prompts and Mask Personal Data with a Jev Guardrail Webhook](labs/llm/webhook-guardrails-jev.md) | Score each prompt against rules with Jev, mask personal values but keep a company's published contact, add a rule in one file | `guardrail-jev` |
 | [Enrich Prompts and Transform Responses](labs/llm/prompt-enrichment-and-transformations.md) | Add a gateway-side system prompt and add response headers | |
 | [Fail Over Between Models](labs/llm/model-failover.md) | Move traffic off a rate-limited backend with a Failover virtual model | `mock-llm` |
 | [Stop Slow Requests and Retry Failed Ones](labs/llm/timeouts-and-retries.md) | End slow LLM requests with a 2 second timeout, then retry `503` errors on a traffic route | `mock-llm-faults` |
 | [Load Balance Models and Fail Over to a Backup](labs/llm/load-balancing-and-failover.md) | Spread requests across two models in one group, drop the failing one, and fail over to OpenAI when the group is down | `mock-llm`, `mock-llm-faults` |
+| [Route Requests by Path, Header, and Query Parameter](labs/llm/routing-match-types.md) | Send requests to two model servers by URL path, header or query parameter on a traffic gateway | `mock-llm-routing` |
+| [Route Requests by a Field in the Request Body](labs/llm/body-based-routing.md) | Send requests tagged `metadata.app: support` to a smaller model with a Conditional virtual model | `mock-llm-routing` |
+| [Route Each Prompt to the Cheapest Model That Can Answer It, with Jev](labs/llm/semantic-routing-jev.md) | Give clients one model name, `auto_model`, and let Jev pick one of three price tiers for each prompt | `semantic-router-jev` |
+| [Route Each Prompt to the Cheapest Model That Can Answer It, with the OpenAI Decisions API](labs/llm/semantic-routing-openai-decisions.md) | The same router, with OpenAI's Decisions API as the classifier | `semantic-router-openai` |
 | [Connect Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | |
 
 ## MCP track
@@ -58,22 +64,27 @@ Then do any of these, in any order:
 |---|---|---|
 | [Federate a Local MCP Server with a Remote One](labs/mcp/local-mcp-and-federation.md) | Serve tools from two servers in one session, control tool name prefixes, compare fail closed with fail open | `mcp-everything` |
 | [Turn a REST API into MCP Tools with OpenAPI](labs/mcp/openapi-to-mcp.md) | Expose the Open-Meteo weather API as an MCP tool from an OpenAPI schema | |
+| [Turn Your Own REST API into MCP Tools with OpenAPI](labs/mcp/openapi-to-mcp-local-service.md) | Expose three operations of a local API as MCP tools, including a path parameter, and have the gateway add the API key | `stripe-mock` |
 | [Shrink the Tool List with Search and Code Tool Modes](labs/mcp/mcp-tool-modes.md) | Replace the tool list with `get_tool`/`invoke_tool`, then with a single `run_code` tool | |
 | [Require a Token for MCP and Limit Tools by Team](labs/mcp/mcp-auth-and-tool-authorization.md) | Require a JWT for MCP, then hide a tool from one team | |
 | [Rate Limit MCP Traffic](labs/mcp/mcp-rate-limiting.md) | Limit MCP requests and see the rate limit error on a tool call | |
 | [Sign In to MCP with Keycloak](labs/mcp/mcp-oauth-keycloak.md) | Require a Keycloak token for MCP, then sign in from MCP Inspector and follow the OAuth steps | `keycloak`, `mcp-inspector` |
 | [Call an API on the User's Behalf with Token Exchange](labs/mcp/obo-token-exchange.md) | Have the gateway exchange the user's Keycloak token for one issued to the API it calls | `keycloak`, `obo` |
 | [Let Your Own Service Approve Each MCP Request](labs/mcp/mcp-external-authorization.md) | Send each MCP request to an external authorization service that allows only the `platform` team | `ext-authz-jwt` |
+| [Decide Who Can Call Which MCP Tool with Open Policy Agent](labs/mcp/mcp-opa-authorization.md) | Use the OPA service from the LLM track to deny one team a tool by reading the JSON-RPC body | `opa` |
 | [Guard MCP Tool Calls with a Policy Server](labs/mcp/mcp-guardrails.md) | Scope tools per persona, deny purchase orders over a limit, block outside email, mask bank details, compare fail closed with fail open | `mcp-guardrails` |
 
 ## Platform track
 
-These labs start after [Connect LLM Providers](labs/llm/connect-llm-providers.md). Both set up the same roles: the first with passwords, the second with an identity provider. Do either one, or both.
+These labs start after [Connect LLM Providers](labs/llm/connect-llm-providers.md). The two UI access labs set up the same roles: the first with passwords, the second with an identity provider. Do either one, or both.
 
 | Lab | What you do | Helper service |
 |---|---|---|
 | [Give Each Person the Right Access to the UI](labs/platform/ui-access-control.md) | Require a password on the UI, then give alice full access, bob read-only access and carol only her own API keys | |
 | [Sign In to the UI with Keycloak and Map Groups to Roles](labs/platform/ui-access-control-oidc.md) | Sign users in through Keycloak, give each Keycloak group a role, and let one user manage one model | `keycloak` |
+| [Serve Traffic over HTTPS and Require Client Certificates](labs/platform/tls-termination.md) | Make an HTTPS gateway on port `8443` with the workshop certificates, then require a client certificate (mTLS) | `mock-llm` |
+| [Serve Several Hostnames with Their Own Certificates](labs/platform/sni-matching.md) | Serve `foo.example.com` and `bar.example.com` on one port, each with its own certificate (SNI) | `mock-llm` |
+| [See Gateway Metrics, Traces, and Alerts in Grafana](labs/platform/metrics-and-tracing.md) | Scrape the gateway with Prometheus, read the agentgateway dashboard, open a trace with model and token counts, fire an error-rate alert | `observability`, `mock-llm-faults` |
 
 ## Helper services
 
