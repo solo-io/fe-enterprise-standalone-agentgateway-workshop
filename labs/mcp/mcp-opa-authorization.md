@@ -2,14 +2,14 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](connect-remote-mcp-server.md). The gateway serves the `solo-docs` MCP server on port `4001`.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start Open Policy Agent (OPA) with the workshop policy. From the `setup/` folder, run:
 
   ```bash
   env UID=$(id -u) GID=$(id -g) docker compose --profile opa up -d
   ```
 
-  This starts the `opa` container next to the gateway. It listens for gRPC on port `9000` and reads its policy from `setup/opa/`. It is the same OPA service that [Decide Who Can Use Which Model with Open Policy Agent](../llm/opa-authorization.md) uses for LLM requests.
+  This starts the `opa` container next to the gateway. It listens for gRPC on port `9000` and reads its policy from `setup/opa/`. [Decide Who Can Use Which Model with Open Policy Agent](../llm/opa-authorization.md) uses the same OPA service for LLM requests. You do not need that lab for this one.
 
 ## What you'll do
 
@@ -31,7 +31,7 @@ The policy in `setup/opa/policy.rego` checks the token in the `Authorization` he
 | `lib/jwt/tokens/alice.jwt` | `alice` | `platform` | all |
 | `lib/jwt/tokens/bob.jwt` | `bob` | `marketing` | all except `get_full_page` |
 
-The rule that lets the `platform` team do anything is the same rule the LLM lab uses. These are the rules the file adds for MCP:
+The rule that lets the `platform` team do anything also applies to LLM requests. These are the rules the file adds for MCP:
 
 ```rego
 # MCP clients send JSON-RPC messages to the path /mcp. OPA parses each message into parsed_body.
@@ -70,6 +70,41 @@ result := {
 ```
 
 A tool call reaches OPA as a body like `{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_full_page",...}}`. The rules read `method` and `params.name` from it. The rules check the path `/mcp`, so they never apply to LLM requests.
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add the External authz policy
 
@@ -223,15 +258,18 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, under **MCP**, click **Policies**.
-2. Click the **External authz** card.
-3. Click **Delete policy** (the trash icon at the top of the panel).
-
-   ![External authz panel with the Delete policy button](../../images/mcp/mcp-opa-authorization/09-delete-policy.png)
-
-4. Click **Delete policy** to confirm. The card shows **disabled**.
-5. From the `setup/` folder, stop OPA:
+1. From the `setup/` folder, stop OPA:
 
    ```bash
    docker compose --profile opa stop opa
    ```
+
+2. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server, the CORS policy and the External authz policy.
+
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-opa-authorization/09-turn-off-mcp.png)
+
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

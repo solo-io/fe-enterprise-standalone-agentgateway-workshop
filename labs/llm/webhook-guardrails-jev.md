@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Get a TypeSafe API key from the [TypeSafe console](https://console.typesafe.ai) and add it to `setup/.env`:
 
   ```bash
@@ -51,6 +51,24 @@ The rules are in `setup/guardrail-jev/policy.json`:
 - `mask.question` is the question Jev answers for each candidate: should this value be masked? The criteria say to mask an individual's own contact detail, card number or ID, and to keep an organization's published contact.
 
 The webhook replaces only the values Jev flags and leaves the rest of the text as sent. If Jev is unreachable or rejects the call, the request check returns `503` and blocks the request, because the webhook cannot check the rules. The reply check masks every value a detector found.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the request webhook
 
@@ -333,4 +351,7 @@ llm:
    docker compose --profile guardrail-jev stop guardrail-jev
    ```
 
-Logs keep the requests from this lab.
+6. In the sidebar, click **Models**.
+7. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. Logs keep the requests from this lab.

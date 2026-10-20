@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Pull the latest workshop files. The `setup/ui-users.htpasswd` file holds three UI users, `alice`, `bob` and `carol`. All three have the password `workshop`.
 
 ## What you'll do
@@ -273,3 +273,5 @@ Do every clean-up step on `http://localhost:15000/ui`.
 15. Delete the line `gateways: {}` and click **Save**.
 
 Deleting the gateway leaves an empty `gateways: {}` line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

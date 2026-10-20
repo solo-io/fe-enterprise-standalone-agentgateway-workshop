@@ -1,6 +1,7 @@
 // labs/mcp/obo-token-exchange.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles keycloak,obo
+import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
@@ -79,18 +80,22 @@ function payload(): string {
   return r;
 }
 
-test('add the public gateway and a route to the API', async ({ page }) => {
-  await go(page, '/traffic/gateways');
-  await page.locator('main').getByRole('button', { name: 'Add gateway' }).first().click();
-  let d = page.getByRole('dialog');
-  await expect(d.getByRole('textbox', { name: /^Name/ })).toHaveValue('public');
-  await expect(d.getByRole('textbox', { name: /^Port/ })).toHaveValue('8080');
-  await shot(page, '01-add-gateway', d.getByRole('button', { name: 'Save gateway' }));
-  await save(page, 'Save gateway');
+test('turn on Traffic and add a route to the API', async ({ page }) => {
+  await go(page, '/');
+  // The first "Get started" in the sidebar is under MCP; the second is under Traffic.
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' }).nth(1).click();
+  await expect(page).toHaveURL(/\/ui\/traffic\/get-started/);
+  const enable = page.locator('main').getByRole('button', { name: 'Enable', exact: true });
+  await shot(page, '01-enable-traffic', enable);
+  await enable.click();
+  await expect(page).toHaveURL(/\/ui\/traffic\/gateways/);
+  await expect(page.locator('main').getByRole('heading', { name: 'public' })).toBeVisible();
+  await expect(page.locator('main')).toContainText('Port 8080');
+  expect(readConfig().gateways).toEqual({ public: { port: 8080 } });
 
   await go(page, '/traffic/routes');
   await page.locator('main').getByRole('button', { name: 'Add route' }).first().click();
-  d = page.getByRole('dialog');
+  const d = page.getByRole('dialog');
   await d.getByRole('combobox', { name: 'Gateway' }).click();
   await page.getByRole('option', { name: /^public/ }).click();
   await d.getByRole('textbox', { name: /^Name/ }).fill('procurement-api');
@@ -198,15 +203,38 @@ curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders \\
   expect(other).toContain('token exchange returned status 403 Forbidden\nHTTP 500');
 });
 
-test('clean up', async ({ page }) => {
-  await go(page, '/traffic/routes');
-  const row = page.locator('main').getByRole('row', { name: /^procurement-api\b/ });
-  await row.getByRole('button', { name: 'Delete route' }).click();
-  await expect(row).toHaveCount(0);
-  await page.waitForTimeout(1000);
-  await go(page, '/traffic/gateways');
-  const gw = page.locator('main').getByRole('heading', { name: 'public' });
-  await gw.locator('xpath=../..').getByRole('button', { name: 'Delete gateway' }).click();
-  await expect(gw).toHaveCount(0);
-  await page.waitForTimeout(1000);
+/**
+ * Turns Traffic off, as in the lab's cleanup: in Raw Configuration, selects from the line `gateways:`
+ * to the end of the file (the `public` gateway and the route), deletes it and saves.
+ * Deleting the route and the gateway in the UI leaves `gateways: {}` and `routes: []`, and Traffic stays on.
+ */
+async function turnOffTraffic(page: Page) {
+  const lines = readFileSync('/work/config.yaml', 'utf8').replace(/\n+$/, '').split('\n');
+  while (lines.length && (lines[0].startsWith('#') || lines[0] === '')) lines.shift();
+  const top = lines.map((l) => (/^[a-zA-Z]/.test(l) ? l.replace(/:.*/, '') : null)).filter(Boolean);
+  expect(top.slice(-2), 'gateways and routes must be the last top-level sections').toEqual(['gateways', 'routes']);
+  const start = lines.findIndex((l) => l.startsWith('gateways:'));
+
+  await go(page, '/raw-config');
+  const editor = page.locator('main .monaco-editor').first();
+  await editor.locator('.view-lines').click();
+  await page.keyboard.press('ControlOrMeta+Home');
+  for (let i = 0; i < start; i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ControlOrMeta+Shift+End');
+  const saveBtn = page.locator('main').getByRole('button', { name: 'Save', exact: true });
+  await shot(page, '07-turn-off-traffic', saveBtn);
+  await page.keyboard.press('Delete');
+  await saveBtn.click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Save', exact: true }).click({ timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+  expect(readFileSync('/work/config.yaml', 'utf8')).not.toMatch(/^(gateways|routes):/m);
+}
+
+test('clean up: turn off Traffic', async ({ page }) => {
+  await turnOffTraffic(page);
+  await go(page, '/');
+  // With Traffic off, the sidebar shows Get started under Traffic again.
+  await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' })).toHaveCount(2);
 });

@@ -1,9 +1,10 @@
 // labs/mcp/mcp-auth-and-tool-authorization.md
-// @fixture mcp-ready
+// @fixture base
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { mcpConnect } from '../../lib/mcp';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-auth-and-tool-authorization');
 const MCP = 'http://localhost:4001/mcp';
@@ -45,6 +46,10 @@ async function toolOptions(page: Page): Promise<string[]> {
   await expect(page.getByRole('option').first()).toBeVisible();
   return page.getByRole('option').allInnerTexts();
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('turn on MCP authentication', async ({ page }) => {
   await go(page, '/mcp/policies');
@@ -165,15 +170,6 @@ curl -s -o /dev/null -w '%{http_code}' http://localhost:4001/mcp \\
   expect(withTok.stdout).toBe('200');
 });
 
-test('clean up: delete both policies', async ({ page }) => {
-  for (const name of ['MCP authorization', 'MCP authentication']) {
-    await go(page, '/mcp/policies');
-    await policyCard(page, name).click();
-    const d = page.getByRole('dialog');
-    await d.getByRole('button', { name: 'Delete policy' }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
-    await page.waitForTimeout(1500);
-    await go(page, '/mcp/policies');
-    await expect(policyCard(page, name)).toContainText('disabled');
-  }
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '09-turn-off-mcp', save));
 });

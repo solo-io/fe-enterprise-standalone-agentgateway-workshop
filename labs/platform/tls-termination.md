@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md).
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Pull the latest workshop files. The `setup/tls/` folder holds a workshop certificate authority (CA) and the certificates this lab uses. The gateway reads them at `/config/tls/`, because the `setup/` folder is mounted at `/config`. To make new ones, run `setup/tls/make-certs.sh` (needs `openssl`).
 - Start the mock LLM server that this lab sends requests to. From the `setup/` folder, run:
 
@@ -217,4 +217,4 @@ The gateway has no `protocol: HTTPS` line, because a gateway with `tls` uses HTT
    docker compose --profile mock-llm stop mock-llm mock-llm-429
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

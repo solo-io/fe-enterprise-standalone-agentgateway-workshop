@@ -1,5 +1,5 @@
 // labs/llm/connect-amazon-bedrock.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { readConfig } from '../../lib/config';
 import { chat, chatRequest, HAS_AWS, HAS_BEDROCK_KEY, lab } from '../../lib/lab';
@@ -17,9 +17,8 @@ const KEY_LINE = 'apiKey: $BEDROCK_API_KEY';
 test('add the Bedrock wildcard model', async ({ page }) => {
   test.skip(!HAS_AWS, NO_AWS);
   await go(page, '/llm/models');
-  const add = page.getByRole('button', { name: 'Add model', exact: true }).first();
-  await shot(page, '01-models', add);
-  await add.click();
+  // The lab shows connect-llm-providers/01-models-empty.png for this step.
+  await page.getByRole('button', { name: 'Add model', exact: true }).first().click();
 
   const d = page.getByRole('dialog');
   await d.getByRole('combobox', { name: 'Provider' }).click();
@@ -110,5 +109,5 @@ test('clean up: delete the Bedrock model', async ({ page }) => {
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete model' }).click();
   await expect(row).toHaveCount(0);
   await page.waitForTimeout(1000);
-  expect(readConfig().llm.models.map((m: any) => m.name)).toEqual(['openai/*']);
+  expect(readConfig().llm.models ?? []).toEqual([]);
 });

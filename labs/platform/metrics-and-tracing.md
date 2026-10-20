@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the monitoring tools and the mock LLM servers. From the `setup/` folder, run:
 
   ```bash
@@ -32,6 +32,24 @@
 ## Why this matters
 
 The **Logs** and **Analytics** pages show what one gateway did recently. If your team already watches its systems in Prometheus and Grafana, you can put the LLM traffic on the same screens and alerts. Metrics tell you how much traffic, how many tokens, and how many errors. A trace shows one request from start to end, with the model it used and the tokens it cost.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](../llm/connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Check that Prometheus reads the gateway's metrics
 
@@ -221,10 +239,12 @@ frontendPolicies:
 2. In the `mock-llm-503` row, click the trash icon, then click **Delete model**.
 3. In the sidebar, scroll down and click **Settings**, then click **Observability**.
 4. Click the **Tracing** card. Click the **Delete policy** icon at the top of the panel, then click **Delete policy** to confirm.
-5. Stop the helper services. From the `setup/` folder, run:
+5. In the sidebar, click **Models**.
+6. In the `openai/*` row, click the trash icon, then click **Delete model**.
+7. Stop the helper services. From the `setup/` folder, run:
 
    ```bash
    docker compose --profile observability --profile mock-llm-faults stop prometheus tempo grafana mock-llm-slow mock-llm-flaky mock-llm-503
    ```
 
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in. Prometheus and Tempo keep their data only while their containers exist, so `docker compose --profile observability down` deletes it.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. Prometheus and Tempo keep their data only while their containers exist, so `docker compose --profile observability down` deletes it.

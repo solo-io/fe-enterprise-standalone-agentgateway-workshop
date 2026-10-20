@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The `solo-docs` server is on the **MCP Servers** page.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the example API. From the `setup/` folder, run:
 
   ```bash
@@ -21,6 +21,29 @@
 ## Why this matters
 
 Most companies run internal REST APIs that already have an OpenAPI schema. The gateway reads the schema and makes one MCP tool for each operation, so agents can use the API without a new MCP server. [Turn a REST API into MCP Tools with OpenAPI](openapi-to-mcp.md) does this for a public API with one operation. Here the API runs next to the gateway and needs a key, as most internal APIs do. The gateway keeps the key, so agents never see it.
+
+## Set up
+
+This lab turns on MCP. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Add the API as an MCP server
 
@@ -121,8 +144,8 @@ The list shows `stripe` with the type **OpenAPI**, the endpoint `http://stripe-m
 ## Step 2: Call a tool without an API key
 
 1. In the sidebar, click **Tool Playground**.
-2. Click **Initialize**. The **Result** panel shows **6 tools discovered**: the 3 `solo-docs` tools and the 3 `stripe` tools.
-3. Click **Tool**. The list shows `stripe_listProducts`, `stripe_listPrices` and `stripe_getCustomer`, one tool for each operation in the schema. The gateway puts the server name in front of each tool name. Select **stripe_listProducts**.
+2. Click **Initialize**. The **Result** panel shows **3 tools discovered**.
+3. Click **Tool**. The list shows `listProducts`, `listPrices` and `getCustomer`, one tool for each operation in the schema. Each tool has the name of its `operationId`. Select **listProducts**.
 
    ![Tool list with the three stripe tools](../../images/mcp/openapi-to-mcp-local-service/04-pick-tool.png)
 
@@ -168,7 +191,7 @@ The **Add MCP server** panel has no field for credentials, so you add the key in
 
 1. In the sidebar, click **Tool Playground**.
 2. Click **Initialize**.
-3. In **Tool**, select **stripe_listProducts**.
+3. In **Tool**, select **listProducts**.
 4. The gateway puts the query parameters of an operation into one **query** object. Click in **query**, select all the text, and paste:
 
    ```json
@@ -177,7 +200,7 @@ The **Add MCP server** panel has no field for credentials, so you add the key in
 
 5. Click **Call tool**.
 
-   ![stripe_listProducts with the query filled in](../../images/mcp/openapi-to-mcp-local-service/08-call-list-products.png)
+   ![listProducts with the query filled in](../../images/mcp/openapi-to-mcp-local-service/08-call-list-products.png)
 
 The **Tool output** shows a Stripe list with one product: `"name":"T-shirt"`, `"description":"Comfortable gray cotton t-shirt"` and `"object":"product"`. This is stripe-mock's sample product.
 
@@ -188,7 +211,7 @@ If you still see the authentication error, wait 2 seconds, reload the page and c
 ### Get a customer by ID
 
 1. Click **Initialize**.
-2. In **Tool**, select **stripe_getCustomer**.
+2. In **Tool**, select **getCustomer**.
 3. Path parameters go into a **path** object. Click in **path**, select all the text, and paste:
 
    ```json
@@ -197,7 +220,7 @@ If you still see the authentication error, wait 2 seconds, reload the page and c
 
 4. Click **Call tool**.
 
-   ![stripe_getCustomer with the customer ID filled in](../../images/mcp/openapi-to-mcp-local-service/10-call-get-customer.png)
+   ![getCustomer with the customer ID filled in](../../images/mcp/openapi-to-mcp-local-service/10-call-get-customer.png)
 
 The gateway called `GET http://stripe-mock:12111/v1/customers/cus_workshop`. The **Tool output** shows a customer with `"object":"customer"`. In **Structured content**, find `"id": "cus_workshop"`: stripe-mock returns the ID you sent.
 
@@ -206,7 +229,7 @@ The gateway called `GET http://stripe-mock:12111/v1/customers/cus_workshop`. The
 <details>
 <summary>Optional: check with curl</summary>
 
-Start a session, then call the third tool, `stripe_listPrices`:
+Start a session, then call the third tool, `listPrices`:
 
 ```bash
 SESSION=$(curl -s -D - -o /dev/null http://localhost:4001/mcp \
@@ -218,7 +241,7 @@ curl -s http://localhost:4001/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Mcp-Session-Id: $SESSION" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"stripe_listPrices","arguments":{"query":{"limit":1}}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"listPrices","arguments":{"query":{"limit":1}}}}'
 ```
 
 Expected output (trimmed):
@@ -239,9 +262,6 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 mcp:
   targets:
-  - name: solo-docs
-    mcp:
-      host: https://search.solo.io/mcp
   - name: stripe
     openapi:
       host: http://stripe-mock:12111
@@ -257,13 +277,18 @@ mcp:
 
 ## Clean up
 
-1. In the sidebar, click **Servers**.
-2. In the `stripe` row, click the delete icon, then click **Delete server**. This also removes the API key from the configuration.
-
-   ![Delete MCP server confirmation](../../images/mcp/openapi-to-mcp-local-service/12-delete-server.png)
-
-3. Stop the example API. From the `setup/` folder, run:
+1. Stop the example API. From the `setup/` folder, run:
 
    ```bash
    docker compose --profile stripe-mock stop stripe-mock
    ```
+
+2. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `stripe` server, its API key and the CORS policy.
+
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/openapi-to-mcp-local-service/12-turn-off-mcp.png)
+
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

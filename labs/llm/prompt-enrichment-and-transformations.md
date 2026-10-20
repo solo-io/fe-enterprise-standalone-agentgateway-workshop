@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 
 ## What you'll do
 
@@ -14,6 +14,24 @@
 ## Why this matters
 
 The gateway can change requests and responses on their way through. Response headers carry facts your logs and dashboards can use, for example the exact model version that answered. A system prompt added at the gateway applies to every application that calls the model, without a code change in any of them.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add response headers
 
@@ -145,20 +163,14 @@ llm:
 
 ## Clean up
 
-1. In the sidebar, click **Models**.
-2. In the `openai/*` row, click **Edit model**.
-3. Click **Advanced**, then click **Model policies**.
-4. In the `messages` row, click **Remove**. Keep the `model` row.
+1. In the sidebar, click **Policies**.
+2. Under **Mutation**, click **Transformations**.
+3. Click **Delete policy** (the trash icon at the top right).
 
-   ![Remove button on the messages row](../../images/llm/prompt-enrichment-and-transformations/06-remove-messages.png)
+   ![Delete policy button on the Transformations panel](../../images/llm/prompt-enrichment-and-transformations/06-delete-policy.png)
 
-5. Click **Save model**.
-6. In the sidebar, click **Policies**.
-7. Under **Mutation**, click **Transformations**.
-8. Click **Delete policy** (the trash icon at the top right).
+4. In **Delete policy?**, click **Delete policy**.
+5. In the sidebar, click **Models**.
+6. In the `openai/*` row, click the trash icon, then click **Delete model**. This also removes the system prompt you added in Step 2.
 
-   ![Delete policy button on the Transformations panel](../../images/llm/prompt-enrichment-and-transformations/07-delete-policy.png)
-
-9. In **Delete policy?**, click **Delete policy**.
-
-The gateway is back to the state [Connect LLM Providers](../llm/connect-llm-providers.md) left it in.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

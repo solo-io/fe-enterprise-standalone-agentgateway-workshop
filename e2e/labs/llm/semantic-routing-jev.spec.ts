@@ -1,11 +1,12 @@
 // labs/llm/semantic-routing-jev.md
-// @fixture llm-ready
+// @fixture base
 // @profiles semantic-router-jev
 // @docker yes
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { writeFileSync } from 'fs';
 import { readConfig } from '../../lib/config';
 import { chat, helper, helperLogs, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'semantic-routing-jev');
 
@@ -114,6 +115,11 @@ function decisions(): any[] {
     .filter((l) => l.includes('"routing_decision"'))
     .map((l) => JSON.parse(l));
 }
+
+test('set up', async ({ page }) => {
+  test.skip(!HAS_KEY, NO_KEY);
+  await addOpenAIModel(page);
+});
 
 test('the adapter is running', async ({ page }) => {
   test.skip(!HAS_KEY, NO_KEY);
@@ -272,4 +278,5 @@ test('clean up', async ({ page }) => {
   await page.waitForTimeout(1000);
   expect(readConfig().llm.virtualModels ?? []).toEqual([]);
   helper('stop', SERVICE);
+  await deleteModel(page);
 });

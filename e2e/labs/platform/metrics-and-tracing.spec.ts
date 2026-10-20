@@ -1,9 +1,10 @@
 // labs/platform/metrics-and-tracing.md
-// @fixture llm-ready
+// @fixture base
 // @profiles observability,mock-llm-faults
 import { expect, test, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
 import { chat, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('platform', 'metrics-and-tracing');
 
@@ -20,6 +21,10 @@ async function promQuery(q: string): Promise<any[]> {
   const body = await res.json();
   return body.data.result;
 }
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('Prometheus scrapes the gateway', async ({ page }) => {
   await expect.poll(async () => {
@@ -237,4 +242,6 @@ test('clean up', async ({ page }) => {
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
   await page.waitForTimeout(1500);
   expect(readConfig().frontendPolicies.tracing).toBeUndefined();
+
+  await deleteModel(page);
 });

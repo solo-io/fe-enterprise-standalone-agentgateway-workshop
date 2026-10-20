@@ -1,5 +1,5 @@
 // labs/llm/model-failover.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
@@ -143,5 +143,5 @@ test('clean up: delete the virtual model and both mock models', async ({ page })
   }
   const cfg = readConfig();
   expect(cfg.llm.virtualModels ?? []).toEqual([]);
-  expect(cfg.llm.models.map((m: any) => m.name)).toEqual(['openai/*']);
+  expect(cfg.llm.models ?? []).toEqual([]);
 });

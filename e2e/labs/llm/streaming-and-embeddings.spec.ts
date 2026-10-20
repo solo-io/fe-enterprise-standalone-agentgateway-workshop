@@ -1,12 +1,17 @@
 // labs/llm/streaming-and-embeddings.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'streaming-and-embeddings');
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('stream a reply', async () => {
   const r = sh(`curl -sN http://localhost:4000/v1/chat/completions \\
@@ -56,4 +61,8 @@ test('see both requests in Logs', async ({ page }) => {
   await expect(embRow).toContainText(/operation/i);
   writeFileSync('/repo/e2e/.last/streaming-and-embeddings-logs.txt', await main.innerText());
   await shot(page, '02-embedding-details');
+});
+
+test('clean up: delete the model', async ({ page }) => {
+  await deleteModel(page);
 });

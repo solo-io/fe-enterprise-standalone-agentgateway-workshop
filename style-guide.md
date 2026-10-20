@@ -13,32 +13,32 @@ These rules apply to every lab in this workshop. Readers are mid-market teams an
 | `lib/jwt/` | Workshop JWKS and pre-made tokens. |
 | `e2e/` | Validation harness and one spec per lab. |
 
-## Start states
+## Standalone labs
 
-Labs build on named states:
+Every lab starts from `base`, the state `001` leaves. A lab sets up what it uses in a `## Set up` section, with the same steps and screenshots as the intro lab for that thing:
 
-| State | Reached by |
-|---|---|
-| `base` | `001` |
-| `llm-ready` | `labs/llm/connect-llm-providers.md` |
-| `mcp-ready` | `labs/mcp/connect-remote-mcp-server.md` (starts from `llm-ready`) |
+| Lab needs | Set up steps from | Cleanup |
+|---|---|---|
+| The `openai/*` model | `labs/llm/connect-llm-providers.md` | Delete the model on **Models** |
+| MCP and an MCP server | `labs/mcp/connect-remote-mcp-server.md` | Turn off MCP: delete from `gateways:` to the end of the file in **Raw Configuration** |
 
-The two foundation labs have no cleanup: their end state is the next state. Every other lab's cleanup returns the config to the state it started from.
+Add only what the lab uses. Every lab's cleanup returns the config to `base`. Make a lab require another lab only when it continues that lab, for example a long lab split into two parts.
 
 ## Lab skeleton
 
 ```
 # <Outcome title in Title Case>
 
-## Before you start          start state with a link to the lab that reaches it; keys; helper profile
+## Before you start          link to 001; keys; helper profile
 ## What you'll do            verb-first bullets
 ## Why this matters          2 to 4 sentences, optional
+## Set up                    the model, MCP and servers the lab uses (see Standalone labs)
 ## Step 1: <action>          UI instructions, then the screenshot
 ## Step 2: <action>
 ## Check it                  result in a playground or Logs, with a screenshot
 <details> Optional: check with curl </details>
 ## What the UI wrote         the YAML the UI saved, from Raw Configuration
-## Clean up                  UI steps back to the start state
+## Clean up                  UI steps back to base
 ```
 
 ## Writing UI steps

@@ -1,5 +1,5 @@
 // labs/llm/load-balancing-and-failover.md
-// @fixture llm-ready
+// @fixture base
 // @profiles mock-llm,mock-llm-faults
 // @docker yes
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -170,5 +170,5 @@ test('clean up', async ({ page }) => {
   }
   const cfg = readConfig();
   expect(cfg.llm.virtualModels ?? []).toEqual([]);
-  expect(cfg.llm.models.map((m: any) => m.name)).toEqual(['openai/*']);
+  expect(cfg.llm.models ?? []).toEqual([]);
 });

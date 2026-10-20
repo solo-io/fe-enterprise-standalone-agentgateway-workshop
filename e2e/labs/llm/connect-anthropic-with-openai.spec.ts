@@ -1,10 +1,12 @@
 // labs/llm/connect-anthropic.md, "Optional: compare Claude with GPT"
-// @fixture llm-ready
+// @fixture base
 // Repeats Steps 1 and 2 without screenshots; connect-anthropic.spec.ts captures those.
+// The optional section adds the openai/* model itself, and the cleanup deletes it.
 // Needs ANTHROPIC_API_KEY in setup/.env; every test is skipped without it.
 import { expect, test } from '@playwright/test';
 import { readConfig } from '../../lib/config';
 import { chat, HAS_ANTHROPIC, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-anthropic');
 
@@ -33,7 +35,12 @@ test('add the Anthropic provider and the anthropic/* model', async ({ page }) =>
   await d.getByRole('button', { name: 'Strip anthropic/', exact: true }).click();
   await save(page, 'Save model');
 
-  expect(readConfig().llm.models.map((m: any) => m.name)).toEqual(['openai/*', 'anthropic/*']);
+  expect(readConfig().llm.models.map((m: any) => m.name)).toEqual(['anthropic/*']);
+});
+
+test('optional section: add the OpenAI model', async ({ page }) => {
+  await addOpenAIModel(page);
+  expect(readConfig().llm.models.map((m: any) => m.name)).toEqual(['anthropic/*', 'openai/*']);
 });
 
 test('ask GPT and Claude in the Chat Playground', async ({ page }) => {
@@ -74,13 +81,14 @@ test('Analytics splits tokens between the providers', async ({ page }) => {
   await shot(page, '09-analytics-both', legend);
 });
 
-test('clean up: delete the model and the provider', async ({ page }) => {
+test('clean up: delete the models and the provider', async ({ page }) => {
   await go(page, '/llm/models');
   const row = page.locator('main').getByRole('row').filter({ has: page.getByText('anthropic/*', { exact: true }) });
   await row.getByRole('button', { name: 'Delete model' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete model' }).click();
   await expect(row).toHaveCount(0);
   await page.waitForTimeout(1000);
+  await deleteModel(page);
 
   await go(page, '/llm/providers');
   const prow = page.locator('main').getByRole('row').filter({ hasText: 'anthropic' });
@@ -91,5 +99,5 @@ test('clean up: delete the model and the provider', async ({ page }) => {
 
   const cfg = readConfig();
   expect(cfg.llm.providers ?? []).toEqual([]);
-  expect(cfg.llm.models.map((m: any) => m.name)).toEqual(['openai/*']);
+  expect(cfg.llm.models ?? []).toEqual([]);
 });

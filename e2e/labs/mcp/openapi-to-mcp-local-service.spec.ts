@@ -1,9 +1,10 @@
 // labs/mcp/openapi-to-mcp-local-service.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles stripe-mock
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
+import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'openapi-to-mcp-local-service');
 
@@ -100,11 +101,11 @@ async function pickTool(page: Page, tool: string, screenshot?: string) {
   await go(page, '/mcp/playground');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
-  await expect(main.getByText('6 tools discovered')).toBeVisible({ timeout: 30_000 });
+  await expect(main.getByText('3 tools discovered')).toBeVisible({ timeout: 30_000 });
   await main.getByRole('combobox', { name: 'Tool' }).click();
   const option = page.getByRole('option', { name: new RegExp(`^${tool}`) });
   if (screenshot) {
-    for (const t of ['stripe_listProducts', 'stripe_listPrices', 'stripe_getCustomer']) {
+    for (const t of ['listProducts', 'listPrices', 'getCustomer']) {
       await expect(page.getByRole('option', { name: new RegExp(`^${t}`) })).toBeVisible();
     }
     await shot(page, screenshot, option);
@@ -149,6 +150,11 @@ async function frameText(page: Page, text: string) {
   }, text);
 }
 
+test('set up', async ({ page }) => {
+  await enableMcp(page);
+  await applyMcpCors(page);
+});
+
 test('add the Stripe mock as an MCP server', async ({ page }) => {
   await go(page, '/mcp/servers');
   await page.getByRole('button', { name: 'Add server' }).first().click();
@@ -172,7 +178,7 @@ test('add the Stripe mock as an MCP server', async ({ page }) => {
 });
 
 test('call a tool: the API asks for a key', async ({ page }) => {
-  const main = await pickTool(page, 'stripe_listProducts', '04-pick-tool');
+  const main = await pickTool(page, 'listProducts', '04-pick-tool');
   const call = main.getByRole('button', { name: 'Call tool' });
   await call.click();
   // This text comes only from stripe-mock's 401 response; the tool schema does not contain it.
@@ -206,13 +212,13 @@ test('give the gateway the API key in Raw Configuration', async ({ page }) => {
   await shot(page, '07-raw-config-key', saveBtn);
   await saveBtn.click();
   await expect
-    .poll(() => readConfig().mcp.targets.find((t: any) => t.name === 'stripe')?.policies)
+    .poll(() => readConfig().mcp?.targets?.find((t: any) => t.name === 'stripe')?.policies)
     .toEqual({ backendAuth: { key: 'sk_test_123' } });
 });
 
 test('check it: list products', async ({ page }) => {
   await page.waitForTimeout(2000);
-  const main = await pickTool(page, 'stripe_listProducts');
+  const main = await pickTool(page, 'listProducts');
   const query = main.locator('.monaco-editor').first();
   await pasteInto(page, query, LIMIT);
   await expect(query).toContainText('limit');
@@ -229,7 +235,7 @@ test('check it: list products', async ({ page }) => {
 });
 
 test('check it: get a customer by ID', async ({ page }) => {
-  const main = await pickTool(page, 'stripe_getCustomer');
+  const main = await pickTool(page, 'getCustomer');
   const path = main.locator('.monaco-editor').first();
   await pasteInto(page, path, CUSTOMER);
   await expect(path).toContainText('cus_workshop');
@@ -255,7 +261,7 @@ curl -s http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -H "Mcp-Session-Id: $SESSION" \\
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"stripe_listPrices","arguments":{"query":{"limit":1}}}}'`;
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"listPrices","arguments":{"query":{"limit":1}}}}'`;
 
 test('optional curl check', async () => {
   const r = sh(CURL);
@@ -264,12 +270,6 @@ test('optional curl check', async () => {
   expect(r.stdout).toContain('\\"interval\\":\\"month\\"');
 });
 
-test('clean up', async ({ page }) => {
-  await go(page, '/mcp/servers');
-  const row = page.locator('main').getByRole('row', { name: /^stripe\b/ });
-  await row.getByRole('button', { name: 'Delete server' }).click();
-  const confirm = page.getByRole('alertdialog').getByRole('button', { name: 'Delete server' });
-  await shot(page, '12-delete-server', confirm);
-  await confirm.click();
-  await expect(row).toBeHidden();
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '12-turn-off-mcp', save));
 });

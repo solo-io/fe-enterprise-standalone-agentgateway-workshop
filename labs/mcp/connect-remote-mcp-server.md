@@ -3,10 +3,7 @@
 ## Before you start
 
 - Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md).
 - Your computer can reach `https://search.solo.io`.
-
-Every other MCP lab starts from the state this lab leaves behind. This lab has no cleanup section.
 
 ## What you'll do
 
@@ -145,6 +142,22 @@ mcp:
       - Mcp-Session-Id
 ```
 
+## Clean up
+
+To turn off MCP, delete the MCP part of the configuration in Raw Configuration:
+
+1. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+2. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server and the CORS policy.
+
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/connect-remote-mcp-server/09-turn-off-mcp.png)
+
+3. Press **Delete**.
+4. Click **Save**. If a confirmation appears, click **Save** again.
+
+The sidebar shows **Get started** under **MCP** again. The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.
+
+If you connected Claude Code, run `claude mcp remove solo-docs`.
+
 ## Next
 
-Pick any lab in the MCP track. Each one starts from the state you have now and returns to it in its cleanup.
+Pick any lab in the MCP track. Each MCP lab turns on MCP and adds its servers in its **Set up** section, with the steps from this lab.

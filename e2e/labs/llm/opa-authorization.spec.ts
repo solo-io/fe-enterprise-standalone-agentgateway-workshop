@@ -1,10 +1,11 @@
 // labs/llm/opa-authorization.md
-// @fixture llm-ready
+// @fixture base
 // @profiles opa
 // @docker yes
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'fs';
 import { chat, helperLogs, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('llm', 'opa-authorization');
@@ -14,6 +15,10 @@ const ALICE = readFileSync('/repo/lib/jwt/tokens/alice.jwt', 'utf8').trim();
 const BOB = readFileSync('/repo/lib/jwt/tokens/bob.jwt', 'utf8').trim();
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 /** Runs the lab's curl for a model, with an optional token. Returns the full response with headers. */
 function curl(model: string, token = ''): string {
@@ -127,4 +132,8 @@ test('clean up: delete the policy', async ({ page }) => {
   await expect(card).toContainText('disabled');
   expect(readConfig().llm.policies.extAuthz).toBeUndefined();
   expect(curl('gpt-6-luna')).toMatch(/^HTTP\/1\.1 200 OK/);
+});
+
+test('clean up: delete the model', async ({ page }) => {
+  await deleteModel(page);
 });

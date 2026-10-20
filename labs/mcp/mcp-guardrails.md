@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The gateway serves the `solo-docs` MCP server on port `4001`.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the procurement MCP server and its two policy servers. From the `setup/` folder, run:
 
   ```bash
@@ -40,6 +40,29 @@ The authorization policy in `setup/extmcp/authz.yaml` defines three personas. Th
 
 The policy also allows email only to the domain `try-solo.io`.
 
+## Set up
+
+This lab turns on MCP. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
+
 ## Step 1: Add the procurement MCP server
 
 1. In the sidebar, under **MCP**, click **Servers**.
@@ -52,17 +75,7 @@ The policy also allows email only to the domain `try-solo.io`.
 
 The `procurement` row shows **ready**.
 
-## Step 2: Turn off the tool name prefix
-
-With two servers, the gateway puts the server name in front of each tool name, for example `procurement_get_supplier`. The policy server matches plain tool names such as `get_supplier`, so turn the prefix off. The two servers have no tool names in common.
-
-1. On the **MCP Servers** page, click **Settings**.
-2. In **Prefix mode**, select **Never**.
-3. Click **Save settings**.
-
-   ![Settings panel with Prefix mode set to Never](../../images/mcp/mcp-guardrails/02-prefix-never.png)
-
-## Step 3: Require a token
+## Step 2: Require a token
 
 The policy server needs to know who is calling, so the gateway must check a token first.
 
@@ -93,7 +106,7 @@ The policy server needs to know who is calling, so the gateway must check a toke
 
    ![MCP authentication panel with the inline JWKS, issuer and audience](../../images/mcp/mcp-guardrails/03-authn.png)
 
-## Step 4: See what the buyer can do without guardrails
+## Step 3: See what the buyer can do without guardrails
 
 1. Wait two seconds, then in the sidebar click **Tool Playground**.
 2. Click **Authorization header** to open it.
@@ -107,7 +120,7 @@ The policy server needs to know who is calling, so the gateway must check a toke
 
    ![Tool Playground with the buyer token in Bearer token](../../images/mcp/mcp-guardrails/04-buyer-token.png)
 
-The **Result** panel lists **8 tools discovered**: the 3 `solo-docs` tools and the 5 procurement tools. Open the **Tool** list. The buyer sees `delete_supplier`.
+The **Result** panel lists **5 tools discovered**: the 5 procurement tools. Open the **Tool** list. The buyer sees `delete_supplier`.
 
 ![Tool list for the buyer that includes delete_supplier](../../images/mcp/mcp-guardrails/05-baseline-tools.png)
 
@@ -119,7 +132,7 @@ The **Tool output** shows the supplier's `bankAccount` `004815162342` and `taxId
 
 ![Tool output with the bank account and tax ID](../../images/mcp/mcp-guardrails/06-baseline-supplier.png)
 
-## Step 5: Add the policy server that checks each call
+## Step 4: Add the policy server that checks each call
 
 1. In the sidebar, under **MCP**, click **Policies**.
 2. Click the **MCP guardrails** card.
@@ -143,7 +156,7 @@ The two method phases tell the gateway when to call the policy server:
 
 The metadata sends the caller's `persona` and `sub` claims to the policy server with each call. The gateway checks the token before it runs any processor, so the claims are verified.
 
-## Step 6: Add the policy server that masks payment data
+## Step 5: Add the policy server that masks payment data
 
 1. Click the **MCP guardrails** card again.
 2. Click **Add processor**. **Processor 2** appears under processor 1.
@@ -155,7 +168,7 @@ The metadata sends the caller's `persona` and `sub` claims to the policy server 
 
    ![Processor 2 with host extmcp-redact:9001, Fail open and tools/call Response](../../images/mcp/mcp-guardrails/09-redact-processor.png)
 
-Processors run in the order listed, and the first denial stops the call. This processor sees each tool result after the MCP server returns it, and replaces bank account and tax ID numbers with `<BANK_ACCOUNT>` and `<TAX_ID>`. It is **Fail open** so that Step 7 can show what happens to tool results when this policy server is down.
+Processors run in the order listed, and the first denial stops the call. This processor sees each tool result after the MCP server returns it, and replaces bank account and tax ID numbers with `<BANK_ACCOUNT>` and `<TAX_ID>`. It is **Fail open** so that Step 6 can show what happens to tool results when this policy server is down.
 
 ## Check it
 
@@ -164,7 +177,7 @@ Connect as the buyer again:
 1. Wait two seconds, then in the sidebar click **Tool Playground**.
 2. Click **Authorization header**, paste the buyer's token in **Bearer token**, and click **Initialize**.
 
-The **Result** panel lists **4 tools discovered**: `create_purchase_order`, `get_supplier`, `list_purchase_orders` and `send_supplier_email`. The policy server removed every tool that is not on the buyer's list, including `delete_supplier` and the `solo-docs` tools.
+The **Result** panel lists **4 tools discovered**: `create_purchase_order`, `get_supplier`, `list_purchase_orders` and `send_supplier_email`. The policy server removed every tool that is not on the buyer's list, including `delete_supplier`.
 
 ![Tool list for the buyer with four procurement tools](../../images/mcp/mcp-guardrails/10-buyer-tools.png)
 
@@ -209,7 +222,7 @@ The **Result** panel lists **3 tools discovered**. The requester cannot email su
 
 ![Tool list for the requester with three tools](../../images/mcp/mcp-guardrails/14-requester-tools.png)
 
-## Step 7: Compare Fail open with Fail closed
+## Step 6: Compare Fail open with Fail closed
 
 1. Stop the masking policy server. From the `setup/` folder, run:
 
@@ -249,7 +262,7 @@ After about 10 seconds, the **Result** panel shows an error with `mcpGuardrails 
 
 7. Wait a few seconds. Reload the Tool Playground, connect with the buyer's token, and call **get_supplier** with **id** `SUP-001`. The **Tool output** shows `<BANK_ACCOUNT>` again.
 
-## Step 8: Change a limit without touching the gateway
+## Step 7: Change a limit without touching the gateway
 
 The limits live in the policy server's file, so you can change them while the gateway runs.
 
@@ -266,14 +279,11 @@ If you save a file that does not parse, the policy server keeps the previous pol
 
 ## What the UI wrote
 
-In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI added the `procurement` target, the settings, and two policies to the `mcp` section:
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI added the `procurement` target and two policies to the `mcp` section:
 
 ```yaml
 mcp:
   targets:
-  - name: solo-docs
-    mcp:
-      host: https://search.solo.io/mcp
   - name: procurement
     mcp:
       host: http://procurement-mcp:8000/mcp
@@ -303,41 +313,23 @@ mcp:
         failureMode: failOpen
         methods:
           tools/call: response
-  statefulMode: stateless
-  prefixMode: never
-  failureMode: failClosed
-  toolMode: standard
 ```
 
 ## Clean up
 
 1. In `setup/extmcp/authz.yaml`, change the buyer's `poLimit: 2500` back to `poLimit: 10000`, and save the file.
-2. In the sidebar, under **MCP**, click **Policies**.
-3. Click the **MCP guardrails** card. Click the **Delete policy** icon at the top of the panel, then click **Delete policy** to confirm.
-4. Click the **MCP authentication** card. Click the **Delete policy** icon, then click **Delete policy** to confirm.
-5. In the sidebar, click **Servers**.
-6. In the `procurement` row, click the delete icon, then click **Delete server**.
-7. Click **Settings**.
-8. In **Prefix mode**, select **None**, then click **Save settings**.
+2. Stop the helpers. From the `setup/` folder, run:
 
-   ![Settings panel with Prefix mode set to None](../../images/mcp/mcp-guardrails/18-prefix-none.png)
+   ```bash
+   docker compose --profile mcp-guardrails stop procurement-mcp extmcp-authz extmcp-redact
+   ```
 
-The settings now behave as before, but the UI wrote the default values into the configuration. Remove them so the configuration is the same as when you started:
+3. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+4. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `procurement` server, the CORS policy and the two MCP policies.
 
-9. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-10. At the end of the file, select these three lines and press **Delete**:
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-guardrails/18-turn-off-mcp.png)
 
-    ```yaml
-      statefulMode: stateless
-      failureMode: failClosed
-      toolMode: standard
-    ```
+5. Press **Delete**.
+6. Click **Save**. If a confirmation appears, click **Save** again.
 
-    ![The three lines selected in Raw Configuration](../../images/mcp/mcp-guardrails/19-raw-config-lines.png)
-
-11. Click **Save**.
-12. Stop the helpers. From the `setup/` folder, run:
-
-    ```bash
-    docker compose --profile mcp-guardrails stop procurement-mcp extmcp-authz extmcp-redact
-    ```
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

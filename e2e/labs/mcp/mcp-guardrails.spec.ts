@@ -1,5 +1,5 @@
 // labs/mcp/mcp-guardrails.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles mcp-guardrails
 // @docker yes
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -7,6 +7,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { helper, lab } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 import { mcpConnect } from '../../lib/mcp';
+import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-guardrails');
 const MCP = 'http://localhost:4001/mcp';
@@ -29,18 +30,6 @@ async function pasteInto(page: Page, editor: Locator, text: string) {
   await page.keyboard.press('Delete');
   await page.evaluate((t) => navigator.clipboard.writeText(t), text);
   await page.keyboard.press('ControlOrMeta+V');
-}
-
-async function openSettings(page: Page): Promise<Locator> {
-  await go(page, '/mcp/servers');
-  await page.locator('main').getByRole('button', { name: 'Settings' }).click();
-  return page.getByRole('dialog');
-}
-
-async function pick(page: Page, d: Locator, field: string, value: string): Promise<void> {
-  await d.getByRole('combobox', { name: field }).click();
-  await page.getByRole('option', { name: new RegExp(`^${value}\\s+[A-Z]`) }).click();
-  await expect(d.getByRole('combobox', { name: field })).toContainText(value);
 }
 
 /** Opens the Tool Playground with a token and initializes a session. Returns the main area. */
@@ -83,6 +72,11 @@ async function callTool(page: Page, tool: string, args: Record<string, string>, 
   return text;
 }
 
+test('set up', async ({ page }) => {
+  await enableMcp(page);
+  await applyMcpCors(page);
+});
+
 test('add the procurement MCP server', async ({ page }) => {
   await go(page, '/mcp/servers');
   await page.getByRole('button', { name: 'Add server' }).first().click();
@@ -93,14 +87,6 @@ test('add the procurement MCP server', async ({ page }) => {
   await save(page, 'Save server');
   const row = page.locator('main').getByRole('row', { name: /^procurement\b/ });
   await expect(row).toContainText('ready', { timeout: 30_000 });
-});
-
-test('turn off tool name prefixes', async ({ page }) => {
-  const d = await openSettings(page);
-  await pick(page, d, 'Prefix mode', 'Never');
-  await shot(page, '02-prefix-never', d.getByRole('button', { name: 'Save settings' }));
-  await save(page, 'Save settings');
-  expect(readConfig().mcp.prefixMode).toBe('never');
 });
 
 test('require a token', async ({ page }) => {
@@ -122,7 +108,7 @@ test('require a token', async ({ page }) => {
 test('baseline: the buyer sees every tool and the bank account', async ({ page }) => {
   await page.waitForTimeout(2000);
   const main = await connect(page, BUYER, '04-buyer-token');
-  await expect(main).toContainText('8 tools discovered');
+  await expect(main).toContainText('5 tools discovered');
   const opts = await toolOptions(page);
   expect(opts).toContain('delete_supplier');
   await shot(page, '05-baseline-tools', page.getByRole('option', { name: /^delete_supplier/ }).first());
@@ -252,44 +238,5 @@ test('change the policy without touching the gateway', async ({ page }) => {
 test('clean up', async ({ page }) => {
   writeFileSync(POLICY, readFileSync(POLICY, 'utf8').replace('    poLimit: 2500', '    poLimit: 10000'));
   expect(readFileSync(POLICY, 'utf8')).toBe(readFileSync('/repo/setup/extmcp/authz.yaml', 'utf8'));
-
-  for (const name of ['MCP guardrails', 'MCP authentication']) {
-    await go(page, '/mcp/policies');
-    await policyCard(page, name).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete policy' }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
-    await page.waitForTimeout(1500);
-    await go(page, '/mcp/policies');
-    await expect(policyCard(page, name)).toContainText('disabled');
-  }
-
-  await go(page, '/mcp/servers');
-  const row = page.locator('main').getByRole('row', { name: /^procurement\b/ });
-  await row.getByRole('button', { name: 'Delete server' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete server' }).click();
-  await expect(row).toBeHidden();
-
-  const d = await openSettings(page);
-  await pick(page, d, 'Prefix mode', 'None');
-  await shot(page, '18-prefix-none', d.getByRole('button', { name: 'Save settings' }));
-  await save(page, 'Save settings');
-  const mcp = readConfig().mcp;
-  console.log(JSON.stringify({ prefixMode: mcp.prefixMode, statefulMode: mcp.statefulMode, failureMode: mcp.failureMode, toolMode: mcp.toolMode }));
-  expect(mcp.statefulMode).toBe('stateless');
-  expect(mcp.failureMode).toBe('failClosed');
-  expect(mcp.toolMode).toBe('standard');
-  await go(page, '/raw-config');
-  const editor = page.locator('main .monaco-editor').first();
-  await editor.locator('.view-lines').click();
-  await page.keyboard.press('ControlOrMeta+End');
-  await editor.locator('.view-line', { hasText: 'statefulMode: stateless' }).click();
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Home');
-  for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowDown');
-  await shot(page, '19-raw-config-lines');
-  await page.keyboard.press('Delete');
-  await save(page, page.locator('main').getByRole('button', { name: 'Save', exact: true }));
-  const after = readFileSync('/work/config.yaml', 'utf8');
-  expect(after).not.toContain('statefulMode');
-  expect(after).not.toContain('toolMode');
+  await turnOffMcp(page, (save) => shot(page, '18-turn-off-mcp', save));
 });

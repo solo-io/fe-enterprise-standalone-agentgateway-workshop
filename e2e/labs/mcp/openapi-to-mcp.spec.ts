@@ -1,7 +1,8 @@
 // labs/mcp/openapi-to-mcp.md
-// @fixture mcp-ready
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
+import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'openapi-to-mcp');
 
@@ -94,6 +95,11 @@ const SCHEMA = `{
 
 const QUERY = '{"latitude": 51.5072, "longitude": -0.1276, "hourly": "temperature_2m", "forecast_days": 1}';
 
+test('set up', async ({ page }) => {
+  await enableMcp(page);
+  await applyMcpCors(page);
+});
+
 test('add the Open-Meteo API as an MCP server', async ({ page }) => {
   await go(page, '/mcp/servers');
   await page.getByRole('button', { name: 'Add server' }).first().click();
@@ -124,9 +130,9 @@ test('call the generated tool', async ({ page }) => {
   await go(page, '/mcp/playground');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
-  await expect(main.getByText('4 tools discovered')).toBeVisible({ timeout: 30_000 });
+  await expect(main.getByText('1 tools discovered')).toBeVisible({ timeout: 30_000 });
   await main.getByRole('combobox', { name: 'Tool' }).click();
-  await page.getByRole('option', { name: /^open-meteo_getWeatherForecast/ }).click();
+  await page.getByRole('option', { name: /^getWeatherForecast/ }).click();
   // query is a JSON code editor.
   const query = main.locator('.monaco-editor').first();
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -158,7 +164,7 @@ curl -s http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -H "Mcp-Session-Id: $SESSION" \\
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"open-meteo_getWeatherForecast","arguments":{"query":{"latitude":51.5072,"longitude":-0.1276,"current":"temperature_2m"}}}}'`;
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"getWeatherForecast","arguments":{"query":{"latitude":51.5072,"longitude":-0.1276,"current":"temperature_2m"}}}}'`;
 
 test('optional curl check', async () => {
   const r = sh(CURL);
@@ -166,12 +172,6 @@ test('optional curl check', async () => {
   expect(r.stdout).toContain('current_units');
 });
 
-test('clean up', async ({ page }) => {
-  await go(page, '/mcp/servers');
-  const row = page.locator('main').getByRole('row', { name: /^open-meteo\b/ });
-  await row.getByRole('button', { name: 'Delete server' }).click();
-  const confirm = page.getByRole('alertdialog').getByRole('button', { name: 'Delete server' });
-  await shot(page, '06-delete-server', confirm);
-  await confirm.click();
-  await expect(row).toBeHidden();
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '06-turn-off-mcp', save));
 });

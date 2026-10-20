@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect a Remote MCP Server](../mcp/connect-remote-mcp-server.md). The gateway serves the `solo-docs` MCP server on port `4001`.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start Keycloak and MCP Inspector. From the `setup/` folder, run:
 
   ```bash
@@ -19,7 +19,42 @@
 
 ## Why this matters
 
-In [Require a Token for MCP and Limit Tools by Team](mcp-auth-and-tool-authorization.md), you pasted a token into the Tool Playground. Real users sign in instead. The MCP specification defines how: the gateway answers an unauthenticated request with `401` and a link to its metadata, the metadata names your identity provider, and the MCP client signs the user in there and sends the token it gets. Claude Code, Cursor, VS Code and MCP Inspector all follow these steps. You configure the gateway once, and each of these clients shows your identity provider's sign-in page.
+[Require a Token for MCP and Limit Tools by Team](mcp-auth-and-tool-authorization.md) pastes a token into the Tool Playground. Real users sign in instead. The MCP specification defines how: the gateway answers an unauthenticated request with `401` and a link to its metadata, the metadata names your identity provider, and the MCP client signs the user in there and sends the token it gets. Claude Code, Cursor, VS Code and MCP Inspector all follow these steps. You configure the gateway once, and each of these clients shows your identity provider's sign-in page.
+
+## Set up
+
+This lab uses the `solo-docs` MCP server. [Connect a Remote MCP Server](connect-remote-mcp-server.md) explains these steps.
+
+Turn on MCP:
+
+1. In the sidebar, under **MCP**, click **Get started**.
+
+   ![Sidebar with Get started under MCP](../../images/mcp/connect-remote-mcp-server/01-sidebar-get-started.png)
+
+2. Click **Enable**.
+
+   ![Enable MCP page](../../images/mcp/connect-remote-mcp-server/02-enable-mcp.png)
+
+Add the `solo-docs` server:
+
+1. On the **MCP Servers** page, click **Add server**.
+2. In **Server name**, enter `solo-docs`.
+3. Leave the transport on **Streamable HTTP**.
+4. In **URL**, enter `https://search.solo.io/mcp`.
+5. Click **Save server**.
+
+   ![Add MCP server panel for solo-docs](../../images/mcp/connect-remote-mcp-server/03-add-server.png)
+
+After a few seconds, the **State** column shows **ready**.
+
+Allow the Tool Playground to connect:
+
+1. In the sidebar, click **Tool Playground**.
+2. Click **Apply CORS**.
+
+   ![Tool Playground with the Apply CORS button](../../images/mcp/connect-remote-mcp-server/05-apply-cors.png)
+
+3. Wait two seconds, then reload the page.
 
 ## Step 1: Require a Keycloak token
 
@@ -122,17 +157,22 @@ mcp:
 
 With `resourceMetadata` empty, the gateway builds its metadata from the issuer.
 
-> **Note:** The gateway downloads Keycloak's keys when you save the policy. If you remove and recreate the Keycloak container while the policy exists, Keycloak gets new keys and the gateway rejects the new tokens: save the policy again. The gateway also downloads the keys when it starts, and Keycloak runs in the gateway's network, so Keycloak is not up yet at that moment. If the policy exists when you restart the Compose stack, the gateway exits. Delete the policy before you restart, as in **Clean up**.
+> **Note:** The gateway downloads Keycloak's keys when you save the policy. If you remove and recreate the Keycloak container while the policy exists, Keycloak gets new keys and the gateway rejects the new tokens: save the policy again. The gateway also downloads the keys when it starts, and Keycloak runs in the gateway's network, so Keycloak is not up yet at that moment. If the policy exists when you restart the Compose stack, the gateway exits. Delete the policy before you restart. **Clean up** deletes it when you turn off MCP.
 
 ## Clean up
 
-1. In the sidebar, under **MCP**, click **Policies**.
-2. Click the **MCP authentication** card.
-3. Click the **Delete policy** icon at the top of the panel, then click **Delete policy** to confirm.
-4. Close the Inspector tab, then stop Keycloak and Inspector. From the `setup/` folder, run:
+1. Close the Inspector tab, then stop Keycloak and Inspector. From the `setup/` folder, run:
 
    ```bash
    docker compose --profile keycloak --profile mcp-inspector stop keycloak mcp-inspector
    ```
 
-The **MCP authentication** card shows **disabled**, and MCP clients connect without a token again.
+2. Turn off MCP. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
+3. Select from the line `gateways:` to the end of the file. This is the `default` gateway on port `4001` and the `mcp:` section, with the `solo-docs` server, the CORS policy and the MCP authentication policy.
+
+   ![Raw Configuration with the gateways and mcp sections selected](../../images/mcp/mcp-oauth-keycloak/11-turn-off-mcp.png)
+
+4. Press **Delete**.
+5. Click **Save**. If a confirmation appears, click **Save** again.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

@@ -17,13 +17,12 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 ## Start here
 
 1. [Set Up Standalone Agentgateway](001-set-up-standalone-agentgateway.md)
-2. [Connect LLM Providers](labs/llm/connect-llm-providers.md): add an OpenAI model, chat in the Chat Playground, find the request in Logs. Every lab except Connect Anthropic builds on it.
-3. Pick labs from any track, in any order. Each lab cleans up after itself.
+2. Pick labs from any track, in any order. Each lab sets up what it needs, such as the OpenAI model or an MCP server, and cleans up after itself.
 
 | Track | Topics |
 |---|---|
 | [LLM](#llm-track) | [Providers and clients](#providers-and-clients) · [Access control](#model-access-control) · [Cost and limits](#cost-and-limits) · [Guardrails](#guardrails) · [Request processing](#request-processing) · [Routing and resilience](#routing-and-resilience) |
-| [MCP](#mcp-track) | Start with [Connect a Remote MCP Server](labs/mcp/connect-remote-mcp-server.md), then [Servers and tools](#mcp-servers-and-tools) · [Access control](#mcp-access-control) · [Limits and guardrails](#mcp-limits-and-guardrails) |
+| [MCP](#mcp-track) | [Servers and tools](#mcp-servers-and-tools) · [Access control](#mcp-access-control) · [Limits and guardrails](#mcp-limits-and-guardrails) |
 | [Platform](#platform-track) | UI access · TLS · Metrics and tracing |
 
 ## LLM track
@@ -32,9 +31,10 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 
 | Lab | What you do | Needs |
 |---|---|---|
-| [Anthropic](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, call Claude in OpenAI and Anthropic format, find tokens and cost in Logs and Analytics, optionally compare with GPT. Needs only 001 | Anthropic key |
+| [OpenAI](labs/llm/connect-llm-providers.md) | Add an OpenAI model, chat in the Chat Playground, find the request in Logs, copy a curl command from Client Setup | |
+| [Anthropic](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, call Claude in OpenAI and Anthropic format, find tokens and cost in Logs and Analytics, optionally compare with GPT | Anthropic key |
 | [Amazon Bedrock](labs/llm/connect-amazon-bedrock.md) | Add a Bedrock model that signs requests with your AWS credentials, chat with Claude Haiku, optionally switch to a Bedrock API key | AWS credentials with Bedrock access |
-| [Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | For Claude Code: Anthropic key and the model from Connect Anthropic |
+| [Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | For Claude Code: Anthropic key |
 | [Streaming and Embeddings](labs/llm/streaming-and-embeddings.md) | Stream a chat reply, turn a sentence into an embedding, find both in Logs with their tokens and cost | |
 
 ### Model access control
@@ -82,15 +82,14 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 
 ## MCP track
 
-Start with [Connect a Remote MCP Server](labs/mcp/connect-remote-mcp-server.md): turn on MCP, add the Solo.io docs server, call a tool in the Tool Playground. The other MCP labs build on it.
-
 ### MCP servers and tools
 
 | Lab | What you do | Needs |
 |---|---|---|
+| [Remote MCP Server](labs/mcp/connect-remote-mcp-server.md) | Turn on MCP, add the Solo.io docs server, call a tool in the Tool Playground | |
 | [Local MCP and Federation](labs/mcp/local-mcp-and-federation.md) | Serve tools from two servers in one session, control tool name prefixes, compare fail closed with fail open | `mcp-everything` |
-| [OpenAPI to MCP](labs/mcp/openapi-to-mcp.md) | Expose the Open-Meteo weather API as an MCP tool from an OpenAPI schema | |
 | [OpenAPI to MCP for a Local API](labs/mcp/openapi-to-mcp-local-service.md) | Expose three operations of a local API as MCP tools, including a path parameter, and have the gateway add the API key | `stripe-mock` |
+| [OpenAPI to MCP](labs/mcp/openapi-to-mcp.md) | Expose the Open-Meteo weather API as an MCP tool from an OpenAPI schema | |
 | [Search and Code Tool Modes](labs/mcp/mcp-tool-modes.md) | Replace the tool list with `get_tool`/`invoke_tool`, then with a single `run_code` tool | |
 
 ### MCP access control

@@ -1,9 +1,8 @@
 // labs/mcp/mcp-tool-modes.md
-// @fixture mcp-ready
+// @fixture base
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { lab } from '../../lib/lab';
-import { readConfig } from '../../lib/config';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-tool-modes');
 
@@ -49,6 +48,10 @@ async function paste(page: Page, editor: Locator, text: string): Promise<void> {
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('ControlOrMeta+V');
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('Search mode: two tools replace the tool list', async ({ page }) => {
   await setToolMode(page, 'Search', '01-tool-mode-search');
@@ -99,27 +102,6 @@ test('Code mode: one run_code tool', async ({ page }) => {
   await shot(page, '09-run-code-result', hit);
 });
 
-test('clean up', async ({ page }) => {
-  await setToolMode(page, 'Standard', '10-tool-mode-standard');
-  const mcp = readConfig().mcp;
-  expect(mcp.statefulMode).toBe('stateless');
-  expect(mcp.failureMode).toBe('failClosed');
-  expect(mcp.toolMode).toBe('standard');
-
-  // The Settings panel writes every field, including defaults. Remove those three lines.
-  await go(page, '/raw-config');
-  const editor = page.locator('main .monaco-editor').first();
-  await editor.locator('.view-lines').click();
-  await page.keyboard.press('ControlOrMeta+End');
-  await editor.locator('.view-line', { hasText: 'statefulMode: stateless' }).click();
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Home');
-  for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowDown');
-  await shot(page, '11-raw-config-lines');
-  await page.keyboard.press('Delete');
-  const saveBtn = page.locator('main').getByRole('button', { name: 'Save', exact: true });
-  await save(page, saveBtn);
-  const after = readFileSync('/work/config.yaml', 'utf8');
-  expect(after).not.toContain('statefulMode');
-  expect(after).not.toContain('toolMode');
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '10-turn-off-mcp', save));
 });

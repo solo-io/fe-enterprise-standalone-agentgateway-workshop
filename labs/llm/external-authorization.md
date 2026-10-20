@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - Start the workshop's authorization service. From the `setup/` folder, run:
 
   ```bash
@@ -22,6 +22,24 @@
 Some access rules live outside the gateway: an entitlement system, a license check, a per-customer allow list. External authorization lets the gateway ask your own service about every request before it calls the LLM. The service answers allow or deny, and the gateway enforces the answer.
 
 The service in this lab is a small example. It allows a request only when the request has the header `x-ext-authz: allow`. Your real service can check anything in the request: headers, tokens, the path, or the body.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Add the External authz policy
 
@@ -126,3 +144,8 @@ llm:
    ```bash
    docker compose --profile ext-authz stop ext-authz
    ```
+
+6. In the sidebar, click **Models**.
+7. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

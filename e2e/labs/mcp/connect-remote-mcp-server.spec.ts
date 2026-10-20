@@ -1,9 +1,9 @@
-// labs/mcp/connect-remote-mcp-server.md (foundation lab: ends in mcp-ready)
-// @fixture llm-ready
-// @expect mcp-ready
+// labs/mcp/connect-remote-mcp-server.md
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
 import { mcpConnect } from '../../lib/mcp';
+import { turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'connect-remote-mcp-server');
 
@@ -86,4 +86,11 @@ test('MCP endpoint answers on port 4001', async () => {
   const s = await mcpConnect('http://localhost:4001/mcp');
   expect(s.status).toBe(200);
   expect(await s.tools()).toContain('search');
+});
+
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '09-turn-off-mcp', save));
+  await go(page, '/');
+  // With MCP off, the sidebar shows Get started under MCP again.
+  await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Get started' })).toHaveCount(2);
 });

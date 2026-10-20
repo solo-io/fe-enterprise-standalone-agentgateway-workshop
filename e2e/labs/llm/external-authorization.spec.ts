@@ -1,8 +1,9 @@
 // labs/llm/external-authorization.md
-// @fixture llm-ready
+// @fixture base
 // @profiles ext-authz
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('llm', 'external-authorization');
@@ -10,6 +11,10 @@ const PROMPT = 'Reply with the single word: pong';
 const DENY_MSG = 'denied by ext_authz: header `x-ext-authz: allow` not found in request';
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 /** Runs the lab's curl, with an optional extra header line. Returns the full response with headers. */
 function curl(header = ''): string {
@@ -77,4 +82,8 @@ test('clean up: delete the policy', async ({ page }) => {
   await expect(card).toContainText('disabled');
   expect(readConfig().llm.policies.extAuthz).toBeUndefined();
   expect(curl()).toMatch(/^HTTP\/1\.1 200 OK/);
+});
+
+test('clean up: delete the model', async ({ page }) => {
+  await deleteModel(page);
 });

@@ -1,12 +1,17 @@
 // labs/llm/local-rate-limiting.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test } from '@playwright/test';
 import { chat, chatRequest, lab } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
 
 const { go, shot } = lab('llm', 'local-rate-limiting');
 
 test.describe.configure({ mode: 'serial' });
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('add a local token rate limit', async ({ page }) => {
   await go(page, '/llm/policies');
@@ -76,5 +81,6 @@ test('clean up: delete the policy', async ({ page }) => {
   await page.getByRole('alertdialog').or(page.getByRole('dialog')).getByRole('button', { name: 'Delete policy', exact: true }).last().click();
   await expect(card).toContainText('disabled');
   await page.waitForTimeout(1000);
-  expectMatchesFixture('llm-ready');
+  await deleteModel(page);
+  expectMatchesFixture('base');
 });

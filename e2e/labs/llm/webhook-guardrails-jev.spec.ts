@@ -1,11 +1,12 @@
 // labs/llm/webhook-guardrails-jev.md
-// @fixture llm-ready
+// @fixture base
 // @profiles guardrail-jev
 // @docker yes
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'fs';
 import { readConfig } from '../../lib/config';
 import { chatRequest, helper, helperLogs, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'webhook-guardrails-jev');
 
@@ -152,6 +153,11 @@ async function expectBlocked(page: Page, prompt: string, message: string, name: 
   expect(r.text).toContain(message);
   await shot(page, name, bannerOf(page));
 }
+
+test('set up: add the OpenAI model', async ({ page }) => {
+  test.skip(!HAS_KEY, NO_KEY);
+  await addOpenAIModel(page);
+});
 
 test('the webhook is running', async ({ page }) => {
   test.skip(!HAS_KEY, NO_KEY);
@@ -301,4 +307,5 @@ test('clean up', async ({ page }) => {
   await expect(confirm).toBeHidden();
   await expect(main.getByText('No guards configured.')).toHaveCount(2);
   helper('stop', SERVICE);
+  await deleteModel(page);
 });

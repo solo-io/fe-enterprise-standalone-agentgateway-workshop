@@ -1,4 +1,5 @@
 // labs/llm/connect-anthropic.md
+// @fixture base
 // Main path, from base. The optional OpenAI comparison runs in connect-anthropic-with-openai.spec.ts.
 // Needs ANTHROPIC_API_KEY in setup/.env; every test is skipped without it.
 import { expect, test } from '@playwright/test';

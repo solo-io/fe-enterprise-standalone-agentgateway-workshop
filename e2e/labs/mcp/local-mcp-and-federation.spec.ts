@@ -1,10 +1,9 @@
 // labs/mcp/local-mcp-and-federation.md
-// @fixture mcp-ready
+// @fixture base
 // @profiles mcp-everything
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { lab, sh } from '../../lib/lab';
-import { readConfig } from '../../lib/config';
+import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'local-mcp-and-federation');
 
@@ -53,6 +52,10 @@ async function addServer(page: Page, name: string, url: string, shotName: string
   await save(page, 'Save server');
   return page.locator('main').getByRole('row', { name: new RegExp(`^${name}\\b`) });
 }
+
+test('set up', async ({ page }) => {
+  await setUpSoloDocs(page);
+});
 
 test('add the local MCP server', async ({ page }) => {
   // The lab's readiness check: npx downloads the server when the container starts.
@@ -138,42 +141,6 @@ test('fail open: the healthy servers keep working', async ({ page }) => {
   await shot(page, '12-fail-open-tools', main.getByText('16 tools discovered'));
 });
 
-test('clean up', async ({ page }) => {
-  for (const name of ['broken', 'everything']) {
-    await go(page, '/mcp/servers');
-    const row = page.locator('main').getByRole('row', { name: new RegExp(`^${name}\\b`) });
-    await row.getByRole('button', { name: 'Delete server' }).click();
-    const confirm = page.getByRole('alertdialog').getByRole('button', { name: 'Delete server' });
-    if (name === 'broken') await shot(page, '13-delete-server', confirm);
-    await confirm.click();
-    await expect(row).toBeHidden();
-  }
-  const d = await openSettings(page);
-  await pick(page, d, 'Prefix mode', 'None');
-  await pick(page, d, 'Failure mode', 'Fail closed');
-  await shot(page, '14-settings-defaults', d.getByRole('button', { name: 'Save settings' }));
-  await save(page, 'Save settings');
-
-  // The Settings dialog writes every field, including defaults. Remove those three lines.
-  const mcp = readConfig().mcp;
-  expect(mcp.statefulMode).toBe('stateless');
-  expect(mcp.failureMode).toBe('failClosed');
-  expect(mcp.toolMode).toBe('standard');
-  await go(page, '/raw-config');
-  const editor = page.locator('main .monaco-editor').first();
-  await editor.locator('.view-lines').click();
-  await page.keyboard.press('ControlOrMeta+End');
-  const first = editor.locator('.view-line', { hasText: 'statefulMode: stateless' });
-  await first.click();
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Home');
-  for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowDown');
-  await shot(page, '15-raw-config-lines');
-  await page.keyboard.press('Delete');
-  const saveBtn = page.locator('main').getByRole('button', { name: 'Save', exact: true });
-  await shot(page, '16-raw-config-save', saveBtn);
-  await save(page, saveBtn);
-  const after = readFileSync('/work/config.yaml', 'utf8');
-  expect(after).not.toContain('statefulMode');
-  expect(after).not.toContain('toolMode');
+test('clean up: turn off MCP', async ({ page }) => {
+  await turnOffMcp(page, (save) => shot(page, '13-turn-off-mcp', save));
 });

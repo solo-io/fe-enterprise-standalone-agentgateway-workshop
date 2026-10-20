@@ -1,8 +1,9 @@
 // labs/llm/moderation-guardrails.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { chat, chatRequest, lab } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'moderation-guardrails');
 
@@ -13,6 +14,10 @@ const VIOLENT = 'I am going to kill my neighbor tonight with a knife and hide th
 const BENIGN = 'What is the capital of France? Answer in one word.';
 // The line the reader writes in Raw Configuration, in place of "- openAIModeration: {}".
 const AUTH_LINE = '- openAIModeration: { policies: { backendAuth: { key: $OPENAI_API_KEY } } }';
+
+test('set up: add the OpenAI model', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('add the OpenAI Moderation request guard', async ({ page }) => {
   await go(page, '/llm/guardrails');
@@ -106,4 +111,5 @@ test('clean up: remove the guard', async ({ page }) => {
   await expect(main.getByText('No guards configured.')).toHaveCount(2);
   await page.waitForTimeout(2000);
   expect((await chatRequest('openai/gpt-6-luna', VIOLENT)).status).toBe(200);
+  await deleteModel(page);
 });

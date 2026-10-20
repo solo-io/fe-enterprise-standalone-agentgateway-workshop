@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - The workshop ships a signing key and two test users in `lib/jwt/`. You paste the public key and the tokens from this lab, or from the files named below.
 
 | User | Token file | `team` claim |
@@ -22,6 +22,24 @@ Both tokens have issuer `solo-workshop` and audience `agentgateway`, and expire 
 ## Why this matters
 
 Your company already signs users in with an identity provider such as Okta, Entra ID or Keycloak. That provider issues JSON Web Tokens (JWTs). The gateway can check each token's signature and claims, so only signed-in users reach your LLMs. An authorization rule then reads the claims, for example the user's team, and decides who gets access.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Turn on JWT auth
 
@@ -251,6 +269,8 @@ llm:
 
    ![Delete policy confirmation](../../images/llm/jwt-auth-and-authorization/12-confirm-delete.png)
 
-5. Click the **JWT auth** card, click **Delete policy**, then click **Delete policy** to confirm.
+5. Click the **JWT auth** card, click **Delete policy**, then click **Delete policy** to confirm. Both cards show **disabled**.
+6. In the sidebar, click **Models**.
+7. In the `openai/*` row, click the trash icon, then click **Delete model**.
 
-Both cards show **disabled**, and requests without a token work again.
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

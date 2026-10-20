@@ -1,8 +1,9 @@
 // labs/llm/prompt-enrichment-and-transformations.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
 import { chat, lab, sh } from '../../lib/lab';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'prompt-enrichment-and-transformations');
 
@@ -30,6 +31,10 @@ async function openModelTransformation(page: Page) {
   await expect(d.getByPlaceholder('field name')).toBeVisible();
   return d;
 }
+
+test('set up: add the OpenAI model', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 test('add response headers with a Transformations policy', async ({ page }) => {
   await go(page, '/llm/policies');
@@ -99,25 +104,17 @@ test('the Chat Playground reply contains BANANA', async ({ page }) => {
   await shot(page, '05-playground-banana', page.locator('.chat-message.assistant').last());
 });
 
-test('clean up: remove the system prompt and the policy', async ({ page }) => {
-  const d = await openModelTransformation(page);
-  // Rows: model (row 1), messages (row 2).
-  const remove = d.getByRole('button', { name: 'Remove', exact: true }).nth(1);
-  await shot(page, '06-remove-messages', remove);
-  await remove.click();
-  await expect(d).not.toContainText('Always end your reply');
-  await save(page, 'Save model');
-
+test('clean up: delete the policy and the model', async ({ page }) => {
   await go(page, '/llm/policies');
   await page.locator('main').getByRole('button', { name: /Transformations/ }).click();
   const del = page.getByRole('dialog').getByRole('button', { name: 'Delete policy' });
-  await shot(page, '07-delete-policy', del);
+  await shot(page, '06-delete-policy', del);
   await del.click();
   // The UI asks to confirm: "Delete the Transformations policy from this configuration?"
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete policy' }).click();
   await page.waitForTimeout(1000);
+  expect(readConfig().llm.policies.transformations).toBeUndefined();
 
-  const cfg = readConfig();
-  expect(cfg.llm.policies.transformations).toBeUndefined();
-  expect(cfg.llm.models[0].transformation.messages).toBeUndefined();
+  // Deleting the model also removes the messages transformation from Step 2.
+  await deleteModel(page);
 });

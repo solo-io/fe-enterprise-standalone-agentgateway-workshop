@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Complete [Connect LLM Providers](../llm/connect-llm-providers.md). The gateway has the `openai/*` model.
+- Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 
 ## What you'll do
 
@@ -14,6 +14,24 @@
 ## Why this matters
 
 Users paste sensitive data into prompts, and models can repeat sensitive data in replies. Guardrails check this traffic inside the gateway, before a prompt reaches OpenAI and before a reply reaches the user. A blocked request never leaves the gateway, so the provider never sees the data and you pay nothing for it.
+
+## Set up
+
+This lab uses the `openai/*` model. [Connect LLM Providers](connect-llm-providers.md) explains these steps.
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+
+   ![Models page with no models yet](../../images/llm/connect-llm-providers/01-models-empty.png)
+
+3. In **Provider**, select **OpenAI**. The UI fills **Incoming model match** with `openai/*`.
+4. Next to **Provider API key**, click **Env var** and enter `OPENAI_API_KEY`.
+5. Under **Outgoing model**, click **Strip openai/**.
+6. Click **Save model**.
+
+   ![Add model panel filled in for OpenAI](../../images/llm/connect-llm-providers/02-add-openai-model.png)
+
+The **Models** page lists `openai/*`.
 
 ## Step 1: Block credit card numbers and SSNs
 
@@ -183,4 +201,9 @@ llm:
 
    ![Remove all LLM guardrails confirmation](../../images/llm/builtin-guardrails/11-confirm-remove.png)
 
-Both lists show **No guards configured.** The change is saved right away. Logs keep the requests from this lab.
+   Both lists show **No guards configured.** The change is saved right away.
+
+4. In the sidebar, click **Models**.
+5. In the `openai/*` row, click the trash icon, then click **Delete model**.
+
+The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in. Logs keep the requests from this lab.

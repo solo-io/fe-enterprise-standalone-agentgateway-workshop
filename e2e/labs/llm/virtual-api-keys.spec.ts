@@ -1,14 +1,19 @@
 // labs/llm/virtual-api-keys.md
-// @fixture llm-ready
+// @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { chat, chatRequest, lab } from '../../lib/lab';
 import { expectMatchesFixture } from '../../lib/config';
+import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'virtual-api-keys');
 
 test.describe.configure({ mode: 'serial' });
 
 const keys: Record<string, string> = {};
+
+test('set up', async ({ page }) => {
+  await addOpenAIModel(page);
+});
 
 /** Creates a virtual key and returns the raw key from the one-time "Copy your new API key" panel. */
 async function createKey(page: Page, name: string, shots = false): Promise<string> {
@@ -109,7 +114,7 @@ test('Logs and Analytics show the user', async ({ page }) => {
   await shot(page, '11-analytics-by-user');
 });
 
-test('clean up: delete the keys and disable API key auth', async ({ page }) => {
+test('clean up: delete the keys, disable API key auth and delete the model', async ({ page }) => {
   await go(page, '/llm/keys');
   const main = page.locator('main');
   for (const name of ['alice', 'bob']) {
@@ -127,5 +132,6 @@ test('clean up: delete the keys and disable API key auth', async ({ page }) => {
   await page.getByRole('alertdialog').or(page.getByRole('dialog')).getByRole('button', { name: 'Disable API Key Policy' }).click();
   await expect(main.getByRole('button', { name: 'Enable API key auth' }).first()).toBeVisible();
   await page.waitForTimeout(1000);
-  expectMatchesFixture('llm-ready');
+  await deleteModel(page);
+  expectMatchesFixture('base');
 });

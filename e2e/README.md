@@ -9,7 +9,7 @@ You need Docker and `setup/.env` with real keys.
 ```bash
 e2e/run-e2e.sh 001                                  # one lab
 e2e/run-e2e.sh llm/virtual-api-keys --update-screenshots
-e2e/run-e2e.sh all                                  # every lab, foundation labs first
+e2e/run-e2e.sh all                                  # every lab
 e2e/lint.sh                                         # markdown checks
 ```
 
@@ -25,10 +25,4 @@ The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screens
 
 ## Fixtures
 
-| Fixture | Reached by |
-|---|---|
-| `base` | `setup/config.yaml`, after `001` |
-| `llm-ready` | `labs/llm/connect-llm-providers.md` |
-| `mcp-ready` | `labs/mcp/connect-remote-mcp-server.md` |
-
-When a foundation lab changes, rerun it, copy `e2e/.last/<lab>.yaml` over the fixture, and rerun every lab that starts from that fixture.
+Every lab starts from and returns to `base` (`setup/config.yaml`, after `001`). `e2e/lib/setup.ts` has the shared **Set up** and cleanup steps: add and delete the `openai/*` model, turn on MCP, add an MCP server, apply the Tool Playground CORS policy, turn off MCP.

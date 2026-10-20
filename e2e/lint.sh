@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Static checks for lab markdown:
 #  - every lab has "## Before you start" with a relative link to the lab it builds on
-#  - every lab except foundation labs has "## Clean up"
+#  - every lab has "## Clean up"
 #  - every relative link and image resolves
 #  - no em dashes in markdown files
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-FOUNDATION="labs/llm/connect-llm-providers.md labs/mcp/connect-remote-mcp-server.md"
 fail=0
 err() { echo "$1: $2" >&2; fail=1; }
 
@@ -16,10 +15,7 @@ for f in labs/*/*.md; do
   grep -q '^## Before you start' "$f" || err "$f" "missing '## Before you start'"
   awk '/^## Before you start/{f=1;next} /^## /{f=0} f' "$f" | grep -qE '\]\((\.\./)+[^)]+\.md' \
     || err "$f" "'## Before you start' has no relative link to a lab"
-  case " $FOUNDATION " in
-    *" $f "*) ;;
-    *) grep -q '^## Clean up' "$f" || err "$f" "missing '## Clean up'" ;;
-  esac
+  grep -q '^## Clean up' "$f" || err "$f" "missing '## Clean up'"
 done
 
 for f in README.md style-guide.md 001-*.md labs/*/*.md; do
