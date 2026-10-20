@@ -9,7 +9,7 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 - **Solo Enterprise for agentgateway license key.** Ask your Solo.io contact for a trial key.
 - **OpenAI API key.** The labs use `gpt-6-luna` to keep costs low.
 - **Docker Desktop** (macOS, Windows with WSL) or Docker Engine with the Compose plugin (Linux).
-- Optional: an **Anthropic API key**, for the Anthropic steps in [Connect Coding Agents](labs/llm/connect-coding-agents.md).
+- Optional: an **Anthropic API key**, for [Connect Anthropic Next to OpenAI](labs/llm/connect-anthropic.md) and the Claude Code steps in [Connect Coding Agents](labs/llm/connect-coding-agents.md).
 - Optional: **AWS credentials** with Amazon Bedrock access, for [Connect Amazon Bedrock](labs/llm/connect-amazon-bedrock.md).
 - Optional: a **TypeSafe API key**, for the two Jev labs. The [OpenAI Decisions API](labs/llm/semantic-routing-openai-decisions.md) lab needs an OpenAI key with access to `/v1/decisions`.
 
@@ -31,6 +31,7 @@ Then do any of these, in any order. Each lab cleans up after itself.
 
 | Lab | What you do | Helper service |
 |---|---|---|
+| [Connect Anthropic Next to OpenAI](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, ask GPT and Claude the same question, call Claude in OpenAI and Anthropic format, compare providers in Logs and Analytics | |
 | [Connect Amazon Bedrock](labs/llm/connect-amazon-bedrock.md) | Add a Bedrock model that signs requests with your AWS credentials, chat with Claude Haiku, optionally switch to a Bedrock API key | |
 | [Give Each User a Virtual API Key](labs/llm/virtual-api-keys.md) | Issue per-user keys, block requests without a key, see usage per user in Logs and Analytics | |
 | [Require a JWT and Allow Only One Team](labs/llm/jwt-auth-and-authorization.md) | Require a JWT, then allow only callers whose `team` claim is `platform` | |
@@ -50,7 +51,7 @@ Then do any of these, in any order. Each lab cleans up after itself.
 | [Route Requests by a Field in the Request Body](labs/llm/body-based-routing.md) | Send requests tagged `metadata.app: support` to a smaller model with a Conditional virtual model | `mock-llm-routing` |
 | [Route Each Prompt to the Cheapest Model That Can Answer It, with Jev](labs/llm/semantic-routing-jev.md) | Give clients one model name, `auto_model`, and let Jev pick one of three price tiers for each prompt | `semantic-router-jev` |
 | [Route Each Prompt to the Cheapest Model That Can Answer It, with the OpenAI Decisions API](labs/llm/semantic-routing-openai-decisions.md) | The same router, with OpenAI's Decisions API as the classifier | `semantic-router-openai` |
-| [Connect Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | |
+| [Connect Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup (Claude Code needs the model from Connect Anthropic Next to OpenAI) | |
 
 ## MCP track
 

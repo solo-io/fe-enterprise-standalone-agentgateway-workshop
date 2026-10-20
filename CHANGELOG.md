@@ -1,5 +1,12 @@
 # Changelog
 
+0.0.5 - (10-19-26)
+---
+- Add LLM track lab:
+  - `connect-anthropic`: an `anthropic` shared provider and an `anthropic/*` models
+- `connect-coding-agents`: split anthropic instructions into separate lab
+- `setup/base-costs.json`: add Anthropic prices for `claude-haiku-5-5` and `claude-sonnet-5-5`
+
 0.0.4 - (10-19-26)
 ---
 - Add LLM track labs:
