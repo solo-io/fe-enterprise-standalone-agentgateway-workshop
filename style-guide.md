@@ -95,7 +95,7 @@ e2e/run-e2e.sh <id> --update-screenshots
 e2e/lint.sh
 ```
 
-The spec performs every step of the lab through the UI, checks each result, runs the cleanup steps, and the harness checks the config matches the start state. A top-level key left empty, such as `gateways: {}`, fails that check, so the Clean up must delete it. The spec runs the lab's commands with `labSh`, which fails if the command is not in a code block of the lab. If the lab text and the spec disagree, the lab is wrong.
+The spec performs every step of the lab through the UI, checks each result, runs the cleanup steps, and the harness checks the config matches the start state. A top-level key left empty, such as `gateways: {}`, fails that check, so the Clean up must delete it. The spec runs the lab's commands with `labSh`, which fails if the command is not in a code block of the lab. `labExec` does the same for a `docker compose exec <service> ...` command, and `inLab` checks a command that the spec runs another way, such as a restart with `helper()`. If the lab text and the spec disagree, the lab is wrong.
 
 ## Adding a lab
 

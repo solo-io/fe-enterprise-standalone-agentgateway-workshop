@@ -9,6 +9,8 @@
 #   // @expect base                    config the lab must end in, default: the start fixture
 #   // @profiles mock-llm,ext-authz    Compose helper profiles to start
 #   // @docker yes                     mount the Docker socket, so the spec can stop and start helpers
+#   // @restarts gateway               the spec restarts the gateway: a pause container holds the network
+#                                      (compose.e2e-restart.yaml), so the test browser keeps it
 #
 # The gateway publishes no host ports. Playwright runs in a container that shares the
 # gateway's network namespace, so specs use http://localhost:15000 and the real gateway ports.
@@ -106,6 +108,8 @@ run_one() {
   profiles=$(header "$spec" profiles "")
   local docker_args=()
   [ "$(header "$spec" docker no)" = yes ] && docker_args=(-v /var/run/docker.sock:/var/run/docker.sock)
+  local restarts
+  restarts=$(header "$spec" restarts no)
   local f
   for f in "$fixture" "$expect"; do
     [ -f "$ROOT/$(fixture_file "$f")" ] || { echo "no fixture: $(fixture_file "$f")" >&2; return 1; }
@@ -115,8 +119,11 @@ run_one() {
   local work
   work=$(mktemp -d "${TMPDIR:-/tmp}/agw-e2e.XXXXXX")
 
+  local files=(-f "$work/docker-compose.yml" -f "$ROOT/e2e/compose.e2e.yaml")
+  [ "$restarts" = gateway ] && files+=(-f "$ROOT/e2e/compose.e2e-restart.yaml")
+
   cleanup_one() {
-    docker compose -p "$project" --project-directory "$work" -f "$work/docker-compose.yml" -f "$ROOT/e2e/compose.e2e.yaml" \
+    docker compose -p "$project" --project-directory "$work" "${files[@]}" \
       --profile "*" down -v --remove-orphans >/dev/null 2>&1 || true
     rm -rf "$work"
   }
@@ -134,14 +141,15 @@ run_one() {
 
   echo "=== $id (fixture: $fixture, expect: $expect, profiles: ${profiles:-none})"
   env UID="$(id -u)" GID="$(id -g)" docker compose -p "$project" --project-directory "$work" \
-    -f "$work/docker-compose.yml" -f "$ROOT/e2e/compose.e2e.yaml" ${profile_args[@]+"${profile_args[@]}"} --progress quiet up -d --quiet-pull
+    "${files[@]}" ${profile_args[@]+"${profile_args[@]}"} --progress quiet up -d --quiet-pull
 
-  local gw
-  gw=$(docker compose -p "$project" --project-directory "$work" -f "$work/docker-compose.yml" ps -q agentgateway)
-
+  local gw net
+  gw=$(docker compose -p "$project" --project-directory "$work" "${files[@]}" ps -q agentgateway)
+  net="$gw"
+  [ "$restarts" = gateway ] && net=$(docker compose -p "$project" --project-directory "$work" "${files[@]}" ps -q netns)
 
   set +e
-  docker run --rm --network "container:$gw" \
+  docker run --rm --network "container:$net" \
     -v "$ROOT:/repo" -v "$work:/work" ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
     -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$HAS_ANTHROPIC" -e HAS_AWS="$HAS_AWS" -e HAS_BEDROCK_KEY="$HAS_BEDROCK_KEY" -e HAS_TYPESAFE="$HAS_TYPESAFE" -e LAB_FIXTURE="$fixture" \
     -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \

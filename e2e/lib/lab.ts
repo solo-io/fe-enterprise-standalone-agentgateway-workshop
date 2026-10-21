@@ -72,14 +72,39 @@ export function sh(cmd: string, cwd?: string): { code: number; stdout: string } 
  * whole lines from one. Several run in one shell, as when the reader pastes blocks into the same terminal.
  */
 export function labSh(...cmds: string[]): { code: number; stdout: string } {
+  for (const cmd of cmds) inLab(cmd, 'labSh');
+  return sh(cmds.join('\n'), '/repo/setup');
+}
+
+/**
+ * Runs a lab command of the form `docker compose exec <service> <command>`, which the Playwright image
+ * cannot run itself: checks it is in the lab as labSh does, then runs <command> with sh -c in that
+ * service's container of this run. Needs `// @docker yes`.
+ */
+export function labExec(cmd: string): { code: number; stdout: string } {
+  inLab(cmd, 'labExec');
+  const m = lines(cmd).join('\n').match(/^docker compose exec (\S+) ([\s\S]+)$/);
+  if (!m) throw new Error(`labExec: not a docker compose exec command:\n${cmd}`);
+  const name = `${process.env.COMPOSE_PROJECT}-${m[1]}-1`;
+  const api = `curl -s --unix-socket /var/run/docker.sock -H 'Content-Type: application/json' http://localhost`;
+  const create = { AttachStdout: true, AttachStderr: true, Tty: true, Cmd: ['sh', '-c', m[2]] };
+  const id = JSON.parse(sh(`${api}/containers/${name}/exec -d '${JSON.stringify(create).replace(/'/g, `'\\''`)}'`).stdout).Id;
+  if (!id) throw new Error(`labExec: could not create an exec in ${name}`);
+  const out = sh(`${api}/exec/${id}/start -d '{"Detach":false,"Tty":true}'`).stdout.replace(/\r\n/g, '\n');
+  const code = JSON.parse(sh(`${api}/exec/${id}/json`).stdout).ExitCode ?? -1;
+  return { code, stdout: out };
+}
+
+/**
+ * Fails unless `cmd` is in a code block of the lab, as labSh checks. For a lab command the spec does another
+ * way, such as `docker compose restart agentgateway`, which the spec does with helper().
+ */
+export function inLab(cmd: string, fn = 'inLab'): void {
   const md = labMarkdown();
   const blocks = codeBlocks(readFileSync(md.path, 'utf8'));
-  for (const cmd of cmds) {
-    const want = lines(cmd);
-    const found = blocks.some((block) => block.some((_, i) => want.every((line, j) => block[i + j] === line)));
-    if (!found) throw new Error(`labSh: this command is not in a code block of ${md.name}; make the spec and the lab agree:\n${cmd}`);
-  }
-  return sh(cmds.join('\n'), '/repo/setup');
+  const want = lines(cmd);
+  const found = blocks.some((block) => block.some((_, i) => want.every((line, j) => block[i + j] === line)));
+  if (!found) throw new Error(`${fn}: this command is not in a code block of ${md.name}; make the spec and the lab agree:\n${cmd}`);
 }
 
 function labMarkdown(): { name: string; path: string } {
@@ -114,10 +139,11 @@ function lines(text: string): string[] {
 }
 
 /**
- * Stops or starts a Compose helper of this run, as `docker compose stop|start <service>` does.
- * Needs `// @docker yes` in the spec header, which mounts the Docker socket.
+ * Stops, starts or restarts a Compose service of this run, as `docker compose stop|start|restart <service>` does.
+ * Needs `// @docker yes` in the spec header, which mounts the Docker socket. Restarting the gateway also
+ * needs `// @restarts gateway`, or the test browser loses its network.
  */
-export function helper(action: 'stop' | 'start', service: string): void {
+export function helper(action: 'stop' | 'start' | 'restart', service: string): void {
   const name = `${process.env.COMPOSE_PROJECT}-${service}-1`;
   const r = sh(`curl -s -o /dev/null -w '%{http_code}' --unix-socket /var/run/docker.sock -X POST http://localhost/containers/${name}/${action}`);
   if (!['204', '304'].includes(r.stdout.trim())) throw new Error(`docker ${action} ${name}: HTTP ${r.stdout}`);

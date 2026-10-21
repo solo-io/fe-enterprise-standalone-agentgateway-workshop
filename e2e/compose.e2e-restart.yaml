@@ -1,0 +1,14 @@
+# Test override for specs with `// @restarts gateway`. A pause container holds the network namespace, and the
+# gateways join it, so a gateway restart keeps the test browser's network. Without it, Playwright (which joins
+# the gateway's namespace) loses the gateway when the gateway container restarts.
+services:
+  netns:
+    image: registry.k8s.io/pause:3.10
+    networks:
+      default:
+        # Helpers reach the gateway by this name, as without the override.
+        aliases: [agentgateway]
+  agentgateway:
+    network_mode: "service:netns"
+  agentgateway-2:
+    network_mode: "service:netns"

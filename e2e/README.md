@@ -21,6 +21,8 @@ e2e/lint.sh                                         # markdown checks
 4. Compares the final `config.yaml` with the expected fixture (`// @expect`, default: the start fixture). UI metadata is ignored and empty values count as absent, except a top-level key left empty (such as `gateways: {}`), which fails: the lab's Clean up must delete it. A mismatch exits with code 2.
 5. Removes the Compose project and the temp folder.
 
+A spec that restarts the gateway, such as `platform/postgres-backend`, sets `// @restarts gateway`. The run then adds `compose.e2e-restart.yaml`: a pause container holds the network namespace and the gateways join it, so Playwright keeps its network when the gateway container restarts.
+
 The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`.
 
 ## Fixtures
