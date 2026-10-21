@@ -4,7 +4,7 @@
 // @docker yes
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { helperLogs, lab, sh } from '../../lib/lab';
+import { helperLogs, lab, labSh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 import { mcpConnect } from '../../lib/mcp';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
@@ -19,7 +19,7 @@ const PAGE_URL = 'https://docs.solo.io/agentgateway/latest/';
 // The first heading of that page. The tool description does not contain it.
 const PAGE_TEXT = '# Solo Enterprise for agentgateway latest (Kubernetes)';
 
-// The lab's optional curl, as the reader runs it from setup/.
+// The lab's optional curl.
 const CURL = `TOKEN=$(cat ../lib/jwt/tokens/bob.jwt)
 SESSION=$(curl -si http://localhost:4001/mcp \\
   -H "Authorization: Bearer $TOKEN" \\
@@ -167,7 +167,7 @@ test('the OPA decision log', async () => {
 });
 
 test('optional curl: bob calls get_full_page', async () => {
-  const out = sh(CURL.replaceAll('../lib/', '/repo/lib/')).stdout;
+  const out = labSh(CURL).stdout;
   console.log(out);
   expect(out).toMatch(/^HTTP\/1\.1 403 Forbidden/m);
   expect(out.trimEnd().endsWith(BOB_DENIED)).toBeTruthy();

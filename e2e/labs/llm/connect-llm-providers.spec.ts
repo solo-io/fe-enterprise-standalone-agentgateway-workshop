@@ -1,7 +1,7 @@
 // labs/llm/connect-llm-providers.md
 // @fixture base
 import { expect, test } from '@playwright/test';
-import { chat, lab, sh } from '../../lib/lab';
+import { chat, lab, labSh } from '../../lib/lab';
 import { deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-llm-providers');
@@ -50,10 +50,18 @@ test('curl from Client Setup works', async ({ page }) => {
   await page.locator('main').getByRole('heading', { name: 'Client Setup' }).click(); // close the suggestion list
   await expect(page.locator('main')).toContainText('"model": "openai/gpt-6-luna"');
   await shot(page, '06-client-setup', page.locator('main').getByRole('button', { name: 'Copy' }));
-  const r = sh(`curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/v1/chat/completions \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Hello from agentgateway"}]}'`);
-  expect(r.stdout).toBe('200');
+  // No -s in the copied command, so curl's progress meter (stderr) follows the body.
+  const r = labSh(`curl "http://localhost:4000/v1/chat/completions" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "openai/gpt-6-luna",
+    "messages": [
+      { "role": "user", "content": "Hello from agentgateway" }
+    ]
+  }'`);
+  expect(r.code).toBe(0);
+  expect(r.stdout).toContain('"object":"chat.completion"');
+  expect(r.stdout).toContain('"model":"gpt-6-luna');
 });
 
 test('clean up: delete the model', async ({ page }) => {

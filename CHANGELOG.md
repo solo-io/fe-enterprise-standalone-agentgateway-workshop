@@ -1,5 +1,17 @@
 # Changelog
 
+0.0.8 - (10-21-26)
+---
+- e2e testing improvements
+  - `e2e`: specs run lab commands with `labSh`, which fails unless the command is in a code block of the lab named on the spec's first line, so the command the spec tests is the one the reader pastes
+    - `labSh` runs from `setup/`, as the reader does, and runs several blocks in one shell when a later block uses variables from an earlier one
+    - specs that added `-w` to a lab's curl now check the body the lab's command prints; `llm-global-rate-limiting` runs the lab's loops and compares them with the lab's expected output
+    - `semantic-routing-jev`, `semantic-routing-openai-decisions`: the curl checks use `grep -o` instead of `jq`, which the workshop does not ask readers to install
+  - `e2e`: the end-of-run config check fails on a top-level key left empty, such as `gateways: {}`, which keeps Traffic on; before, empty values counted as absent everywhere
+  - `e2e`: `base` is now `setup/config.yaml` itself; remove the copy in `e2e/fixtures/base.yaml`
+  - `e2e/run-e2e.sh` checks each key once per run against its provider: tests that need an Anthropic, TypeSafe or AWS key skip when the key is missing or rejected (for example, expired), and a rejected OpenAI key stops the run; the Jev specs use the new `HAS_TYPESAFE` flag instead of reading the helper's environment
+  - `e2e/check-ports.sh` runs in `e2e/lint.sh` and takes the required ports from the labs (`localhost:<port>`) instead of a fixed list; it also checks that `e2e/compose.e2e.yaml` removes every published port and that `README.md` lists them
+
 0.0.7 - (10-21-26)
 ---
 - Add LLM track lab `llm-global-rate-limiting`: a **Remote rate limit** policy to the `ratelimit` helper with a shared request counter (5 per minute, sixth request gets `429`), one counter for each `x-user` header value (3 per minute), a token counter (60 per minute, **Tokens** type), and **Fail closed** (`500 rate limit failed`) against **Fail open** with the service stopped

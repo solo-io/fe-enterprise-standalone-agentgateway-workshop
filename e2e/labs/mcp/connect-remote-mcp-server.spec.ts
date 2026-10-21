@@ -1,7 +1,7 @@
 // labs/mcp/connect-remote-mcp-server.md
 // @fixture base
 import { expect, test } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { mcpConnect } from '../../lib/mcp';
 import { turnOffMcp } from '../../lib/setup';
 
@@ -73,7 +73,7 @@ test('call a tool in the Tool Playground', async ({ page }) => {
 });
 
 test('the lab curl starts an MCP session', () => {
-  const r = sh(`curl -s -i http://localhost:4001/mcp \\
+  const r = labSh(`curl -s -i http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`);

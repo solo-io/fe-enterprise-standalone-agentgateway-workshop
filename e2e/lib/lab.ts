@@ -1,12 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
-import { expect, type Locator, type Page } from '@playwright/test';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 export const UI = 'http://localhost:15000/ui';
 const UPDATE = process.env.UPDATE_SCREENSHOTS === '1';
 export const HAS_ANTHROPIC = process.env.HAS_ANTHROPIC === '1';
 export const HAS_AWS = process.env.HAS_AWS === '1';
 export const HAS_BEDROCK_KEY = process.env.HAS_BEDROCK_KEY === '1';
+export const HAS_TYPESAFE = process.env.HAS_TYPESAFE === '1';
 
 /** Navigation and screenshot helpers bound to one lab's image folder. */
 export function lab(track: string, slug: string) {
@@ -59,9 +60,57 @@ export function lab(track: string, slug: string) {
 }
 
 /** Runs a bash command (used to run a lab's exact curl). */
-export function sh(cmd: string): { code: number; stdout: string } {
-  const r = spawnSync('bash', ['-c', cmd], { encoding: 'utf8', timeout: 120_000 });
+export function sh(cmd: string, cwd?: string): { code: number; stdout: string } {
+  const r = spawnSync('bash', ['-c', cmd], { cwd, encoding: 'utf8', timeout: 120_000 });
   return { code: r.status ?? -1, stdout: (r.stdout ?? '') + (r.stderr ?? '') };
+}
+
+/**
+ * Runs commands from the lab, exactly as the reader pastes them, from the reader's `setup` folder.
+ * Fails first if any of `cmds` is not in a fenced block of the lab named on the spec's first line
+ * (`// labs/<track>/<slug>.md`), so the spec and the lab cannot drift. Each one may be a whole block or a run of
+ * whole lines from one. Several run in one shell, as when the reader pastes blocks into the same terminal.
+ */
+export function labSh(...cmds: string[]): { code: number; stdout: string } {
+  const md = labMarkdown();
+  const blocks = codeBlocks(readFileSync(md.path, 'utf8'));
+  for (const cmd of cmds) {
+    const want = lines(cmd);
+    const found = blocks.some((block) => block.some((_, i) => want.every((line, j) => block[i + j] === line)));
+    if (!found) throw new Error(`labSh: this command is not in a code block of ${md.name}; make the spec and the lab agree:\n${cmd}`);
+  }
+  return sh(cmds.join('\n'), '/repo/setup');
+}
+
+function labMarkdown(): { name: string; path: string } {
+  const spec = test.info().file;
+  const name = readFileSync(spec, 'utf8').match(/^\/\/ (\S+\.md)/)?.[1];
+  if (!name) throw new Error(`labSh: ${spec} does not start with // <lab>.md`);
+  return { name, path: `/repo/${name}` };
+}
+
+/** The fenced code blocks of a markdown file, each as dedented lines. */
+function codeBlocks(text: string): string[][] {
+  const blocks: string[][] = [];
+  let open: { fence: string; body: string[] } | undefined;
+  for (const raw of text.split('\n')) {
+    const fence = raw.match(/^\s*(`{3,})/)?.[1];
+    if (!open && fence) open = { fence, body: [] };
+    else if (open && fence && raw.trim() === open.fence) {
+      blocks.push(lines(open.body.join('\n')));
+      open = undefined;
+    } else if (open) open.body.push(raw);
+  }
+  return blocks;
+}
+
+/** Splits into lines with the shared indentation and trailing spaces removed, dropping blank edges. */
+function lines(text: string): string[] {
+  const ls = text.split('\n').map((l) => l.trimEnd());
+  while (ls.length && !ls[0]) ls.shift();
+  while (ls.length && !ls[ls.length - 1]) ls.pop();
+  const indent = Math.min(...ls.filter(Boolean).map((l) => l.length - l.trimStart().length));
+  return ls.map((l) => l.slice(indent));
 }
 
 /**

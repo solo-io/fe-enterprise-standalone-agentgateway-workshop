@@ -5,14 +5,14 @@
 // Needs ANTHROPIC_API_KEY in setup/.env; every test is skipped without it.
 import { expect, test } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { chat, HAS_ANTHROPIC, lab, sh } from '../../lib/lab';
+import { chat, HAS_ANTHROPIC, lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-anthropic');
 
 test.describe.configure({ mode: 'serial' });
 
-const NO_KEY = 'ANTHROPIC_API_KEY is not set in setup/.env';
+const NO_KEY = 'ANTHROPIC_API_KEY in setup/.env is not set or not accepted';
 
 test.beforeEach(() => test.skip(!HAS_ANTHROPIC, NO_KEY));
 
@@ -55,11 +55,9 @@ test('ask GPT and Claude in the Chat Playground', async ({ page }) => {
 });
 
 test('the same OpenAI-format curl reaches GPT', async () => {
-  const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/chat/completions \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`);
-  expect(r.stdout).toMatch(/\nHTTP 200$/);
-  const body = JSON.parse(r.stdout.replace(/\nHTTP \d+$/, ''));
+  const body = JSON.parse(labSh(`curl -s http://localhost:4000/v1/chat/completions \\
+  -H 'Content-Type: application/json' \\
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout);
   expect(body.object).toBe('chat.completion');
   expect(body.model).toMatch(/^gpt-6-luna/);
 });

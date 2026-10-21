@@ -1,7 +1,7 @@
 // labs/mcp/mcp-rate-limiting.md
 // @fixture base
 import { expect, test, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-rate-limiting');
@@ -80,7 +80,7 @@ test('Tool Playground hits the limit', async ({ page }) => {
 });
 
 test('optional curl check', async () => {
-  const r = sh(`curl -s -i http://localhost:4001/mcp \\
+  const r = labSh(`curl -s -i http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`);

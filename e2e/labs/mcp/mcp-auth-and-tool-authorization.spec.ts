@@ -2,7 +2,7 @@
 // @fixture base
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { mcpConnect } from '../../lib/mcp';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
@@ -156,18 +156,18 @@ test('bob does not see search, alice still does', async ({ page }) => {
 });
 
 test('optional curl checks', async () => {
-  const anon = sh(`curl -s -o /dev/null -w '%{http_code}' http://localhost:4001/mcp \\
+  const anon = labSh(`curl -s -o /dev/null -w '%{http_code}\\n' http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`);
-  expect(anon.stdout).toBe('401');
-  const withTok = sh(`TOKEN=$(cat /repo/lib/jwt/tokens/alice.jwt)
-curl -s -o /dev/null -w '%{http_code}' http://localhost:4001/mcp \\
+  expect(anon.stdout.trim()).toBe('401');
+  const withTok = labSh(`TOKEN=$(cat ../lib/jwt/tokens/alice.jwt)
+curl -s -o /dev/null -w '%{http_code}\\n' http://localhost:4001/mcp \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`);
-  expect(withTok.stdout).toBe('200');
+  expect(withTok.stdout.trim()).toBe('200');
 });
 
 test('clean up: turn off MCP', async ({ page }) => {

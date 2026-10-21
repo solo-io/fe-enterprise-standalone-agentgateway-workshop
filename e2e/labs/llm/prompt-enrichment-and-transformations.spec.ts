@@ -2,7 +2,7 @@
 // @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { chat, lab, sh } from '../../lib/lab';
+import { chat, lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'prompt-enrichment-and-transformations');
@@ -64,7 +64,7 @@ test('add response headers with a Transformations policy', async ({ page }) => {
 
 test('the response carries the new headers', async () => {
   await new Promise((r) => setTimeout(r, 2000));
-  const r = sh(CURL);
+  const r = labSh(CURL);
   expect(r.stdout).toMatch(/^HTTP\/1\.1 200/);
   expect(r.stdout).toMatch(/^x-user-id: anonymous$/m);
   expect(r.stdout).toMatch(/^x-llm-response-model: gpt-6-luna\r?$/m);

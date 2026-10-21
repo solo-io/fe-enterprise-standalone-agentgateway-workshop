@@ -5,7 +5,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'fs';
 import { readConfig } from '../../lib/config';
-import { chatRequest, helper, helperLogs, lab, sh } from '../../lib/lab';
+import { chatRequest, HAS_TYPESAFE, helper, helperLogs, lab, labSh, sh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'webhook-guardrails-jev');
@@ -15,7 +15,7 @@ test.describe.configure({ mode: 'serial' });
 const SERVICE = 'guardrail-jev';
 const KEY_VAR = 'TYPESAFE_AI_API_KEY';
 const HOOK = `http://${SERVICE}:8000`;
-const NO_KEY = `needs ${KEY_VAR} in the shell or setup/.env`;
+const NO_KEY = `needs a working ${KEY_VAR} in the shell or setup/.env`;
 const POLICY = `/work/${SERVICE}/policy.json`;
 const ORIGINAL_POLICY = `/repo/setup/${SERVICE}/policy.json`;
 
@@ -90,7 +90,7 @@ async function waitStarted(page: Page, before = 0): Promise<string> {
   return startedLines().at(-1)!;
 }
 
-const HAS_KEY = (() => { try { return containerEnv(KEY_VAR) !== ''; } catch { return false; } })();
+const HAS_KEY = HAS_TYPESAFE;
 
 /** The webhook's decision lines, oldest first. */
 function decisions(): any[] {
@@ -189,7 +189,7 @@ test('step 3: harassment and an indirect jailbreak are rejected', async ({ page 
   await expectBlocked(page, HARASSMENT, HARASSMENT_MSG, '04-harassment-blocked');
   await expectBlocked(page, JAILBREAK, INJECTION_MSG, '05-jailbreak-blocked');
   // The optional curl in Check it.
-  const curl = sh(`curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:4000/v1/chat/completions \\
+  const curl = labSh(`curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"${HARASSMENT}"}]}'`).stdout;
   expect(curl).toBe(`${HARASSMENT_MSG}\nHTTP 403\n`);

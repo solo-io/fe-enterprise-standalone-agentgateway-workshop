@@ -4,7 +4,7 @@
 // @docker yes
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'fs';
-import { chat, helperLogs, lab, sh } from '../../lib/lab';
+import { chat, helperLogs, lab, labSh, sh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
@@ -20,11 +20,15 @@ test('set up', async ({ page }) => {
   await addOpenAIModel(page);
 });
 
-/** Runs the lab's curl for a model, with an optional token. Returns the full response with headers. */
-function curl(model: string, token = ''): string {
-  return sh(`curl -si http://localhost:4000/v1/chat/completions \\
+/**
+ * Runs the lab's curl for a model, with an optional token file. Returns the full response with headers.
+ * `run` is sh for the alice request, which the lab describes in prose without a code block.
+ */
+function curl(model: string, tokenFile = '', run = labSh): string {
+  const auth = tokenFile ? `  -H "Authorization: Bearer $(cat ../lib/jwt/tokens/${tokenFile})" \\\n` : '';
+  return run(`curl -si http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  ${token ? `-H "Authorization: Bearer ${token}" ` : ''}-d '{"model":"openai/${model}","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
+${auth}  -d '{"model":"openai/${model}","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
 }
 
 async function policyCard(page: Page, title: string): Promise<Locator> {
@@ -90,14 +94,14 @@ test('curl: tokens and models', async () => {
   expect(none).toMatch(/^HTTP\/1\.1 403 Forbidden/);
   expect(none.trimEnd().endsWith('denied by OPA: send a valid workshop token')).toBeTruthy();
 
-  const bobMini = curl('gpt-6-luna', BOB);
+  const bobMini = curl('gpt-6-luna', 'bob.jwt');
   expect(bobMini).toMatch(/^HTTP\/1\.1 200 OK/);
 
-  const bobOther = curl('gpt-6.1-sol', BOB);
+  const bobOther = curl('gpt-6.1-sol', 'bob.jwt');
   expect(bobOther).toMatch(/^HTTP\/1\.1 403 Forbidden/);
   expect(bobOther.trimEnd().endsWith('denied by OPA: team marketing may not use model openai/gpt-6.1-sol')).toBeTruthy();
 
-  const alice = curl('gpt-6.1-sol', ALICE);
+  const alice = curl('gpt-6.1-sol', 'alice.jwt', (cmd) => sh(cmd, '/repo/setup'));
   expect(alice).toMatch(/^HTTP\/1\.1 200 OK/);
 });
 
@@ -114,7 +118,7 @@ test('change the policy without touching the gateway', async () => {
   expect(edited).not.toBe(orig);
   writeFileSync(POLICY, edited);
   await new Promise((r) => setTimeout(r, 5000));
-  expect(curl('gpt-6.1-sol', BOB)).toMatch(/^HTTP\/1\.1 200 OK/);
+  expect(curl('gpt-6.1-sol', 'bob.jwt')).toMatch(/^HTTP\/1\.1 200 OK/);
 });
 
 test('clean up: delete the policy', async ({ page }) => {

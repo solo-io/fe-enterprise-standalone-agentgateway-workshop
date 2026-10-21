@@ -5,7 +5,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { writeFileSync } from 'fs';
 import { readConfig } from '../../lib/config';
-import { chat, helper, helperLogs, lab, sh } from '../../lib/lab';
+import { chat, helper, helperLogs, lab, labSh, sh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'semantic-routing-openai-decisions');
@@ -201,18 +201,18 @@ test('check it: Logs show the model that served each prompt', async ({ page }) =
     .toEqual(PROMPTS.map((p) => ['auto_model', p.model, p.tier, p.reason, p.choice ?? p.tier]));
 });
 
-const model = (body: string): string => JSON.parse(body).model;
+/** The model name in what the lab's grep prints, "model":"<name>". */
+const model = (out: string): string => out.trim().match(/^"model":"([^"]*)"$/)?.[1] ?? out;
 
 test('optional curl: auto_model and a named model', () => {
   test.skip(!HAS_KEY, NO_KEY);
-  // The lab pipes to `jq -r '.model'`; the test image has no jq, so the test parses the JSON itself.
-  const auto = model(sh(`curl -s http://localhost:4000/v1/chat/completions \\
+  const auto = model(labSh(`curl -s http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -d '{"model":"auto_model","messages":[{"role":"user","content":"Summarize this email in one sentence: lunch moved to noon."}]}'`).stdout);
+  -d '{"model":"auto_model","messages":[{"role":"user","content":"Summarize this email in one sentence: lunch moved to noon."}]}' | grep -o '"model":"[^"]*"'`).stdout);
   expect(auto).toMatch(/^gpt-5-nano-\d{4}-\d{2}-\d{2}$/);
-  const named = model(sh(`curl -s http://localhost:4000/v1/chat/completions \\
+  const named = model(labSh(`curl -s http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -d '{"model":"openai/gpt-5-nano","messages":[{"role":"user","content":"Prove that sqrt(2) is irrational."}]}'`).stdout);
+  -d '{"model":"openai/gpt-5-nano","messages":[{"role":"user","content":"Prove that sqrt(2) is irrational."}]}' | grep -o '"model":"[^"]*"'`).stdout);
   expect(named).toMatch(/^gpt-5-nano-\d{4}-\d{2}-\d{2}$/);
   // The named model passed through the adapter without a Decisions API call.
   expect(decisions().length).toBe(PROMPTS.length + 1);

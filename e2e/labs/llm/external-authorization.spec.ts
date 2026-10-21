@@ -2,7 +2,7 @@
 // @fixture base
 // @profiles ext-authz
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
@@ -18,9 +18,9 @@ test('set up', async ({ page }) => {
 
 /** Runs the lab's curl, with an optional extra header line. Returns the full response with headers. */
 function curl(header = ''): string {
-  return sh(`curl -si http://localhost:4000/v1/chat/completions \\
+  return labSh(`curl -si http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  ${header ? `-H "${header}" ` : ''}-d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
+${header ? `  -H "${header}" \\\n` : ''}  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"${PROMPT}"}]}'`).stdout;
 }
 
 async function policyCard(page: Page, title: string): Promise<Locator> {

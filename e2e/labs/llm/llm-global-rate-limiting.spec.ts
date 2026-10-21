@@ -3,7 +3,7 @@
 // @profiles ratelimit
 // @docker yes
 import { expect, test, type Page } from '@playwright/test';
-import { helper, lab, sh } from '../../lib/lab';
+import { helper, lab, labSh, sh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
 
@@ -30,12 +30,38 @@ async function setValue(page: Page, cel: string): Promise<void> {
   await page.waitForTimeout(800);
 }
 
+/** One request that the lab does not show, to check the limit or log the error body. */
 function chat(user?: string) {
   const h = user ? `-H 'x-user: ${user}'` : '';
   const r = sh(`curl -s -w '\\n%{http_code}' http://localhost:4000/v1/chat/completions -H 'Content-Type: application/json' ${h} \\
   -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Say hi"}],"max_tokens":5}'`);
   const lines = r.stdout.trim().split('\n');
   return { status: Number(lines.pop()), body: lines.join('\n') };
+}
+
+// The lab's commands.
+const SIX_REQUESTS = `for i in 1 2 3 4 5 6; do
+  curl -s -o /dev/null -w "request $i: HTTP %{http_code}\\n" http://localhost:4000/v1/chat/completions \\
+    -H "Content-Type: application/json" \\
+    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Say hi"}],"max_tokens":5}'
+done`;
+const PER_USER = `for user in alice alice alice alice bob; do
+  curl -s -o /dev/null -w "$user: HTTP %{http_code}\\n" http://localhost:4000/v1/chat/completions \\
+    -H "Content-Type: application/json" -H "x-user: $user" \\
+    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Say hi"}],"max_tokens":5}'
+done`;
+const TEN_REQUESTS = `for i in $(seq 1 10); do
+  curl -s -o /dev/null -w "request $i: HTTP %{http_code}\\n" http://localhost:4000/v1/chat/completions \\
+    -H "Content-Type: application/json" \\
+    -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Say hi"}],"max_tokens":5}'
+done`;
+const ONE_REQUEST = `curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:4000/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Say hi"}],"max_tokens":5}'`;
+
+/** Runs a lab command and returns its output lines. */
+function run(cmd: string): string[] {
+  return labSh(cmd).stdout.trim().split('\n');
 }
 
 test('set up', async ({ page }) => {
@@ -69,8 +95,7 @@ test('add a shared request counter', async ({ page }) => {
 test('the sixth request gets 429', async ({ page }) => {
   await page.waitForTimeout(2000);
   await startOfMinute(page);
-  const codes = [1, 2, 3, 4, 5, 6].map(() => chat().status);
-  expect(codes).toEqual([200, 200, 200, 200, 200, 429]);
+  expect(run(SIX_REQUESTS)).toEqual([1, 2, 3, 4, 5, 6].map((i) => `request ${i}: HTTP ${i < 6 ? 200 : 429}`));
   const blocked = chat();
   expect(blocked.status).toBe(429);
   console.log('429 body:', JSON.stringify(blocked.body));
@@ -96,8 +121,7 @@ test('one counter for each user', async ({ page }) => {
   expect(readConfig().llm.policies.remoteRateLimit.descriptors).toEqual([{ entries: [{ key: 'user', value: 'request.headers["x-user"]' }] }]);
 
   await startOfMinute(page);
-  expect([1, 2, 3, 4].map(() => chat('alice').status)).toEqual([200, 200, 200, 429]);
-  expect([1, 2, 3, 4].map(() => chat('bob').status)).toEqual([200, 200, 200, 429]);
+  expect(run(PER_USER)).toEqual(['alice: HTTP 200', 'alice: HTTP 200', 'alice: HTTP 200', 'alice: HTTP 429', 'bob: HTTP 200']);
 });
 
 test('count tokens', async ({ page }) => {
@@ -114,12 +138,11 @@ test('count tokens', async ({ page }) => {
   expect(readConfig().llm.policies.remoteRateLimit.descriptors).toEqual([{ type: 'tokens', entries: [{ key: 'tokens', value: '"all"' }] }]);
 
   await startOfMinute(page);
-  const codes: number[] = [];
-  for (let i = 0; i < 10; i++) codes.push(chat().status);
-  console.log('token codes:', codes.join(','));
+  const out = run(TEN_REQUESTS);
+  console.log('token codes:', out.join(','));
   // Each request uses 13 tokens (8 in, 5 out). The service adds them after the response, so the fifth request
   // takes the count past 60 and still passes, and the sixth is blocked.
-  expect(codes).toEqual([200, 200, 200, 200, 200, 429, 429, 429, 429, 429]);
+  expect(out).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => `request ${i}: HTTP ${i < 6 ? 200 : 429}`));
 });
 
 test('fail closed and fail open', async ({ page }) => {
@@ -135,9 +158,9 @@ test('fail closed and fail open', async ({ page }) => {
 
   helper('stop', 'ratelimit');
   await page.waitForTimeout(1000);
-  const closed = chat();
-  console.log('fail closed:', closed.status, JSON.stringify(closed.body));
-  expect(closed.status).toBe(500);
+  const closed = run(ONE_REQUEST);
+  console.log('fail closed:', JSON.stringify(closed));
+  expect(closed).toEqual(['rate limit failed', 'HTTP 500']);
 
   await go(page, '/llm/policies');
   await card(page).click();
@@ -147,7 +170,7 @@ test('fail closed and fail open', async ({ page }) => {
   await save(page, 'Save policy');
   await page.waitForTimeout(2000);
   expect(readConfig().llm.policies.remoteRateLimit.failureMode).toBe('failOpen');
-  expect(chat().status).toBe(200);
+  expect(run(ONE_REQUEST).at(-1)).toBe('HTTP 200');
 
   helper('start', 'ratelimit');
 });

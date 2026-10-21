@@ -5,23 +5,22 @@
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { readConfig } from '../../lib/config';
-import { chat, HAS_ANTHROPIC, lab, sh } from '../../lib/lab';
+import { chat, HAS_ANTHROPIC, lab, labSh } from '../../lib/lab';
 
 const { go, shot, save } = lab('llm', 'connect-anthropic');
 
 test.describe.configure({ mode: 'serial' });
 
 const CLAUDE = 'anthropic/claude-haiku-5-5';
-const NO_KEY = 'ANTHROPIC_API_KEY is not set in setup/.env';
+const NO_KEY = 'ANTHROPIC_API_KEY in setup/.env is not set or not accepted';
 
 test.beforeEach(() => test.skip(!HAS_ANTHROPIC, NO_KEY));
 
-/** Sends the lab's OpenAI-format curl and returns the parsed body and status. */
-function chatCompletions(model: string) {
-  const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/chat/completions \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"${model}","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`);
-  return { status: r.stdout.match(/\nHTTP (\d+)$/)?.[1], body: JSON.parse(r.stdout.replace(/\nHTTP \d+$/, '')) };
+/** Sends the lab's OpenAI-format curl and returns the parsed body. */
+function chatCompletions() {
+  return JSON.parse(labSh(`curl -s http://localhost:4000/v1/chat/completions \\
+  -H 'Content-Type: application/json' \\
+  -d '{"model":"${CLAUDE}","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout);
 }
 
 test('add the Anthropic provider', async ({ page }) => {
@@ -72,21 +71,18 @@ test('chat with Claude in the Chat Playground', async ({ page }) => {
 });
 
 test('the OpenAI-format curl reaches Claude', async () => {
-  const b = chatCompletions(CLAUDE);
-  expect(b.status).toBe('200');
-  expect(b.body.object).toBe('chat.completion');
-  expect(b.body.model).toMatch(/^claude-haiku-5-5/);
-  expect(b.body.id).toMatch(/^msg_/);
-  writeFileSync('/repo/e2e/.last/connect-anthropic-curl.json', JSON.stringify(b.body, null, 2));
+  const body = chatCompletions();
+  expect(body.object).toBe('chat.completion');
+  expect(body.model).toMatch(/^claude-haiku-5-5/);
+  expect(body.id).toMatch(/^msg_/);
+  writeFileSync('/repo/e2e/.last/connect-anthropic-curl.json', JSON.stringify(body, null, 2));
 });
 
 test('the Anthropic Messages API answers through the gateway', async () => {
-  const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/messages \\
-    -H 'Content-Type: application/json' \\
-    -H 'anthropic-version: 2023-06-01' \\
-    -d '{"model":"${CLAUDE}","max_tokens":1024,"messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`);
-  expect(r.stdout).toMatch(/\nHTTP 200$/);
-  const body = JSON.parse(r.stdout.replace(/\nHTTP \d+$/, ''));
+  const body = JSON.parse(labSh(`curl -s http://localhost:4000/v1/messages \\
+  -H 'Content-Type: application/json' \\
+  -H 'anthropic-version: 2023-06-01' \\
+  -d '{"model":"${CLAUDE}","max_tokens":1024,"messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout);
   expect(body.type).toBe('message');
   expect(body.role).toBe('assistant');
   expect(body.model).toMatch(/^claude-haiku-5-5/);

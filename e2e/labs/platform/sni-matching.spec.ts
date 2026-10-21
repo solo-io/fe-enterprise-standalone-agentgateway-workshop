@@ -3,20 +3,23 @@
 // @profiles mock-llm
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh, sh } from '../../lib/lab';
 
 const { go, shot, save } = lab('platform', 'sni-matching');
 
 test.describe.configure({ mode: 'serial' });
 
-// The lab's command, as written. The reader runs it from the setup/ folder.
+// The lab's commands. The reader runs them from the setup/ folder.
 const call = (host: string) => `curl -sS -o /dev/null -w '%{http_code}\\n' --cacert tls/ca.crt \\
   --resolve ${host}:8443:127.0.0.1 https://${host}:8443/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
   -d '{"model":"mock-gpt","messages":[{"role":"user","content":"Hello"}]}'`;
+const SUBJECT_FOO = `curl -sv -o /dev/null --cacert tls/ca.crt \\
+  --resolve foo.example.com:8443:127.0.0.1 https://foo.example.com:8443/v1/models 2>&1 | grep 'subject:'`;
 
-function run(cmd: string): { code: number; out: string } {
-  const r = sh(`cd /repo/setup && ${cmd}`);
+/** Runs `cmd` from setup/. `inLab` false is for a variant the lab only describes in words. */
+function run(cmd: string, inLab = true): { code: number; out: string } {
+  const r = inLab ? labSh(cmd) : sh(cmd, '/repo/setup');
   console.log(`$ ${cmd}\nexit ${r.code}\n${r.stdout}`);
   return { code: r.code, out: r.stdout.trim() };
 }
@@ -119,12 +122,11 @@ test('check it: each hostname gets its own certificate, and an unknown hostname 
     expect(r.code).toBe(0); // curl verified a certificate for this exact hostname
     expect(r.out).toBe('200');
   }
-  // The optional block: the certificate subject for each hostname.
-  for (const name of ['foo', 'bar']) {
-    const v = run(`curl -sv -o /dev/null --cacert tls/ca.crt \\
-  --resolve ${name}.example.com:8443:127.0.0.1 https://${name}.example.com:8443/v1/models 2>&1 | grep 'subject:'`);
-    expect(v.out).toBe(`*  subject: O=agentgateway workshop; CN=${name}.example.com`);
-  }
+  // The optional block: the certificate subject. The lab shows the foo command and tells the reader to change foo to bar.
+  let v = run(SUBJECT_FOO);
+  expect(v.out).toBe('*  subject: O=agentgateway workshop; CN=foo.example.com');
+  v = run(SUBJECT_FOO.replaceAll('foo', 'bar'), false);
+  expect(v.out).toBe('*  subject: O=agentgateway workshop; CN=bar.example.com');
   const r = run(call('baz.example.com'));
   expect(r.code).toBe(35); // TLS handshake failed: no listener for this hostname
   expect(r.out).toMatch(/^000$/m);

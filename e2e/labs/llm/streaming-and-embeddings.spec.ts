@@ -2,7 +2,7 @@
 // @fixture base
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'streaming-and-embeddings');
@@ -14,9 +14,9 @@ test('set up', async ({ page }) => {
 });
 
 test('stream a reply', async () => {
-  const r = sh(`curl -sN http://localhost:4000/v1/chat/completions \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-6-luna","stream":true,"messages":[{"role":"user","content":"Count from 1 to 5, one number per line."}]}'`);
+  const r = labSh(`curl -sN http://localhost:4000/v1/chat/completions \\
+  -H 'Content-Type: application/json' \\
+  -d '{"model":"openai/gpt-6-luna","stream":true,"messages":[{"role":"user","content":"Count from 1 to 5, one number per line."}]}'`);
   writeFileSync('/repo/e2e/.last/streaming-and-embeddings-stream.txt', r.stdout);
   const events = r.stdout.split('\n').filter((l) => l.startsWith('data: '));
   expect(events.at(-1)).toBe('data: [DONE]');
@@ -31,9 +31,9 @@ test('stream a reply', async () => {
 });
 
 test('create an embedding', async () => {
-  const r = sh(`curl -s http://localhost:4000/v1/embeddings \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/text-embedding-3-small","input":"The gateway counts every request."}'`);
+  const r = labSh(`curl -s http://localhost:4000/v1/embeddings \\
+  -H 'Content-Type: application/json' \\
+  -d '{"model":"openai/text-embedding-3-small","input":"The gateway counts every request."}'`);
   writeFileSync('/repo/e2e/.last/streaming-and-embeddings-embedding.json', r.stdout);
   const body = JSON.parse(r.stdout);
   expect(body.object).toBe('list');

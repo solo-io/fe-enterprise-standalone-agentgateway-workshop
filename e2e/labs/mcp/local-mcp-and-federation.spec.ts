@@ -2,7 +2,7 @@
 // @fixture base
 // @profiles mcp-everything
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh, sh } from '../../lib/lab';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'local-mcp-and-federation');
@@ -58,7 +58,7 @@ test('set up', async ({ page }) => {
 });
 
 test('add the local MCP server', async ({ page }) => {
-  // The lab's readiness check: npx downloads the server when the container starts.
+  // Wait for the server to answer: npx downloads it when the container starts.
   await expect.poll(() => sh(`curl -s -o /dev/null -w '%{http_code}' http://mcp-everything:3001/mcp`).stdout.trim(),
     { timeout: 180_000, intervals: [2000] }).not.toBe('000');
   const row = await addServer(page, 'everything', 'http://mcp-everything:3001/mcp', '01-add-server');
@@ -85,7 +85,7 @@ test('see tools from both servers in one session', async ({ page }) => {
   await shot(page, '05-echo-result', out);
 });
 
-// The lab's optional curl check, run as written.
+// The lab's optional curl check.
 const CURL = `SESSION=$(curl -s -D - -o /dev/null http://localhost:4001/mcp \\
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
@@ -99,7 +99,7 @@ curl -s http://localhost:4001/mcp \\
   | grep -o '"name":"[^"]*"'`;
 
 test('optional curl check lists both servers', async () => {
-  const r = sh(CURL);
+  const r = labSh(CURL);
   console.log(r.stdout);
   expect(r.stdout).toContain('"name":"solo-docs_search"');
   expect(r.stdout).toContain('"name":"everything_echo"');
