@@ -51,6 +51,7 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 | Lab | What you do | Needs |
 |---|---|---|
 | [Token Rate Limit](labs/llm/local-rate-limiting.md) | Cap tokens per minute and see the 429 | |
+| [Global Rate Limit](labs/llm/llm-global-rate-limiting.md) | Share one limit across gateways with a rate limit service: a shared request counter, a counter for each user, a token counter, fail closed and fail open | `ratelimit` |
 | [Cost Tracking and Budgets](labs/llm/budgets-and-cost-tracking.md) | Set a model price, block requests over a token budget, see spend in Analytics | |
 
 ### Guardrails
@@ -107,6 +108,7 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 | Lab | What you do | Needs |
 |---|---|---|
 | [MCP Rate Limit](labs/mcp/mcp-rate-limiting.md) | Limit MCP requests and see the rate limit error on a tool call | |
+| [MCP Global Rate Limit](labs/mcp/mcp-global-rate-limiting.md) | Keep the MCP request count in the shared rate limit service and read the same error on a tool call | `ratelimit` |
 | [MCP Policy Server Guardrails](labs/mcp/mcp-guardrails.md) | Scope tools per persona, deny purchase orders over a limit, block outside email, mask bank details, compare fail closed with fail open | `mcp-guardrails` |
 
 ## Platform track

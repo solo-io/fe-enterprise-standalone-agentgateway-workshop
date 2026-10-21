@@ -1,5 +1,12 @@
 # Changelog
 
+0.0.7 - (10-21-26)
+---
+- Add LLM track lab `llm-global-rate-limiting`: a **Remote rate limit** policy to the `ratelimit` helper with a shared request counter (5 per minute, sixth request gets `429`), one counter for each `x-user` header value (3 per minute), a token counter (60 per minute, **Tokens** type), and **Fail closed** (`500 rate limit failed`) against **Fail open** with the service stopped
+- Add MCP track lab `mcp-global-rate-limiting`: the same service with the descriptor `counter=mcp` (5 per hour); the sixth request is a tool result with `isError: true`, as with the local rate limit; restarting Redis clears the count
+- Add helper profile `ratelimit`: `envoyproxy/ratelimit:f4e76690` with `redis:7.4.11-alpine` (no snapshots, so a restart clears the counts); rules in `setup/ratelimit/config.yaml`
+- `README.md`: add both labs
+
 0.0.6 - (10-20-26)
 ---
 - `README.md`: reorder the Providers and clients and Routing and resilience tables
