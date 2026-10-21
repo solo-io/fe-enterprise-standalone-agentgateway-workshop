@@ -12,7 +12,7 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 
 A few labs need another API key or AWS credentials. The **Needs** column in each lab table lists them, with the helper services.
 
-The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab.
+The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab and `15100` and `4100` (second gateway) in the Postgres lab.
 
 ## Start here
 
@@ -23,7 +23,7 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 |---|---|
 | [LLM](#llm-track) | [Providers and clients](#providers-and-clients) · [Access control](#model-access-control) · [Cost and limits](#cost-and-limits) · [Guardrails](#guardrails) · [Request processing](#request-processing) · [Routing and resilience](#routing-and-resilience) |
 | [MCP](#mcp-track) | [Servers and tools](#mcp-servers-and-tools) · [Access control](#mcp-access-control) · [Limits and guardrails](#mcp-limits-and-guardrails) |
-| [Platform](#platform-track) | UI access · TLS · Metrics and tracing |
+| [Platform](#platform-track) | UI access · TLS · Postgres · Metrics and tracing |
 
 ## LLM track
 
@@ -121,6 +121,7 @@ The two UI access labs set up the same roles: the first with passwords, the seco
 | [UI Sign-In with Keycloak](labs/platform/ui-access-control-oidc.md) | Sign users in through Keycloak, give each Keycloak group a role, and let one user manage one model | `keycloak` |
 | [TLS Termination and mTLS](labs/platform/tls-termination.md) | Make an HTTPS gateway on port `8443` with the workshop certificates, then require a client certificate (mTLS) | `mock-llm` |
 | [SNI Matching](labs/platform/sni-matching.md) | Serve `foo.example.com` and `bar.example.com` on one port, each with its own certificate (SNI) | `mock-llm` |
+| [Postgres Backend](labs/platform/postgres-backend.md) | Move request logs and UI changes to Postgres, start a second gateway on the same database, see both gateways' requests in one log and a model deleted on one gateway disappear from the other | `postgres` |
 | [Metrics, Traces and Alerts](labs/platform/metrics-and-tracing.md) | Scrape the gateway with Prometheus, read the agentgateway dashboard, open a trace with model and token counts, fire an error-rate alert | `observability`, `mock-llm-faults` |
 
 ## Helper services

@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+# Second gateway for the postgres-backend lab. It reads models, keys and logs from the same Postgres
+# database as the first gateway. It shares the first gateway's network, so every port differs from it.
+config:
+  adminAddr: 0.0.0.0:15100
+  statsAddr: 0.0.0.0:15120
+  readinessAddr: 0.0.0.0:15121
+  database:
+    url: postgres://agentgateway:agentgateway@postgres:5432/agentgateway
+  storage:
+    mode: hybrid
+  modelCatalog:
+    - file: /config/base-costs.json
+llm:
+  port: 4100
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:15100
+      allowHeaders:
+        - '*'
+      allowMethods:
+        - GET
+        - POST
+frontendPolicies:
+  http:
+    maxBufferSize: 33554432

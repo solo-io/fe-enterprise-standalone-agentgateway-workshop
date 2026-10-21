@@ -27,6 +27,8 @@ services:
       - "8443:8443"   # HTTPS traffic gateway (tls-termination, sni-matching), with the files in setup/tls/
       - "8180:8180"   # Keycloak (keycloak profile), which shares the gateway's network
       - "6274:6274"   # MCP Inspector (mcp-inspector profile), which shares the gateway's network
+      - "15100:15100" # second gateway's admin API and UI (postgres profile), which shares the gateway's network
+      - "4100:4100"   # second gateway's LLM traffic (postgres profile)
 
   # Helper services. Labs that need one start it with: docker compose --profile <name> up -d
 
@@ -269,3 +271,36 @@ services:
       RUNTIME_IGNOREDOTFILES: "true"
     volumes:
       - ./ratelimit/config.yaml:/data/ratelimit/config/config.yaml:ro
+
+  # postgres: a Postgres database for the gateway's request logs and UI changes (postgres-backend lab).
+  # No host port: open it with docker compose exec postgres psql -U agentgateway.
+  postgres:
+    profiles: [postgres]
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_DB: agentgateway
+      POSTGRES_USER: agentgateway
+      POSTGRES_PASSWORD: agentgateway
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentgateway -d agentgateway"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # agentgateway-2: a second gateway on the same Postgres database, with its config in setup/postgres/.
+  # It runs in the first gateway's network on other ports: UI on 15100, LLM traffic on 4100.
+  # Restarting the first gateway disconnects it, so stop it first.
+  agentgateway-2:
+    profiles: [postgres]
+    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.10.0
+    user: "${UID:-1000}:${GID:-1000}"
+    network_mode: "service:agentgateway"
+    command: ["-f", "/config/postgres/gateway-2.yaml"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENTERPRISE_AGENTGATEWAY_LICENSE_KEY: ${ENTERPRISE_AGENTGATEWAY_LICENSE_KEY:?set ENTERPRISE_AGENTGATEWAY_LICENSE_KEY in .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
+    volumes:
+      - .:/config:ro

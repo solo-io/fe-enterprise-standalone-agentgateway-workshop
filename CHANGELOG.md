@@ -1,5 +1,11 @@
 # Changelog
 
+0.0.9 - (10-21-26)
+---
+- Add Platform track lab `postgres-backend`: point the gateway at Postgres in Raw Configuration (`config.database.url`) with `config.storage.mode: hybrid`
+- Add helper profile `postgres`: `postgres:17.11-alpine` and `agentgateway-2`, a second gateway with `setup/postgres/gateway-2.yaml` that runs in the gateway's network with its UI on port `15100` and LLM traffic on `4100`
+- `README.md`: add the lab and ports `15100` and `4100`
+
 0.0.8 - (10-21-26)
 ---
 - e2e testing improvements
