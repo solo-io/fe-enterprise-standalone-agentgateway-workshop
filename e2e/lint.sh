@@ -4,6 +4,7 @@
 #  - every lab has "## Clean up"
 #  - every relative link and image resolves
 #  - no em dashes in markdown files
+#  - host ports in setup/docker-compose.yml match the labs (check-ports.sh)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,6 +29,8 @@ for f in README.md style-guide.md 001-*.md labs/*/*.md; do
   done < <(awk '/^```/{c=!c;next} !c' "$f" | sed -E 's/`[^`]*`//g' | grep -oE '\]\([^)]+\)' | sed -E 's/^\]\(//; s/\)$//' | grep -vE '^(https?:|mailto:|#)')
   grep -n '—' "$f" | sed "s|^|$f: em dash: |" >&2 && fail=1
 done
+
+e2e/check-ports.sh || fail=1
 
 [ $fail -eq 0 ] && echo "lint ok"
 exit $fail

@@ -1,7 +1,7 @@
 // labs/mcp/openapi-to-mcp.md
 // @fixture base
 import { expect, test } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'openapi-to-mcp');
@@ -167,7 +167,7 @@ curl -s http://localhost:4001/mcp \\
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"getWeatherForecast","arguments":{"query":{"latitude":51.5072,"longitude":-0.1276,"current":"temperature_2m"}}}}'`;
 
 test('optional curl check', async () => {
-  const r = sh(CURL);
+  const r = labSh(CURL);
   console.log(r.stdout.slice(0, 600));
   expect(r.stdout).toContain('current_units');
 });

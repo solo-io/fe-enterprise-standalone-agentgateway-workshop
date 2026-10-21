@@ -1,7 +1,7 @@
 // labs/platform/ui-access-control.md
 // @fixture base
 import { expect, type Browser, type Page, test } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh, sh } from '../../lib/lab';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('platform', 'ui-access-control');
@@ -251,7 +251,8 @@ test('the admin port keeps full access', async ({ page }) => {
   await expect(page.locator('main')).toContainText('Connected through the admin interface, which always has full access.');
   await shot(page, '17-admin-interface');
 
-  const out = sh(`for u in alice bob carol; do
+  // The lab's optional curl check.
+  const out = labSh(`for u in alice bob carol; do
   echo "$u: $(curl -s -o /dev/null -w '%{http_code}' -u $u:workshop http://localhost:8080/api/config)"
 done
 echo "no password: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/config)"`).stdout;

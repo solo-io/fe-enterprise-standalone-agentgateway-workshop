@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 
 const { go, shot, save } = lab('llm', 'routing-match-types');
 
@@ -32,7 +32,7 @@ const BACKENDS = `backends:
 function model(path: string, extra = ''): string {
   const cmd = `curl -s 'http://localhost:8080${path}' ${extra}-H 'Content-Type: application/json' \\
   -d '{"messages":[{"role":"user","content":"Hello"}]}' | grep -o '"model":"[^"]*"'`;
-  const out = sh(cmd).stdout.trim();
+  const out = labSh(cmd).stdout.trim();
   console.log(`${path} ${extra}=> ${out}`);
   return out;
 }
@@ -189,8 +189,7 @@ test('add a query route to nano', async ({ page }) => {
 
 test('check it: each match sends the request to nano', async ({ page }) => {
   await new Promise((r) => setTimeout(r, 2000));
-  // The lab's loop, as written.
-  const out = sh(`for q in '?model=nano' '?model=mini' ''; do
+  const out = labSh(`for q in '?model=nano' '?model=mini' ''; do
   curl -s "http://localhost:8080/v1/chat/completions$q" -H 'Content-Type: application/json' \\
     -d '{"messages":[{"role":"user","content":"Hello"}]}' | grep -o '"model":"[^"]*"'
 done`).stdout.trim();

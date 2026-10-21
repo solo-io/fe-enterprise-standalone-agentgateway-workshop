@@ -8,7 +8,7 @@ const { go, shot, save } = lab('llm', 'connect-amazon-bedrock');
 
 test.describe.configure({ mode: 'serial' });
 
-const NO_AWS = 'needs AWS credentials (AWS_ACCESS_KEY_ID in the shell or setup/.env)';
+const NO_AWS = 'needs working AWS credentials (AWS_ACCESS_KEY_ID in the shell or setup/.env)';
 const HAIKU = 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 const SONNET = 'us.anthropic.claude-sonnet-4-6';
 // The line the reader adds under awsRegion in Raw Configuration.

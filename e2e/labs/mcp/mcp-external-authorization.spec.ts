@@ -3,7 +3,7 @@
 // @profiles ext-authz-jwt
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 import { mcpConnect } from '../../lib/mcp';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
@@ -92,12 +92,12 @@ const INIT = `-H "Content-Type: application/json" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`;
 
 test('optional curl checks', async () => {
-  const anon = sh(`curl -si http://localhost:4001/mcp \\
+  const anon = labSh(`curl -si http://localhost:4001/mcp \\
   ${INIT}`).stdout;
   console.log(anon);
   expect(anon).toMatch(/^HTTP\/1\.1 403 Forbidden/);
   expect(anon.trimEnd().endsWith(NO_TOKEN)).toBeTruthy();
-  const alice = sh(`TOKEN=$(cat /repo/lib/jwt/tokens/alice.jwt)
+  const alice = labSh(`TOKEN=$(cat ../lib/jwt/tokens/alice.jwt)
 curl -s -o /dev/null -w '%{http_code}\\n' http://localhost:4001/mcp \\
   -H "Authorization: Bearer $TOKEN" \\
   ${INIT}`).stdout;

@@ -82,7 +82,8 @@ test('check it: token and request metrics in Prometheus and Grafana', async ({ p
     return Number(r[0]?.value[1] ?? 0);
   }, { timeout: 30_000 }).toBe(3);
 
-  // The lab's optional curl, with the Compose service name in place of localhost.
+  // The lab's optional curl, with the Compose service name in place of localhost. It stays sh, not labSh:
+  // Prometheus publishes no port in the test run, so localhost:9090 does not answer here.
   const curl = sh(`curl -s http://prometheus:9090/api/v1/query \\
   --data-urlencode 'query=sum by (gen_ai_token_type) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_request_model="gpt-6-luna"})'`).stdout;
   console.log(curl);

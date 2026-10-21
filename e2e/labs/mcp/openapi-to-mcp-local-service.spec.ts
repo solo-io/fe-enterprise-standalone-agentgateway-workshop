@@ -2,7 +2,7 @@
 // @fixture base
 // @profiles stripe-mock
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
@@ -264,7 +264,7 @@ curl -s http://localhost:4001/mcp \\
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"listPrices","arguments":{"query":{"limit":1}}}}'`;
 
 test('optional curl check', async () => {
-  const r = sh(CURL);
+  const r = labSh(CURL);
   console.log(r.stdout.slice(0, 600));
   expect(r.stdout).toContain('\\"unit_amount\\":2000');
   expect(r.stdout).toContain('\\"interval\\":\\"month\\"');

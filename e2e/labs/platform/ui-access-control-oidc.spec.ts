@@ -2,7 +2,7 @@
 // @fixture base
 // @profiles keycloak
 import { expect, type Browser, type Page, test } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
@@ -152,8 +152,8 @@ test('turn on role-based enforcement', async ({ page }) => {
 });
 
 test('an API call without a session is sent to the sign-in page', async () => {
-  // The lab's exact curl. Plain curl gets a 302; only browser-style fetches (sec-fetch-mode: cors) get a 401.
-  const r = sh(`curl -s -o /dev/null -w '%{http_code} %{redirect_url}\\n' http://localhost:8080/api/config`);
+  // The lab's curl. Plain curl gets a 302; only browser-style fetches (sec-fetch-mode: cors) get a 401.
+  const r = labSh(`curl -s -o /dev/null -w '%{http_code} %{redirect_url}\\n' http://localhost:8080/api/config`);
   expect(r.stdout.trim()).toBe('302 http://localhost:8080/ui/login?returnTo=%2Fapi%2Fconfig');
 });
 

@@ -1,7 +1,7 @@
 // 001-set-up-standalone-agentgateway.md
 // Host port publishing is checked statically (check-ports.sh); the harness publishes none.
 import { expect, test } from '@playwright/test';
-import { lab, sh } from '../lib/lab';
+import { lab, labSh, sh } from '../lib/lab';
 
 const { go, shot } = lab('setup', '001');
 
@@ -10,12 +10,12 @@ test('gateway is licensed and running in standalone mode', async () => {
   expect(runtime.build.version).toBe('v2026.10.0');
   expect(runtime.ui.gatewayMode).toBe('standalone');
   expect(runtime.license.state).toBe('running');
-  // The lab's optional curl check, exactly as written.
-  const r = sh(`curl -s http://localhost:15000/api/runtime | grep -o '"state":"[a-z]*"'`);
+  // The lab's optional curl check.
+  const r = labSh(`curl -s http://localhost:15000/api/runtime | grep -o '"state":"[a-z]*"'`);
   expect(r.stdout.trim()).toBe('"state":"running"');
 });
 
-test('compose publishes matching host and container ports', () => {
+test('compose publishes the ports the labs use', () => {
   const r = sh('/repo/e2e/check-ports.sh');
   expect(r.code, r.stdout).toBe(0);
 });

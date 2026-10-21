@@ -3,7 +3,7 @@
 // @profiles keycloak,obo
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('mcp', 'obo-token-exchange');
@@ -52,6 +52,12 @@ const GET_AGENT_TOKEN = `AGENT_TOKEN=$(curl -s http://localhost:8180/realms/work
 const CALL_AS_AGENT = `curl -s http://localhost:8080/orders \\
   -H "Authorization: Bearer $USER_TOKEN" -H "x-actor-token: $AGENT_TOKEN" \\
   | tr -d ' \\n' | grep -oE '"(aud|azp|preferred_username)":"[^"]*"|"act":\\{[^}]*\\}'`;
+const CALL_NO_ACTOR = `curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders -H "Authorization: Bearer $USER_TOKEN"`;
+const CALL_OTHER_ACTOR = `OTHER_TOKEN=$(curl -s http://localhost:8180/realms/workshop/protocol/openid-connect/token \\
+  -u agentgateway:workshop-gateway-secret -d grant_type=client_credentials \\
+  | sed -E 's/.*"access_token":"([^"]+)".*/\\1/')
+curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders \\
+  -H "Authorization: Bearer $USER_TOKEN" -H "x-actor-token: $OTHER_TOKEN"`;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -75,7 +81,7 @@ async function pasteInto(page: Page, editor: Locator, text: string) {
 }
 
 function payload(): string {
-  const r = sh(`${GET_TOKEN}\n${CALL}`).stdout.trim();
+  const r = labSh(GET_TOKEN, CALL).stdout.trim();
   console.log(r);
   return r;
 }
@@ -150,7 +156,7 @@ test('check it: the API gets an exchanged token', async () => {
   expect(p).toContain('"azp":"agentgateway"');
   expect(p).toContain('"preferred_username":"alice"');
   // Without a user token, the gateway has nothing to exchange and does not call the API.
-  const anon = sh(`curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders`).stdout;
+  const anon = labSh(`curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders`).stdout;
   console.log(`no token: ${anon}`);
   expect(anon).toContain('HTTP 400');
 });
@@ -177,7 +183,7 @@ test('Part B: switch the exchange to delegation', async ({ page }) => {
 
 test('Part B check it: the API gets a delegated token', async () => {
   await new Promise((r) => setTimeout(r, 2000));
-  const out = sh(`${GET_USER_TOKEN}\n${GET_AGENT_TOKEN}\n${CALL_AS_AGENT}`).stdout.trim();
+  const out = labSh(GET_USER_TOKEN, GET_AGENT_TOKEN, CALL_AS_AGENT).stdout.trim();
   console.log(out);
   expect(out.split('\n')).toEqual([
     '"aud":"procurement-api"',
@@ -187,18 +193,12 @@ test('Part B check it: the API gets a delegated token', async () => {
   ]);
 
   // Without the agent's token, the gateway has no actor to send and does not call the API.
-  const noActor = sh(`${GET_USER_TOKEN}
-curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders -H "Authorization: Bearer $USER_TOKEN"`).stdout;
+  const noActor = labSh(GET_USER_TOKEN, CALL_NO_ACTOR).stdout;
   console.log(`no actor: ${noActor}`);
   expect(noActor).toContain('invalid request\nHTTP 400');
 
   // An actor alice did not authorize: Keycloak refuses the exchange.
-  const other = sh(`${GET_USER_TOKEN}
-OTHER_TOKEN=$(curl -s http://localhost:8180/realms/workshop/protocol/openid-connect/token \\
-  -u agentgateway:workshop-gateway-secret -d grant_type=client_credentials \\
-  | sed -E 's/.*"access_token":"([^"]+)".*/\\1/')
-curl -s -w '\\nHTTP %{http_code}\\n' http://localhost:8080/orders \\
-  -H "Authorization: Bearer $USER_TOKEN" -H "x-actor-token: $OTHER_TOKEN"`).stdout;
+  const other = labSh(GET_USER_TOKEN, CALL_OTHER_ACTOR).stdout;
   console.log(`other actor: ${other}`);
   expect(other).toContain('token exchange returned status 403 Forbidden\nHTTP 500');
 });

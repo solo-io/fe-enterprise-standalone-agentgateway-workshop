@@ -2,7 +2,7 @@
 // @fixture base
 import { readFileSync } from 'node:fs';
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { chat, lab, sh } from '../../lib/lab';
+import { chat, lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 import { readConfig } from '../../lib/config';
 
@@ -21,12 +21,12 @@ test('set up', async ({ page }) => {
   await addOpenAIModel(page);
 });
 
-/** Runs the lab's curl from the repo root, optionally with a token file. Returns the full response with headers. */
+/** Runs the lab's curl, optionally with a token file. Returns the full response with headers. */
 function curl(tokenFile?: string): string {
-  const auth = tokenFile ? `-H "Authorization: Bearer $(cat lib/jwt/tokens/${tokenFile})" ` : '';
-  return sh(`cd /repo && curl -si http://localhost:4000/v1/chat/completions \\
+  const auth = tokenFile ? `  -H "Authorization: Bearer $(cat ../lib/jwt/tokens/${tokenFile})" \\\n` : '';
+  return labSh(`curl -si http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  ${auth}-d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout;
+${auth}  -d '{"model":"openai/gpt-6-luna","messages":[{"role":"user","content":"Reply with the single word: pong"}]}'`).stdout;
 }
 
 /** Replaces the text of a code editor field the way a reader does: select all, then paste. */

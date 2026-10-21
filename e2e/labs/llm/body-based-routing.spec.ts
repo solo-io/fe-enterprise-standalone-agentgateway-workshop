@@ -3,7 +3,7 @@
 // @profiles mock-llm-routing
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { chat, lab, sh } from '../../lib/lab';
+import { chat, lab, labSh } from '../../lib/lab';
 
 const { go, shot, save } = lab('llm', 'body-based-routing');
 
@@ -15,7 +15,7 @@ const CONDITION = 'json(request.body).metadata.app == "support"';
 function curlModel(metadata: string): string {
   const cmd = `curl -s http://localhost:4000/v1/chat/completions -H 'Content-Type: application/json' \\
   -d '{"model":"router",${metadata}"messages":[{"role":"user","content":"Hello"}]}' | grep -o '"model":"[^"]*"'`;
-  const out = sh(cmd).stdout.trim();
+  const out = labSh(cmd).stdout.trim();
   console.log(`${metadata || '(no metadata)'} => ${out}`);
   return out;
 }

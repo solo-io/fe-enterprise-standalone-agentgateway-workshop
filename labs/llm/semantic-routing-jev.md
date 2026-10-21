@@ -181,13 +181,13 @@ The `model` field of the response names the model that answered:
 ```bash
 curl -s http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"auto_model","messages":[{"role":"user","content":"Summarize this email in one sentence: lunch moved to noon."}]}' | jq -r '.model'
+  -d '{"model":"auto_model","messages":[{"role":"user","content":"Summarize this email in one sentence: lunch moved to noon."}]}' | grep -o '"model":"[^"]*"'
 ```
 
 Expected output:
 
 ```
-gpt-5-nano-2025-08-07
+"model":"gpt-5-nano-2025-08-07"
 ```
 
 A request that names a real model skips classification. This proof prompt would go to the high tier as `auto_model`, but here the model the client named answers it:
@@ -195,13 +195,13 @@ A request that names a real model skips classification. This proof prompt would 
 ```bash
 curl -s http://localhost:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-nano","messages":[{"role":"user","content":"Prove that sqrt(2) is irrational."}]}' | jq -r '.model'
+  -d '{"model":"openai/gpt-5-nano","messages":[{"role":"user","content":"Prove that sqrt(2) is irrational."}]}' | grep -o '"model":"[^"]*"'
 ```
 
 Expected output:
 
 ```
-gpt-5-nano-2025-08-07
+"model":"gpt-5-nano-2025-08-07"
 ```
 
 The adapter log has no new `routing_decision` line for the second request. Clients can still name a premium model; this lab makes `auto_model` the low-cost default without taking that choice away.

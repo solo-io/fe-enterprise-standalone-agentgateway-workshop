@@ -4,13 +4,13 @@
 // @docker yes
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { helperLogs, lab, sh } from '../../lib/lab';
+import { helperLogs, lab, labSh } from '../../lib/lab';
 
 const { go, shot, save } = lab('llm', 'timeouts-and-retries');
 
 test.describe.configure({ mode: 'serial' });
 
-// The lab's request loop against the route on port 8080, as written.
+// The lab's request loop against the route on port 8080.
 const LOOP = `for i in $(seq 1 20); do
   curl -s -o /dev/null -w '%{http_code} ' http://localhost:8080/v1/chat/completions \\
     -H 'Content-Type: application/json' \\
@@ -18,7 +18,7 @@ const LOOP = `for i in $(seq 1 20); do
 done; echo`;
 
 function loop(): string[] {
-  const out = sh(LOOP).stdout.trim();
+  const out = labSh(LOOP).stdout.trim();
   console.log(out);
   return out.split(/\s+/);
 }

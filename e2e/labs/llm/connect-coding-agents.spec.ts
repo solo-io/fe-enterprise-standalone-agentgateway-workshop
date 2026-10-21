@@ -6,7 +6,7 @@
 // the openai/* model and, for Claude Code, the anthropic provider and anthropic/* model; the cleanup deletes them.
 import { expect, test, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { HAS_ANTHROPIC, lab, sh } from '../../lib/lab';
+import { HAS_ANTHROPIC, lab, labSh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-coding-agents');
@@ -14,7 +14,7 @@ const { go, shot, save } = lab('llm', 'connect-coding-agents');
 test.describe.configure({ mode: 'serial' });
 
 const CLAUDE = 'anthropic/claude-haiku-5-5';
-const NO_KEY = 'ANTHROPIC_API_KEY is not set in setup/.env; the lab marks the Anthropic part optional';
+const NO_KEY = 'ANTHROPIC_API_KEY in setup/.env is not set or not accepted; the lab marks the Anthropic part optional';
 
 /** Picks an Integration in Client Setup and returns the snippet area. */
 async function integration(page: Page, name: string) {
@@ -65,11 +65,9 @@ test('Codex: snippet in Client Setup', async ({ page }) => {
 });
 
 test('Codex: the Responses API answers through the gateway', async () => {
-  const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/responses \\
-    -H 'Content-Type: application/json' \\
-    -d '{"model":"openai/gpt-6-luna","input":"Reply with the single word: ready"}'`);
-  expect(r.stdout).toMatch(/\nHTTP 200$/);
-  const body = JSON.parse(r.stdout.replace(/\nHTTP \d+$/, ''));
+  const body = JSON.parse(labSh(`curl -s http://localhost:4000/v1/responses \\
+  -H 'Content-Type: application/json' \\
+  -d '{"model":"openai/gpt-6-luna","input":"Reply with the single word: ready"}'`).stdout);
   expect(body.object).toBe('response');
   expect(body.status).toBe('completed');
 });
@@ -89,12 +87,10 @@ test('Claude Code: snippet in Client Setup', async ({ page }) => {
 
 test('Claude Code: the Messages API answers through the gateway', async () => {
   test.skip(!HAS_ANTHROPIC, NO_KEY);
-  const r = sh(`curl -s -w '\\nHTTP %{http_code}' http://localhost:4000/v1/messages \\
-    -H 'Content-Type: application/json' \\
-    -H 'anthropic-version: 2023-06-01' \\
-    -d '{"model":"${CLAUDE}","max_tokens":1024,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'`);
-  expect(r.stdout).toMatch(/\nHTTP 200$/);
-  const body = JSON.parse(r.stdout.replace(/\nHTTP \d+$/, ''));
+  const body = JSON.parse(labSh(`curl -s http://localhost:4000/v1/messages \\
+  -H 'Content-Type: application/json' \\
+  -H 'anthropic-version: 2023-06-01' \\
+  -d '{"model":"${CLAUDE}","max_tokens":1024,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'`).stdout);
   expect(body.type).toBe('message');
   expect(body.model).toMatch(/^claude-haiku-5-5/);
 });

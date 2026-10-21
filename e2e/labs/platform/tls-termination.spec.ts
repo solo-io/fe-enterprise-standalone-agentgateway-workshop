@@ -3,13 +3,13 @@
 // @profiles mock-llm
 import { expect, test, type Page } from '@playwright/test';
 import { expectMatchesFixture, readConfig } from '../../lib/config';
-import { lab, sh } from '../../lib/lab';
+import { lab, labSh } from '../../lib/lab';
 
 const { go, shot, save } = lab('platform', 'tls-termination');
 
 test.describe.configure({ mode: 'serial' });
 
-// The lab's commands, as written. The reader runs them from the setup/ folder.
+// The lab's commands. The reader runs them from the setup/ folder.
 const BODY = `-H 'Content-Type: application/json' \\
   -d '{"model":"mock-gpt","messages":[{"role":"user","content":"Hello"}]}'`;
 const HTTPS_TRUSTED = `curl -sS -o /dev/null -w '%{http_code}\\n' --cacert tls/ca.crt \\
@@ -24,7 +24,7 @@ const WITH_CLIENT_CERT = `curl -sS -o /dev/null -w '%{http_code}\\n' --cacert tl
 const ROOT_LINE = 'root: /config/tls/ca.crt';
 
 function run(cmd: string): { code: number; out: string } {
-  const r = sh(`cd /repo/setup && ${cmd}`);
+  const r = labSh(cmd);
   console.log(`$ ${cmd}\nexit ${r.code}\n${r.stdout}`);
   return { code: r.code, out: r.stdout.trim() };
 }
