@@ -243,3 +243,29 @@ services:
       GUARDRAIL_POLICY_PATH: /app/policy.json
     volumes:
       - ./guardrail-jev:/app:ro
+
+  # ratelimit: the global rate limit service (envoyproxy/ratelimit) with its Redis counter store.
+  # The gateway asks it over gRPC on port 8081 whether a request fits. Rules are in setup/ratelimit/config.yaml.
+  redis:
+    profiles: [ratelimit]
+    image: redis:7.4.11-alpine
+    # No snapshots: a restart clears the counts, which is how a lab starts over.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  ratelimit:
+    profiles: [ratelimit]
+    image: envoyproxy/ratelimit:f4e76690
+    command: ["/bin/ratelimit"]
+    depends_on: [redis]
+    environment:
+      LOG_LEVEL: debug
+      REDIS_SOCKET_TYPE: tcp
+      REDIS_URL: redis:6379
+      USE_STATSD: "false"
+      GRPC_PORT: "8081"
+      RUNTIME_ROOT: /data
+      RUNTIME_SUBDIRECTORY: ratelimit
+      RUNTIME_WATCH_ROOT: "false"
+      RUNTIME_IGNOREDOTFILES: "true"
+    volumes:
+      - ./ratelimit/config.yaml:/data/ratelimit/config/config.yaml:ro

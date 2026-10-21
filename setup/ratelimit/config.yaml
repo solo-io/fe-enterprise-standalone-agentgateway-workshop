@@ -1,0 +1,28 @@
+# Rules for the rate limit service (envoyproxy/ratelimit). The gateway sends descriptors, and the
+# service matches them against this tree. See https://github.com/envoyproxy/ratelimit#configuration
+domain: agentgateway
+descriptors:
+  # One shared counter for everyone: the gateway sends the descriptor counter=all.
+  - key: counter
+    value: all
+    rate_limit:
+      unit: minute
+      requests_per_unit: 5
+  # One counter for each user: the gateway sends user=<value of the x-user header>.
+  - key: user
+    rate_limit:
+      unit: minute
+      requests_per_unit: 3
+  # One shared token counter: the gateway sends tokens=all and adds the tokens each LLM response used.
+  - key: tokens
+    value: all
+    rate_limit:
+      unit: minute
+      requests_per_unit: 60
+  # One shared counter for MCP traffic: the gateway sends counter=mcp. This one counts per hour, so a
+  # slow reader does not lose the count to a minute boundary.
+  - key: counter
+    value: mcp
+    rate_limit:
+      unit: hour
+      requests_per_unit: 5
