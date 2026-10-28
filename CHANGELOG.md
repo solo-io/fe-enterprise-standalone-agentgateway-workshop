@@ -1,5 +1,9 @@
 # Changelog
 
+0.1.1 - (10-28-26)
+---
+- The three agentdesktop labs: add a component diagram (PNG) and a Mermaid sequence diagram to "Why this matters" that show where agentgateway sits between Claude Code, the identity provider and the model provider
+
 0.1.0 - (10-28-26)
 ---
 - Add LLM lab `connect-coding-agents-sso-using-agentdesktop`: agentdesktop signs Claude Code in with Keycloak; the gateway checks the token with **JWT auth** and allows one group

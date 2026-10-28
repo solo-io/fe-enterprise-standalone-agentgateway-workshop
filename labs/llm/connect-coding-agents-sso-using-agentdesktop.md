@@ -35,6 +35,31 @@ In [Connect Coding Agents](connect-coding-agents.md), every developer uses the s
 
 With agentdesktop, developers sign in with the identity provider the company already uses, such as Okta, Entra ID or Keycloak. agentdesktop runs on the developer's computer, gets a short-lived token from the identity provider, and writes Claude Code settings that fetch a fresh token before each request expires. The gateway checks the token's signature and claims, so it knows the user and their groups. When someone leaves the company, you disable them in the identity provider, and their coding agents stop working.
 
+agentgateway runs in your network, between the developers and the model provider. These are the parts:
+
+![Components: Claude Code and agentdesktop on the developer's computer, agentgateway with its policies, Keycloak, and OpenAI](../../images/llm/connect-coding-agents-sso-using-agentdesktop/00-architecture.png)
+
+Each request flows like this. agentgateway sits between Claude Code and the model provider. It checks who is asking and holds the provider key, so the key stays on the gateway.
+
+```mermaid
+sequenceDiagram
+    participant C as Claude Code
+    participant D as agentdesktop
+    participant G as agentgateway
+    participant I as Keycloak
+    participant O as OpenAI
+
+    D->>I: Sign in once as alice (browser)
+    C->>D: Ask for a credential
+    D-->>C: Fresh Keycloak token
+    C->>G: Request with the token
+    G->>I: Fetch public keys (cached)
+    Note over G: Check the token and alice's group
+    G->>O: Request with the gateway's OpenAI key
+    O-->>G: Response
+    G-->>C: Response, logged with alice's name
+```
+
 This lab uses Keycloak. For Okta, you change the issuer URL and client ID in the agentdesktop configuration and the gateway's JWT auth policy.
 
 ## Set up
