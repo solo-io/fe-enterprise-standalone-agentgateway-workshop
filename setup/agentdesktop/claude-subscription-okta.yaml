@@ -1,0 +1,15 @@
+# agentdesktop configuration for the connect-claude-subscription-okta-using-agentdesktop lab.
+# agentdesktop signs you in with Okta and with your Claude subscription, and gives Claude Code both in one credential.
+# Replace <issuer> and <client-id> with your values before you run it.
+llmGateway:
+  url: http://localhost:4000
+  authentication:
+    type: oidc
+    issuer: <issuer>
+    clientId: <client-id>
+    scopes: [openid, email, offline_access]
+
+programs:
+  claudeCode:
+    auth: subscription
+    companyAnnouncements: ["Signed in to agentgateway with Okta and your Claude subscription through agentdesktop"]

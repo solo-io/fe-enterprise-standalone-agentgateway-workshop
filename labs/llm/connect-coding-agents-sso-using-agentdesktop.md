@@ -95,15 +95,15 @@ authentication failure: no bearer token found
 
 [agentdesktop](https://agentdesktop.dev/) is an open-source tool from Solo.io. It signs you in to the identity provider and writes the gateway URL and a credential command into each coding agent's own settings.
 
-Download version `v0.6.0` for your computer. On a Mac with Apple silicon:
+Download version `v0.5.0` for your computer. On a Mac with Apple silicon:
 
 ```bash
-curl -fL -o /tmp/agentdesktop https://github.com/agentdesktop-dev/agentdesktop/releases/download/v0.6.0/agentdesktop-darwin-arm64
+curl -fL -o /tmp/agentdesktop https://github.com/agentdesktop-dev/agentdesktop/releases/download/v0.5.0/agentdesktop-darwin-arm64
 chmod +x /tmp/agentdesktop
 /tmp/agentdesktop --version
 ```
 
-On an Intel Mac, use `agentdesktop-darwin-amd64`. On Linux, use `agentdesktop-linux-amd64` or `agentdesktop-linux-arm64`. The [releases page](https://github.com/agentdesktop-dev/agentdesktop/releases/tag/v0.6.0) lists every file.
+On an Intel Mac, use `agentdesktop-darwin-amd64`. On Linux, use `agentdesktop-linux-amd64` or `agentdesktop-linux-arm64`. The [releases page](https://github.com/agentdesktop-dev/agentdesktop/releases/tag/v0.5.0) lists every file.
 
 agentdesktop changes `~/.claude/settings.json`. It records your earlier values and puts them back when you clean up, but make your own copy first:
 
