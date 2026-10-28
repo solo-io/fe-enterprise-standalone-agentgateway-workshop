@@ -1,0 +1,17 @@
+# agentdesktop configuration for the connect-coding-agents-sso-using-agentdesktop lab.
+# agentdesktop signs you in with Keycloak and gives Claude Code a short-lived token for the gateway.
+llmGateway:
+  url: http://localhost:4000
+  authentication:
+    type: oidc
+    issuer: http://localhost:8180/realms/workshop
+    clientId: agentdesktop
+    scopes: [openid, email, offline_access]
+    # Workshop only: Keycloak and the gateway use plain HTTP on localhost.
+    allowInsecure: true
+
+programs:
+  claudeCode:
+    useLlmGateway: true
+    model: openai/gpt-6-luna
+    companyAnnouncements: ["Signed in to agentgateway with Keycloak through agentdesktop"]

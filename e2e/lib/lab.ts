@@ -8,6 +8,7 @@ export const HAS_ANTHROPIC = process.env.HAS_ANTHROPIC === '1';
 export const HAS_AWS = process.env.HAS_AWS === '1';
 export const HAS_BEDROCK_KEY = process.env.HAS_BEDROCK_KEY === '1';
 export const HAS_TYPESAFE = process.env.HAS_TYPESAFE === '1';
+export const HAS_CLAUDE_OAUTH = process.env.HAS_CLAUDE_OAUTH === '1';
 
 /** Navigation and screenshot helpers bound to one lab's image folder. */
 export function lab(track: string, slug: string) {

@@ -1,0 +1,16 @@
+# agentdesktop configuration for the connect-claude-subscription-sso-using-agentdesktop lab.
+# agentdesktop signs you in with Keycloak and with your Claude subscription, and gives Claude Code both in one credential.
+llmGateway:
+  url: http://localhost:4000
+  authentication:
+    type: oidc
+    issuer: http://localhost:8180/realms/workshop
+    clientId: agentdesktop
+    scopes: [openid, email, offline_access]
+    # Workshop only: Keycloak and the gateway use plain HTTP on localhost.
+    allowInsecure: true
+
+programs:
+  claudeCode:
+    auth: subscription
+    companyAnnouncements: ["Signed in to agentgateway with Keycloak and your Claude subscription through agentdesktop"]

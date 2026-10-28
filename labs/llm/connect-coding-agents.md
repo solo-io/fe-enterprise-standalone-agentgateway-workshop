@@ -5,12 +5,14 @@
 - Complete [001: Set Up Standalone Agentgateway](../../001-set-up-standalone-agentgateway.md).
 - For Codex: the [Codex CLI](https://github.com/openai/codex) on your machine.
 - Optional, for Claude Code: [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) on your machine, and your Anthropic API key in `setup/.env` as `ANTHROPIC_API_KEY`. After you add the key, restart the gateway so it reads the key: from the `setup/` folder, run `env UID=$(id -u) GID=$(id -g) docker compose up -d`. Skip the Claude Code steps if you have no Anthropic key.
+- Optional, for Step 5: Claude Code and a Claude Pro, Max, Team or Enterprise subscription. Check that your plan's terms allow its use through your own gateway. Step 5 needs no Anthropic API key.
 
 ## What you'll do
 
 - Get a Codex setup snippet from Client Setup and check the OpenAI Responses API through the gateway
 - Optional: get a Claude Code setup snippet and check the Anthropic Messages API through the gateway
 - Run Codex and Claude Code through the gateway
+- Optional: run Claude Code on your own Claude subscription, with no API key on the gateway
 
 ## Why this matters
 
@@ -158,14 +160,102 @@ Paste the snippet from Step 3 into a terminal. You should see Claude Code start 
 
 In the sidebar, click **Logs**. You should see `anthropic/claude-haiku-5-5` rows for the Claude Code requests. A row named `unknown model` with status `400` is Claude Code's connection check (`HEAD /api/hello`); you can ignore it.
 
+## Step 5 (optional): Use a Claude subscription instead of an API key
+
+In Steps 3 and 4 the gateway sends its own Anthropic API key, and the company pays per token. Developers who already pay for a Claude plan can use that plan instead. The gateway then holds no Anthropic key: it forwards the token each developer sends, and Anthropic checks it. You still see every request in Logs.
+
+The gateway cannot read who the developer is from a subscription token. To know the user, and to allow or block them by group, see [Sign In Coding Agents with Your Identity Provider Using agentdesktop](connect-coding-agents-sso-using-agentdesktop.md).
+
+### Add a Claude model with no provider key
+
+1. In the sidebar, click **Models**.
+2. Click **Add model**.
+3. In **Provider**, select **Anthropic**.
+4. In **Incoming model match**, select all the text and enter `claude-*`.
+5. Leave **Provider API key** at **Unset**.
+6. Under **Outgoing model**, click **Incoming model**.
+7. Click **Save model**.
+
+   ![Add model panel for claude-* with no provider API key](../../images/llm/connect-coding-agents/04-subscription-add-model.png)
+
+The **Models** page lists `claude-*`:
+
+![Models page with the claude-* model](../../images/llm/connect-coding-agents/05-subscription-models.png)
+
+`claude-*` matches the model names Claude Code sends, such as `claude-haiku-5-5`, and the gateway passes each name to Anthropic as it is. With no provider key, the gateway forwards the credential from the request.
+
+Check that a request without a credential fails:
+
+```bash
+curl -s http://localhost:4000/v1/messages \
+  -H 'Content-Type: application/json' \
+  -H 'anthropic-version: 2023-06-01' \
+  -d '{"model":"claude-haiku-5-5","max_tokens":50,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'
+```
+
+Expected output:
+
+```
+{"type":"error","error":{"type":"authentication_error","message":"x-api-key header is required"},"request_id":"req_..."}
+```
+
+Anthropic sent this error. The gateway forwarded the request with no credential, because the request had none.
+
+### Create a Claude Code token
+
+Run:
+
+```bash
+claude setup-token
+```
+
+Claude Code opens your browser. Sign in to Claude and approve the request. The terminal then prints a token that starts with `sk-ant-oat01-` and is valid for one year. Export it in the terminal you use next:
+
+```bash
+export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
+```
+
+Treat the token as a password. Anyone who has it can use your subscription.
+
+### Run Claude Code on your subscription
+
+If you ran Step 4 in this terminal, first run `unset ANTHROPIC_AUTH_TOKEN`, so Claude Code sends your subscription token instead of `dummy_key`. Then run:
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:4000
+claude -p "Reply with exactly: hello from agentgateway"
+```
+
+Expected output:
+
+```
+hello from agentgateway
+```
+
+In the sidebar, click **Logs**. You should see a `claude-` row with status `200` for each Claude Code request, with its input and output tokens:
+
+![Logs page with a Claude Code request](../../images/llm/connect-coding-agents/06-subscription-logs.png)
+
+The `claude-haiku-5-5` row with status `401` is the curl command above, and the `unknown model` row with status `400` is Claude Code's connection check. **Cost** in Logs and Analytics shows what the request would cost at Anthropic's API prices. Your subscription pays for it under your plan's limits.
+
 ## What the UI wrote
 
 Client Setup only builds snippets. The only changes to `config.yaml` are the models and the provider from **Set up**. [Connect Anthropic](connect-anthropic.md) shows the YAML for the `anthropic` provider and model.
 
+If you did Step 5, the UI also added this model. `params` has no `apiKey`, so the gateway forwards the credential from each request:
+
+```yaml
+llm:
+  models:
+  - name: claude-*
+    provider: anthropic
+    params: {}
+```
+
 ## Clean up
 
-1. Close Codex and Claude Code. If you used the `CODEX_HOME` line, delete that folder: `rm -rf /tmp/codex-gateway-home`.
-2. In the sidebar, click **Models**.
+1. Close Codex and Claude Code. If you used the `CODEX_HOME` line, delete that folder: `rm -rf /tmp/codex-gateway-home`. If you did Step 5, run `unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_BASE_URL`.
+2. In the sidebar, click **Models**. If you did Step 5, in the `claude-*` row, click the trash icon, then click **Delete model**.
 3. If you did the Claude Code steps, in the `anthropic/*` row, click **Delete model**, then click **Delete model** in the dialog.
 4. In the `openai/*` row, click the trash icon, then click **Delete model**.
 5. If you did the Claude Code steps, in the sidebar, click **Providers**. In the `anthropic` row, click **Delete provider**, then click **Delete provider** in the dialog.
