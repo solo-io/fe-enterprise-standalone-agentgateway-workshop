@@ -42,6 +42,32 @@ agentdesktop:<Claude token>:<identity provider token>
 
 The gateway checks the identity provider token, as in [Sign In Coding Agents with Your Identity Provider Using agentdesktop](connect-coding-agents-sso-using-agentdesktop.md), and sends only the Claude token to Anthropic. When someone leaves the company, you disable them in the identity provider, and the gateway stops their requests even though their Claude plan still works.
 
+agentgateway runs in your network, between the developers and the model provider. These are the parts:
+
+![Components: Claude Code and agentdesktop on the developer's computer, agentgateway with its policies, Keycloak, and Anthropic](../../images/llm/connect-claude-subscription-sso-using-agentdesktop/00-architecture.png)
+
+Each request flows like this. agentgateway sits between Claude Code and Anthropic. It checks who is asking and passes only the Claude token on to Anthropic.
+
+```mermaid
+sequenceDiagram
+    participant C as Claude Code
+    participant D as agentdesktop
+    participant G as agentgateway
+    participant I as Keycloak
+    participant A as Anthropic
+
+    D->>I: Sign in once as alice (browser)
+    D->>A: Sign in to Claude (browser)
+    C->>D: Ask for a credential
+    D-->>C: One credential with both tokens
+    C->>G: Request with the credential
+    G->>I: Fetch public keys (cached)
+    Note over G: Check the Keycloak token and alice's group
+    G->>A: Request with only the Claude token
+    A-->>G: Response
+    G-->>C: Response, logged with alice's name
+```
+
 This lab uses Keycloak. For Okta, follow [Run Claude Code on Developer Subscriptions with Okta Using agentdesktop](connect-claude-subscription-okta-using-agentdesktop.md).
 
 ## Step 1: Add a Claude model with no provider key
