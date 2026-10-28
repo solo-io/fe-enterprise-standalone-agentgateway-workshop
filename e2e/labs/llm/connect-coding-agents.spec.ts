@@ -4,9 +4,11 @@
 // words their results as "you should see". This spec checks the endpoints the CLIs use.
 // The Claude Code part needs ANTHROPIC_API_KEY in setup/.env and is skipped without it. Set up adds
 // the openai/* model and, for Claude Code, the anthropic provider and anthropic/* model; the cleanup deletes them.
+// Step 5 runs Claude Code for real with CLAUDE_CODE_OAUTH_TOKEN from the runner, as the reader runs it after
+// `claude setup-token`; Anthropic accepts a subscription token only from Claude Code. Skipped without the token.
 import { expect, test, type Page } from '@playwright/test';
 import { readConfig } from '../../lib/config';
-import { HAS_ANTHROPIC, lab, labSh } from '../../lib/lab';
+import { HAS_ANTHROPIC, HAS_CLAUDE_OAUTH, lab, labSh, sh } from '../../lib/lab';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot, save } = lab('llm', 'connect-coding-agents');
@@ -14,6 +16,8 @@ const { go, shot, save } = lab('llm', 'connect-coding-agents');
 test.describe.configure({ mode: 'serial' });
 
 const CLAUDE = 'anthropic/claude-haiku-5-5';
+const NO_TOKEN = 'needs CLAUDE_CODE_OAUTH_TOKEN (claude setup-token) in the shell or setup/.env';
+const CLAUDE_CODE = '@anthropic-ai/claude-code@2.1.312';
 const NO_KEY = 'ANTHROPIC_API_KEY in setup/.env is not set or not accepted; the lab marks the Anthropic part optional';
 
 /** Picks an Integration in Client Setup and returns the snippet area. */
@@ -95,7 +99,56 @@ test('Claude Code: the Messages API answers through the gateway', async () => {
   expect(body.model).toMatch(/^claude-haiku-5-5/);
 });
 
+test('step 5: add a Claude model with no provider key', async ({ page }) => {
+  test.skip(!HAS_CLAUDE_OAUTH, NO_TOKEN);
+  await go(page, '/llm/models');
+  await page.getByRole('button', { name: 'Add model', exact: true }).first().click();
+  const d = page.getByRole('dialog');
+  await d.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'Anthropic', exact: true }).click();
+  await d.getByRole('textbox', { name: /Incoming model match/ }).fill('claude-*');
+  await expect(d.getByRole('button', { name: /^Provider API key/ })).toContainText('Unset');
+  await d.getByRole('button', { name: 'Incoming model', exact: true }).click();
+  await shot(page, '04-subscription-add-model', d.getByRole('button', { name: 'Save model' }));
+  await save(page, 'Save model');
+  await expect(page.locator('main')).toContainText('claude-*');
+  await shot(page, '05-subscription-models', page.locator('main tbody tr').filter({ hasText: 'claude-*' }).first());
+
+  expect(readConfig().llm.models.find((m: any) => m.name === 'claude-*')).toEqual({ name: 'claude-*', provider: 'anthropic', params: {} });
+});
+
+test('step 5: without a token, Anthropic rejects the request', async () => {
+  test.skip(!HAS_CLAUDE_OAUTH, NO_TOKEN);
+  await new Promise((r) => setTimeout(r, 2000));
+  const r = labSh(`curl -s http://localhost:4000/v1/messages \\
+  -H 'Content-Type: application/json' \\
+  -H 'anthropic-version: 2023-06-01' \\
+  -d '{"model":"claude-haiku-5-5","max_tokens":50,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'`).stdout;
+  expect(r).toContain('"type":"authentication_error"');
+  expect(r).toContain('x-api-key header is required');
+});
+
+test('step 5: Claude Code answers on the subscription', async ({ page }) => {
+  test.skip(!HAS_CLAUDE_OAUTH, NO_TOKEN);
+  test.setTimeout(300_000);
+  const install = sh(`npm install -g --no-audit --no-fund --loglevel=error ${CLAUDE_CODE}`);
+  expect(install.code, install.stdout).toBe(0);
+
+  const r = labSh(`export ANTHROPIC_BASE_URL=http://localhost:4000
+claude -p "Reply with exactly: hello from agentgateway"`);
+  expect(r.code, r.stdout).toBe(0);
+  expect(r.stdout).toContain('hello from agentgateway');
+
+  await go(page, '/llm/logs');
+  const row = page.locator('main tbody tr').filter({ hasText: /claude-/ }).filter({ hasText: '200' }).first();
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  await shot(page, '06-subscription-logs', row);
+});
+
 test('clean up: delete the models and the provider', async ({ page }) => {
+  if (HAS_CLAUDE_OAUTH) {
+    await deleteModel(page, 'claude-*');
+  }
   // The Anthropic model and provider exist only when the optional Claude Code part ran.
   if (HAS_ANTHROPIC) {
     await go(page, '/llm/models');

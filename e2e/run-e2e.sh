@@ -85,6 +85,11 @@ check_keys() {
   # No cheap check for a Bedrock API key without a region and model; only check it is set.
   HAS_BEDROCK_KEY=0
   [ -n "$(env_val BEDROCK_API_KEY)" ] && HAS_BEDROCK_KEY=1
+
+  # A Claude subscription token (claude setup-token). Anthropic accepts it only from Claude Code, so only check it is set.
+  CLAUDE_CODE_OAUTH_TOKEN=$(env_val CLAUDE_CODE_OAUTH_TOKEN)
+  HAS_CLAUDE_OAUTH=0
+  if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then HAS_CLAUDE_OAUTH=1; else echo "CLAUDE_CODE_OAUTH_TOKEN: not set, Claude subscription tests skip"; fi
   return 0
 }
 
@@ -151,7 +156,8 @@ run_one() {
   set +e
   docker run --rm --network "container:$net" \
     -v "$ROOT:/repo" -v "$work:/work" ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
-    -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$HAS_ANTHROPIC" -e HAS_AWS="$HAS_AWS" -e HAS_BEDROCK_KEY="$HAS_BEDROCK_KEY" -e HAS_TYPESAFE="$HAS_TYPESAFE" -e LAB_FIXTURE="$fixture" \
+    -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$HAS_ANTHROPIC" -e HAS_AWS="$HAS_AWS" -e HAS_BEDROCK_KEY="$HAS_BEDROCK_KEY" -e HAS_TYPESAFE="$HAS_TYPESAFE" \
+    -e HAS_CLAUDE_OAUTH="$HAS_CLAUDE_OAUTH" -e CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" -e LAB_FIXTURE="$fixture" \
     -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \
     "$PW_IMAGE" bash -c "
       for i in \$(seq 1 60); do curl -sf localhost:15000/api/runtime >/dev/null && break; sleep 1; done

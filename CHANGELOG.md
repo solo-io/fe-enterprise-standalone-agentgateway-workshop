@@ -1,5 +1,16 @@
 # Changelog
 
+0.1.0 - (10-28-26)
+---
+- Add LLM lab `connect-coding-agents-sso-using-agentdesktop`: agentdesktop signs Claude Code in with Keycloak; the gateway checks the token with **JWT auth** and allows one group
+- Add LLM lab `connect-claude-subscription-sso-using-agentdesktop`: the same sign-in plus each developer's Claude subscription; the gateway checks the Keycloak token and sends only the Claude token to Anthropic
+- `connect-coding-agents`: add optional Step 5, Claude Code on a Claude subscription with no provider key
+- Add `setup/agentdesktop/` configs for both agentdesktop labs
+- `setup/keycloak/workshop-realm.json`: add the `agentdesktop` client and the `offline_access` role for test users; set `fullScopeAllowed: false` on the other clients
+- `e2e/run-e2e.sh`: pass `CLAUDE_CODE_OAUTH_TOKEN` to the specs, which skip the subscription tests without it
+- Add LLM lab `connect-claude-subscription-okta-using-agentdesktop`: the Okta version of the Claude subscription lab
+- `README.md`: add both labs
+
 0.0.9 - (10-21-26)
 ---
 - Add Platform track lab `postgres-backend`: point the gateway at Postgres in Raw Configuration (`config.database.url`) with `config.storage.mode: hybrid`

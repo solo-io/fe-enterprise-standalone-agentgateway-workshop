@@ -34,7 +34,7 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 | [OpenAI](labs/llm/connect-llm-providers.md) | Add an OpenAI model, chat in the Chat Playground, find the request in Logs, copy a curl command from Client Setup | |
 | [Anthropic](labs/llm/connect-anthropic.md) | Add Anthropic as a shared provider and an `anthropic/*` model, call Claude in OpenAI and Anthropic format, find tokens and cost in Logs and Analytics, optionally compare with GPT | Anthropic key |
 | [Amazon Bedrock](labs/llm/connect-amazon-bedrock.md) | Add a Bedrock model that signs requests with your AWS credentials, chat with Claude Haiku, optionally switch to a Bedrock API key | AWS credentials with Bedrock access |
-| [Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup | For Claude Code: Anthropic key |
+| [Coding Agents](labs/llm/connect-coding-agents.md) | Point Codex and Claude Code at the gateway with Client Setup, optionally run Claude Code on a Claude subscription with no API key on the gateway | For Claude Code: Anthropic key or a Claude subscription |
 | [Streaming and Embeddings](labs/llm/streaming-and-embeddings.md) | Stream a chat reply, turn a sentence into an embedding, find both in Logs with their tokens and cost | |
 
 ### Model access control
@@ -42,6 +42,9 @@ The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`
 | Lab | What you do | Needs |
 |---|---|---|
 | [Virtual API Keys](labs/llm/virtual-api-keys.md) | Issue per-user keys, block requests without a key, see usage per user in Logs and Analytics | |
+| [Coding Agents with Single Sign-On (agentdesktop)](labs/llm/connect-coding-agents-sso-using-agentdesktop.md) | Sign Claude Code in with Keycloak through agentdesktop instead of handing out keys, then allow only one Keycloak group | Claude Code, `keycloak` |
+| [Claude Subscriptions with Single Sign-On (agentdesktop)](labs/llm/connect-claude-subscription-sso-using-agentdesktop.md) | Run Claude Code on each developer's own Claude plan with no Anthropic key on the gateway, while the gateway checks their Keycloak sign-in and group | Claude Code, a Claude subscription, `keycloak` |
+| [Claude Subscriptions with Okta (agentdesktop)](labs/llm/connect-claude-subscription-okta-using-agentdesktop.md) | Run Claude Code on each developer's own Claude plan while the gateway checks their Okta sign-in and group | Claude Code, a Claude subscription, an Okta org |
 | [JWT Auth and Team Authorization](labs/llm/jwt-auth-and-authorization.md) | Require a JWT, then allow only callers whose `team` claim is `platform` | |
 | [External Authorization](labs/llm/external-authorization.md) | Send each request to an external authorization service that allows or denies it | `ext-authz` |
 | [Open Policy Agent](labs/llm/opa-authorization.md) | Send each request to OPA, allow one team any model and limit another to one model, change the Rego policy live | `opa` |
