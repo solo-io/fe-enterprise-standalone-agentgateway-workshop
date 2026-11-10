@@ -1,0 +1,46 @@
+{
+  "config": {},
+  "suites": [
+    {
+      "title": "x.spec.ts",
+      "file": "x.spec.ts",
+      "specs": [
+        {
+          "title": "[R1] alice is allowed",
+          "ok": true,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": [
+        {
+          "title": "group",
+          "specs": [
+            {
+              "title": "[R2] bob is denied",
+              "ok": false,
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "status": "failed"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
