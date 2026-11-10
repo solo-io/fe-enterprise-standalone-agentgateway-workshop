@@ -5,7 +5,8 @@
 #   run_runner <repo> <args...>   runs the copied runner with the stubs on PATH; sets OUT and RC
 #
 # The docker stub appends its argv, one call per line, to $DOCKER_LOG. It answers:
-#   compose ls        $STUB_COMPOSE_LS (default [])
+#   compose ls        first call per run: $STUB_COMPOSE_LS_BEFORE, later calls: $STUB_COMPOSE_LS_AFTER,
+#                     each falling back to $STUB_COMPOSE_LS (default [])
 #   compose ps -q     a fake container id
 #   run               writes a canned playwright.json to the host side of the -v that holds the
 #                     JSON output path, then exits $STUB_PW_RC (default 0); $STUB_PW_JSON names the canned file
@@ -27,7 +28,10 @@ printf '%s\n' "$*" >> "${DOCKER_LOG:-/dev/null}"
 case "$1" in
   compose)
     case " $* " in
-      *" ls "*) echo "${STUB_COMPOSE_LS:-[]}" ;;
+      *" ls "*)
+        n=$(cat "$TMP_PW/lscount" 2>/dev/null || echo 0); echo $((n + 1)) > "$TMP_PW/lscount"
+        if [ "$n" -eq 0 ]; then echo "${STUB_COMPOSE_LS_BEFORE:-${STUB_COMPOSE_LS:-[]}}"
+        else echo "${STUB_COMPOSE_LS_AFTER:-${STUB_COMPOSE_LS:-[]}}"; fi ;;
       *" ps -q "*) echo fakecontainerid ;;
     esac ;;
   logs) echo "fake gateway log line" ;;
@@ -66,7 +70,7 @@ new_runner_repo() {
 
 run_runner() {
   local d="$1"; shift
-  : > "$TMP/docker.log"
+  : > "$TMP/docker.log"; rm -f "$TMP/fixtures-pw/lscount"
   RC=0
   OUT=$(cd "$d" && env -u OPENAI_API_KEY -u ANTHROPIC_API_KEY -u TYPESAFE_AI_API_KEY -u AWS_ACCESS_KEY_ID \
     -u BEDROCK_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN \

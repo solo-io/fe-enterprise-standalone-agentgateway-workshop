@@ -48,6 +48,8 @@ if [ -n "$TARGET" ] && [ -n "$TRACK" ]; then usage; fi
 [ "$LIST" = 1 ] || [ -f "$ROOT/setup/.env" ] || { echo "missing setup/.env (copy setup/.env.example and fill in keys)" >&2; exit 1; }
 
 WORK_ROOT="${E2E_WORK_ROOT:-$ROOT/e2e/.work}"
+mkdir -p "$WORK_ROOT" 2>/dev/null || true
+WORK_ROOT="$(cd "$WORK_ROOT" 2>/dev/null && pwd || echo "$WORK_ROOT")"
 
 # Install test dependencies once, inside the Linux image.
 if [ "$LIST" = 0 ] && [ ! -d "$ROOT/e2e/node_modules/@playwright/test" ]; then
@@ -101,6 +103,8 @@ run_one() {
   local rdir="$WORK_ROOT/$(echo "$id" | tr '/' '-')"
   rm -rf "$rdir"; mkdir -p "$rdir"
   local started=$SECONDS
+  local before
+  before=$(list_e2e_projects)
 
   # Copy the reader's setup, then swap in the start fixture.
   (cd "$ROOT/setup" && tar cf - --exclude 'data.db*' .) | (cd "$work" && tar xf -)
@@ -154,15 +158,17 @@ run_one() {
 
   cleanup_one
   trap - RETURN
-  leftover_check
+  leftover_check "$project" "$before"
   local leftover=$LEFTOVER_N
 
   [ "${E2E_OUTCOME_ON_HOST:-0}" = 1 ] && node "$ROOT/e2e/lib/outcome.mjs" "$rdir/playwright.json" > "$rdir/outcome-parse"
   local parsed tests skipped first_failure reason=""
   parsed=$(cat "$rdir/outcome-parse" 2>/dev/null || echo "tests=0 skipped=0 failed=0 first_failure=-")
-  tests=$(echo "$parsed" | sed -E 's/.*tests=([0-9]+).*/\1/')
-  skipped=$(echo "$parsed" | sed -E 's/.*skipped=([0-9]+).*/\1/')
-  first_failure=$(echo "$parsed" | sed -E 's/.*first_failure=//')
+  # first_failure is free text and last, so read the counts only from the part before it.
+  local counts="${parsed%% first_failure=*}"
+  tests=$(echo "$counts" | sed -E 's/.*tests=([0-9]+).*/\1/')
+  skipped=$(echo "$counts" | sed -E 's/.*skipped=([0-9]+).*/\1/')
+  first_failure="${parsed#* first_failure=}"
   rm -f "$rdir/outcome-parse"
   case $rc in
     0) [ "$leftover" -gt 0 ] && reason="leftover projects remain" ;;
@@ -177,39 +183,53 @@ run_one() {
   return $final
 }
 
-# Prints a LEFTOVER PROJECT line for each agw-e2e-* Compose project still listed and sets LEFTOVER_N.
+# The agw-e2e-* Compose projects Docker lists, running or not, one per line.
+list_e2e_projects() {
+  "$E2E_DOCKER" compose ls -a --format json 2>/dev/null | grep -oE '"Name" *: *"agw-e2e-[^"]*"' | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/' || true
+}
+
+# leftover_check <own project> <projects listed before the run>: lists again after cleanup.
+# A project still listed that is this run's own, or was not there before, prints LEFTOVER PROJECT and
+# counts in LEFTOVER_N. A project listed before and after, not ours, prints PRE-EXISTING PROJECT and does not count.
 LEFTOVER_N=0
 leftover_check() {
-  local name
+  local own="$1" before="$2" name
   LEFTOVER_N=0
   while IFS= read -r name; do
     [ -n "$name" ] || continue
-    echo "LEFTOVER PROJECT: $name"
-    LEFTOVER_N=$((LEFTOVER_N + 1))
-  done < <("$E2E_DOCKER" compose ls --format json 2>/dev/null | grep -oE '"Name" *: *"agw-e2e-[^"]*"' | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/' || true)
+    if [ "$name" = "$own" ] || ! printf '%s\n' "$before" | grep -qxF -- "$name"; then
+      echo "LEFTOVER PROJECT: $name"
+      LEFTOVER_N=$((LEFTOVER_N + 1))
+    else
+      echo "PRE-EXISTING PROJECT: $name"
+    fi
+  done < <(list_e2e_projects)
+}
+
+# Candidate ids for a track, in order and with repeats: intro labs, README links, then every spec by name.
+candidate_ids() {
+  case "$1" in
+    llm) printf '%s\n' 001 llm/connect-llm-providers ;;
+    mcp) printf '%s\n' mcp/connect-remote-mcp-server ;;
+    platform) ;;
+    *) printf '%s\n' 001 llm/connect-llm-providers mcp/connect-remote-mcp-server ;;
+  esac
+  grep -oE '\]\(labs/[a-z0-9-]+/[a-z0-9-]+\.md\)' "$ROOT/README.md" | sed -E 's/^\]\(labs\/(.*)\.md\)$/\1/'
+  find "$ROOT/e2e/labs" -name '*.spec.ts' | sort | sed -E "s|^$ROOT/e2e/labs/||; s|\.spec\.ts\$||"
 }
 
 # The ids of the specs for a track, one per line: the intro labs of the track, then README order,
 # then any other spec by name. Specs without a file are dropped.
 order_ids() {
-  local track="$1" seen=$'\n' id f
-  local candidates
-  case "$track" in
-    llm) candidates="001 llm/connect-llm-providers" ;;
-    mcp) candidates="mcp/connect-remote-mcp-server" ;;
-    platform) candidates="" ;;
-    *) candidates="001 llm/connect-llm-providers mcp/connect-remote-mcp-server" ;;
-  esac
-  candidates="$candidates $(grep -oE '\]\(labs/[a-z0-9-]+/[a-z0-9-]+\.md\)' "$ROOT/README.md" | sed -E 's/^\]\(labs\/(.*)\.md\)$/\1/' | tr '\n' ' ')"
-  candidates="$candidates $(find "$ROOT/e2e/labs" -name '*.spec.ts' | sort | sed -E "s|^$ROOT/e2e/labs/||; s|\.spec\.ts$||" | tr '\n' ' ')"
-  for id in $candidates; do
+  local track="$1" seen=$'\n' id
+  while IFS= read -r id; do
     [ "$id" = smoke ] && continue
     [ "$track" = all ] || case "$id" in "$track"/*) ;; 001) [ "$track" = llm ] || continue ;; *) continue ;; esac
     [ -f "$ROOT/e2e/labs/$id.spec.ts" ] || continue
     case "$seen" in *$'\n'"$id"$'\n'*) continue ;; esac
     seen="$seen$id"$'\n'
     echo "$id"
-  done
+  done < <(candidate_ids "$track")
 }
 
 # lab_path <id>: the lab's markdown file relative to the repo root.

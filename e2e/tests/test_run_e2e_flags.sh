@@ -87,10 +87,22 @@ check "leftover none: no line" $(has "LEFTOVER PROJECT:" && echo 1 || echo 0)
 check "leftover none: leftover=0" $(outcome llm-virtual-api-keys | grep -q 'leftover=0' && echo 0 || echo 1)
 STUB_COMPOSE_LS='[{"Name":"keycloak"}]' run_runner "$REPO" llm/virtual-api-keys
 check "leftover other prefix: no line" $(has "LEFTOVER PROJECT:" && echo 1 || echo 0)
-STUB_COMPOSE_LS='[{"Name":"agw-e2e-llm-x","Status":"running(1)"}]' run_runner "$REPO" llm/virtual-api-keys
+STUB_COMPOSE_LS_BEFORE='[]' STUB_COMPOSE_LS_AFTER='[{"Name":"agw-e2e-llm-x","Status":"running(1)"}]' run_runner "$REPO" llm/virtual-api-keys
 check "leftover ours: line" $(has "LEFTOVER PROJECT: agw-e2e-llm-x" && echo 0 || echo 1)
 check "leftover ours: exit 1" $([ "$RC" -eq 1 ] && echo 0 || echo 1)
 check "leftover ours: leftover=1 and fail" $(outcome llm-virtual-api-keys | grep -q '^status=fail rc=0 .*leftover=1 reason=leftover projects remain$' && echo 0 || echo 1)
+STUB_COMPOSE_LS='[{"Name":"agw-e2e-old"}]' run_runner "$REPO" llm/virtual-api-keys
+check "pre-existing only: run passes" $([ "$RC" -eq 0 ] && echo 0 || echo 1)
+check "pre-existing only: line printed once" $([ "$(printf '%s\n' "$OUT" | grep -cF 'PRE-EXISTING PROJECT: agw-e2e-old')" -eq 1 ] && echo 0 || echo 1)
+check "pre-existing only: no LEFTOVER line, leftover=0" $(! has "LEFTOVER PROJECT:" && outcome llm-virtual-api-keys | grep -q 'leftover=0' && echo 0 || echo 1)
+STUB_COMPOSE_LS_BEFORE='[{"Name":"agw-e2e-old"}]' STUB_COMPOSE_LS_AFTER='[{"Name":"agw-e2e-old"},{"Name":"agw-e2e-llm-virtual-api-keys"}]' run_runner "$REPO" llm/virtual-api-keys
+check "old plus own: only own is leftover" $(has "LEFTOVER PROJECT: agw-e2e-llm-virtual-api-keys" && ! has "LEFTOVER PROJECT: agw-e2e-old" && has "PRE-EXISTING PROJECT: agw-e2e-old" && outcome llm-virtual-api-keys | grep -q 'leftover=1' && echo 0 || echo 1)
+check "old plus own: exit 1" $([ "$RC" -eq 1 ] && echo 0 || echo 1)
+
+# a failing title that looks like outcome fields must not corrupt the counts
+STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/trap.json" run_runner "$REPO" llm/virtual-api-keys
+check "trap title: counts intact" $(outcome llm-virtual-api-keys | grep -q ' tests=2 skipped=0 ' && echo 0 || echo 1)
+check "trap title: reason is the full title" $(outcome llm-virtual-api-keys | grep -qF 'reason=[R1] tests=9 skipped=3 trap' && echo 0 || echo 1)
 
 # --track runs several ids and reports failures
 STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --track platform

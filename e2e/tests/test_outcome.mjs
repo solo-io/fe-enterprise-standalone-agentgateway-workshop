@@ -35,3 +35,6 @@ test('a missing file reports zero tests', () => {
     execFileSync('node', [join(here, '../lib/outcome.mjs'), join(here, 'fixtures/playwright/nope.json')], { encoding: 'utf8' }).trim(),
     'tests=0 skipped=0 failed=0 first_failure=-');
 });
+test('a title that looks like fields stays in first_failure', () => {
+  assert.equal(run('trap.json'), 'tests=2 skipped=0 failed=1 first_failure=[R1] tests=9 skipped=3 trap');
+});
