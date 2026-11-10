@@ -14,14 +14,6 @@ A few labs need another API key or AWS credentials. The **Needs** column in each
 
 The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab and `15100` and `4100` (second gateway) in the Postgres lab.
 
-## Alpha: Evaluate with an agent
-
-An AI agent can run the LLM, MCP or Platform track for you, explain each lab, and write a local report. It runs every lab on a throwaway gateway that Docker Compose starts and removes, so the gateway you set up in 001 is untouched. To start it from the repo root, run `/evaluate` in Claude Code, or tell Codex to read `AGENTS.md` and run the evaluate skill. See [AGENTS.md](AGENTS.md) for prerequisites and the hard rules the agent follows.
-
-The same agent can also build a custom lab for your own scenario. Run `/adapt-lab` in Claude Code, or tell Codex to read `AGENTS.md` and run the adapt-lab skill, then name the labs to start from or describe what you need. The agent writes a proposal, waits for your approval, then writes a lab, a Playwright spec, and the screenshots the spec takes under `custom-labs/<name>/`, and runs the spec on a throwaway gateway until every requirement passes. The folder is gitignored and stays on your machine.
-
-To contribute a custom lab back to the workshop, run `/contribute-lab <name>` in Claude Code, or tell Codex to read `AGENTS.md` and run the contribute-lab skill. The agent promotes the lab on a new version branch, shows you the diff, and pushes only when you say yes.
-
 ## Start here
 
 1. [Set Up Standalone Agentgateway](001-set-up-standalone-agentgateway.md)
@@ -142,6 +134,15 @@ Some labs need a small service next to the gateway, such as a mock LLM or an MCP
 ```bash
 env UID=$(id -u) GID=$(id -g) docker compose --profile <helper> up -d
 ```
+
+## Alpha: Evaluate with an agent
+
+An AI agent can run the LLM, MCP or Platform track for you, explain each lab, and write a local report. It runs every lab on a throwaway gateway that Docker Compose starts and removes, so the gateway you set up in 001 is untouched. To start it from the repo root, run `/evaluate` in Claude Code, or tell Codex to read `AGENTS.md` and run the evaluate skill. See [AGENTS.md](AGENTS.md) for prerequisites and the hard rules the agent follows.
+
+The same agent can also build a custom lab for your own scenario. Run `/adapt-lab` in Claude Code, or tell Codex to read `AGENTS.md` and run the adapt-lab skill, then name the labs to start from or describe what you need. The agent writes a proposal, waits for your approval, then writes a lab, a Playwright spec, and the screenshots the spec takes under `custom-labs/<name>/`, and runs the spec on a throwaway gateway until every requirement passes. The folder is gitignored and stays on your machine.
+
+To contribute a custom lab back to the workshop, run `/contribute-lab <name>` in Claude Code, or tell Codex to read `AGENTS.md` and run the contribute-lab skill. The agent promotes the lab on a new version branch, shows you the diff, and pushes only when you say yes.
+
 
 ## For workshop authors
 
