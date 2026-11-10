@@ -35,13 +35,13 @@ if command -v docker >/dev/null; then
   v=$(docker compose version --short 2>/dev/null) && [ -n "$v" ] && compose_v="$v"
   if [ "$docker_v" != absent ]; then
     docker image inspect "$PW_IMAGE" >/dev/null 2>&1 && image=present
-    projects=$(docker compose ls --format json 2>/dev/null | grep -o '"Name":"agw-e2e-[^"]*"' | sed 's/^"Name":"//; s/"$//')
+    projects=$(docker compose ls -a --format json 2>/dev/null | grep -o '"Name":"agw-e2e-[^"]*"' | sed 's/^"Name":"//; s/"$//')
   fi
 fi
 
 # setup/.env and keys
 env_file=false; [ -f "$ROOT/setup/.env" ] && env_file=true
-KEYS="OPENAI_API_KEY ANTHROPIC_API_KEY TYPESAFE_AI_API_KEY AWS_ACCESS_KEY_ID BEDROCK_API_KEY CLAUDE_CODE_OAUTH_TOKEN"
+KEYS="$KEY_NAMES"
 if [ "$env_file" = true ]; then
   KEYS_NO_EXIT=1 check_keys >/dev/null 2>&1 || true
 else
@@ -50,10 +50,11 @@ fi
 
 # a gateway a reader already runs
 gw_state=absent; gw_version=""
-body=$("$CURL" -s -m 5 http://localhost:15000/api/runtime 2>/dev/null || true)
-if [ -n "$body" ]; then
-  gw_state=running
+out=$("$CURL" -s -m 5 -w '\n%{http_code}' http://localhost:15000/api/runtime 2>/dev/null || true)
+gw_code="${out##*$'\n'}"; body="${out%$'\n'*}"
+if [ "$gw_code" = 200 ]; then
   gw_version=$(printf '%s' "$body" | tr -d '\n' | sed -n 's/.*"version" *: *"\([^"]*\)".*/\1/p' | head -1)
+  [ -z "$gw_version" ] || gw_state=running
 fi
 
 # ports (check-ports.sh checks compose against the labs; no script means nothing to flag)
@@ -61,9 +62,10 @@ ports=ok
 if [ -f "$ROOT/e2e/check-ports.sh" ]; then bash "$ROOT/e2e/check-ports.sh" >/dev/null 2>&1 || ports=fail; fi
 
 # setup/config.yaml edits; no git counts as not dirty
-dirty=false
-if [ -d "$ROOT/.git" ] && command -v git >/dev/null; then
-  git -C "$ROOT" diff --quiet -- setup/config.yaml 2>/dev/null || dirty=true
+dirty=false; dirty_err=""
+if command -v git >/dev/null && git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  git -C "$ROOT" diff --quiet HEAD -- setup/config.yaml >/dev/null 2>&1; rc=$?
+  case "$rc" in 0) ;; 1) dirty=true ;; *) dirty_err="$rc" ;; esac
 fi
 
 # node and the Playwright MCP
@@ -94,6 +96,7 @@ mkdir -p "$WORK_ROOT"
   printf '  "ports": "%s",\n' "$ports"
   printf '  "leftover_projects": [%s],\n' "$left_json"
   printf '  "setup_config_dirty": %s,\n' "$dirty"
+  [ -z "$dirty_err" ] || printf '  "setup_config_dirty_error": "%s",\n' "$dirty_err"
   printf '  "node": %s,\n' "$(json_str "$node_v")"
   printf '  "playwright_mcp": %s,\n' "$pw_mcp"
   printf '  "detected_at": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -116,6 +119,6 @@ missing=0
 [ "$docker_v" != absent ] || { echo "missing: docker"; missing=1; }
 [ "$compose_v" != absent ] || { echo "missing: docker compose"; missing=1; }
 [ "$env_file" = true ] || { echo "missing: setup/.env (copy setup/.env.example and fill in keys)"; missing=1; }
-[ "${KEY_STATUS_OPENAI_API_KEY:-missing}" = ok ] || { echo "missing: a working OPENAI_API_KEY"; missing=1; }
+[ "${KEY_STATUS_OPENAI_API_KEY:-missing}" = ok ] || { echo "missing: a working OPENAI_API_KEY (${KEY_STATUS_OPENAI_API_KEY:-missing})"; missing=1; }
 [ "$missing" -eq 0 ] || exit 2
 exit 0

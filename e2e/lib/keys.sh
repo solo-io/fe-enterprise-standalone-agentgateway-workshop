@@ -9,23 +9,26 @@ env_val() {
   echo "$v"
 }
 
+# Every key check_keys reports, in order.
+KEY_NAMES="OPENAI_API_KEY ANTHROPIC_API_KEY TYPESAFE_AI_API_KEY AWS_ACCESS_KEY_ID BEDROCK_API_KEY CLAUDE_CODE_OAUTH_TOKEN"
+
 # HTTP status of a request, 000 when the host does not answer. E2E_CURL replaces curl in tests.
 status_of() { "${E2E_CURL:-curl}" -s -o /dev/null -m 15 -w '%{http_code}' "$@" || true; }
 
 # Checks each key once per run against its provider. Specs skip the parts that need a key that is
 # missing or rejected; an OpenAI key that does not work stops the run, since almost every lab needs it.
 # Also sets KEY_STATUS_<NAME> to ok|missing|rejected for each key (detect-env.sh reads them).
-# With KEYS_NO_EXIT=1 a bad OpenAI key returns 1 instead of exiting, so a caller can keep going.
+# With KEYS_NO_EXIT=1 a bad OpenAI key does not exit: the other keys are still checked and the
+# function returns 1 at the end, so a caller can report every key.
 check_keys() {
-  local k code
+  local k code openai_rc=0
   KEY_STATUS_OPENAI_API_KEY=ok
   k=$(env_val OPENAI_API_KEY)
   if [ -z "$k" ]; then code=000; else code=$(status_of https://api.openai.com/v1/models -H "Authorization: Bearer $k"); fi
   if [ "$code" != 200 ]; then
     if [ -z "$k" ]; then KEY_STATUS_OPENAI_API_KEY=missing; else KEY_STATUS_OPENAI_API_KEY=rejected; fi
     echo "OPENAI_API_KEY does not work (HTTP $code); fix it in setup/.env" >&2
-    if [ -n "${KEYS_NO_EXIT:-}" ]; then return 1; fi
-    exit 1
+    if [ -n "${KEYS_NO_EXIT:-}" ]; then openai_rc=1; else exit 1; fi
   fi
 
   HAS_ANTHROPIC=0
@@ -73,5 +76,5 @@ check_keys() {
   KEY_STATUS_CLAUDE_CODE_OAUTH_TOKEN=missing
   if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then HAS_CLAUDE_OAUTH=1; KEY_STATUS_CLAUDE_CODE_OAUTH_TOKEN=ok
   else echo "CLAUDE_CODE_OAUTH_TOKEN: not set, Claude subscription tests skip"; fi
-  return 0
+  return "$openai_rc"
 }

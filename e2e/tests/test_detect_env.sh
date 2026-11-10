@@ -9,13 +9,21 @@ check() { # check <name> <condition-exit-code>
   else T_FAIL=$((T_FAIL+1)); printf 'FAIL %s\n' "$1"; fi
 }
 
+# Keys exported in the developer shell must not leak into the cases.
+unset OPENAI_API_KEY ANTHROPIC_API_KEY TYPESAFE_AI_API_KEY AWS_ACCESS_KEY_ID BEDROCK_API_KEY CLAUDE_CODE_OAUTH_TOKEN
+
 STUBS="$TMP/stubs"; mkdir -p "$STUBS"
 cat > "$STUBS/curl" <<'STUB'
 #!/usr/bin/env bash
-for a in "$@"; do [ "$a" = -w ] && { printf 200; exit 0; }; done
+# STUB_OPENAI_CODE and STUB_RUNTIME_CODE (default 200) set the status for each endpoint.
 case "$*" in
-  *localhost:15000/api/runtime*) printf '{"build":{"version":"v2026.10.0"}}' ;;
+  *localhost:15000/api/runtime*)
+    code="${STUB_RUNTIME_CODE:-200}"
+    [ "$code" = 200 ] && printf '%s' "${STUB_RUNTIME_BODY-{\"build\":{\"version\":\"v2026.10.0\"}}}"
+    printf '\n%s' "$code"; exit 0 ;;
+  *api.openai.com*) printf '%s' "${STUB_OPENAI_CODE:-200}"; exit 0 ;;
 esac
+for a in "$@"; do [ "$a" = -w ] && { printf 200; exit 0; }; done
 exit 0
 STUB
 cat > "$TMP/docker.stub" <<'STUB'
@@ -24,7 +32,7 @@ case "$*" in
   "version --format {{.Server.Version}}") echo 27.0.1 ;;
   "compose version --short") echo 2.29.0 ;;
   "image inspect "*) exit 0 ;;
-  "compose ls --format json") echo "${STUB_COMPOSE_LS:-[]}" ;;
+  "compose ls -a --format json") echo "${STUB_COMPOSE_LS:-[]}" ;;
   *) exit 1 ;;
 esac
 STUB
@@ -77,6 +85,35 @@ d=$(new_repo left)
 export STUB_COMPOSE_LS='[{"Name":"agw-e2e-llm-x"},{"Name":"other"}]'
 run_detect "$d" 1; unset STUB_COMPOSE_LS
 has "$d/e2e/.work/env.json" '"leftover_projects": ["agw-e2e-llm-x"]'; check "leftover projects: only agw-e2e-* listed" $?
+
+d=$(new_repo staged); echo "# x" >> "$d/setup/config.yaml"; git -C "$d" add setup/config.yaml; run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"setup_config_dirty": true'; check "staged edit: dirty" $?
+
+d=$(new_repo wt); git -C "$d" worktree add -q "$TMP/wtree" -b wtb 2>/dev/null
+mkdir -p "$TMP/wtree/e2e/lib"; cp "$d/e2e/lib/"*.sh "$TMP/wtree/e2e/lib/"; cp "$d/setup/.env" "$TMP/wtree/setup/.env"
+echo "# x" >> "$TMP/wtree/setup/config.yaml"; run_detect "$TMP/wtree" 1
+has "$TMP/wtree/e2e/.work/env.json" '"setup_config_dirty": true'; check "worktree: dirty detected" $?
+
+d=$(new_repo gitbad); echo "ref: refs/heads/nope" > "$d/.git/HEAD"; run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"setup_config_dirty": false' && has "$d/e2e/.work/env.json" '"setup_config_dirty_error"'; check "git error: not dirty, error recorded" $?
+
+d=$(new_repo badkey); echo "ANTHROPIC_API_KEY=sk-x" >> "$d/setup/.env"; STUB_OPENAI_CODE=401 run_detect "$d" 1
+[ "$RC" -eq 2 ]; check "rejected openai key: exit 2 (rc=$RC)" $?
+case "$OUT" in *OPENAI_API_KEY*rejected*) r=0 ;; *) r=1 ;; esac; check "rejected openai key: line names OPENAI_API_KEY" $r
+has "$d/e2e/.work/env.json" '"OPENAI_API_KEY": "rejected"'; check "rejected openai key: status rejected" $?
+has "$d/e2e/.work/env.json" '"ANTHROPIC_API_KEY": "ok"'; check "rejected openai key: other keys still checked" $?
+
+d=$(new_repo nokey); sed -i.bak '/^OPENAI_API_KEY=/d' "$d/setup/.env"; run_detect "$d" 1
+[ "$RC" -eq 2 ]; check "openai key missing: exit 2 (rc=$RC)" $?
+has "$d/e2e/.work/env.json" '"OPENAI_API_KEY": "missing"'; check "openai key missing: status missing" $?
+
+d=$(new_repo gw404); STUB_RUNTIME_CODE=404 run_detect "$d" 1
+[ "$RC" -eq 0 ]; check "runtime 404: exit 0 (rc=$RC)" $?
+has "$d/e2e/.work/env.json" '"user_gateway": {"state":"absent"}'; check "runtime 404: gateway absent" $?
+d=$(new_repo gwdown); STUB_RUNTIME_CODE=000 run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"user_gateway": {"state":"absent"}'; check "connection refused: gateway absent" $?
+d=$(new_repo gwjunk); STUB_RUNTIME_BODY='<html>' run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"user_gateway": {"state":"absent"}'; check "200 without build.version: gateway absent" $?
 
 printf '\n%s passed, %s failed\n' "$T_PASS" "$T_FAIL"
 [ "$T_FAIL" -eq 0 ]
