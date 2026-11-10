@@ -22,8 +22,11 @@ Labs that call a provider cost money. List them before a run starts.
 For every mode:
 
 - Docker Desktop (macOS, Windows with WSL) or Docker Engine with the Compose plugin (Linux).
+- `python3` (the session log) and `jq`.
 - `setup/.env` with the keys, copied from `setup/.env.example`. `OPENAI_API_KEY` is required. Labs that need another key, such as `ANTHROPIC_API_KEY`, skip those tests when the key is missing or rejected.
 - The Playwright image `mcr.microsoft.com/playwright:v1.64.1-noble`. The first run pulls it.
+
+For contribute mode only: `gh`, logged in.
 
 For adapt mode only, because its learning phase uses the Playwright MCP server on the host:
 
@@ -52,7 +55,7 @@ In Claude Code, run `/evaluate`, `/adapt-lab`, or `/contribute-lab <name>` from 
 
 ## Solo docs server
 
-Claude Code reads `.mcp.json`, which also starts the Playwright MCP server. Codex needs this entry in `~/.codex/config.toml`:
+Claude Code reads `.mcp.json`, which also starts the Playwright MCP server with `--allowed-origins http://localhost:15000`, so the browser cannot request any other origin. Codex needs this entry in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.solo-knowledge]

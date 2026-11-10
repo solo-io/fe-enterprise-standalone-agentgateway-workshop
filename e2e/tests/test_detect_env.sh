@@ -36,7 +36,10 @@ case "$*" in
   *) exit 1 ;;
 esac
 STUB
-chmod +x "$STUBS/curl" "$TMP/docker.stub"
+printf '#!/usr/bin/env bash\necho "Python 3.12.1"\n' > "$STUBS/python3"
+printf '#!/usr/bin/env bash\necho "jq-1.7.1"\n' > "$STUBS/jq"
+printf '#!/usr/bin/env bash\necho "gh version 2.50.0 (2026-01-01)"\necho "https://github.com/cli/cli"\n' > "$STUBS/gh"
+chmod +x "$STUBS/curl" "$STUBS/python3" "$STUBS/jq" "$STUBS/gh" "$TMP/docker.stub"
 
 # new_repo <name>: a git repo copy holding the scripts under test and a setup/.env with fake keys.
 new_repo() {
@@ -52,6 +55,8 @@ new_repo() {
 run_detect() {
   local d="$1" withdocker="$2" bin="$TMP/bin-$1"
   rm -rf "$bin"; mkdir -p "$bin"; cp "$STUBS/curl" "$bin/curl"
+  cp "$STUBS/python3" "$STUBS/jq" "$bin/"
+  [ -z "${WITH_GH:-}" ] || cp "$STUBS/gh" "$bin/gh"
   [ "$withdocker" = 1 ] && cp "$TMP/docker.stub" "$bin/docker"
   RC=0
   OUT=$(cd "$d" && PATH="$bin:/usr/bin:/bin" E2E_CURL="$bin/curl" bash e2e/lib/detect-env.sh 2>&1) || RC=$?
@@ -114,6 +119,32 @@ d=$(new_repo gwdown); STUB_RUNTIME_CODE=000 run_detect "$d" 1
 has "$d/e2e/.work/env.json" '"user_gateway": {"state":"absent"}'; check "connection refused: gateway absent" $?
 d=$(new_repo gwjunk); STUB_RUNTIME_BODY='<html>' run_detect "$d" 1
 has "$d/e2e/.work/env.json" '"user_gateway": {"state":"absent"}'; check "200 without build.version: gateway absent" $?
+
+# run_detect_without <repo> <tool>: PATH holds every /usr/bin and /bin tool except <tool>, plus the stubs.
+run_detect_without() {
+  local d="$1" tool="$2" bin="$TMP/binx-$(basename "$1")" f
+  rm -rf "$bin"; mkdir -p "$bin"
+  for f in /usr/bin/* /bin/*; do case "$(basename "$f")" in "$tool"|curl|docker|python3|jq) continue ;; esac; ln -sf "$f" "$bin/$(basename "$f")" 2>/dev/null; done
+  cp "$STUBS/curl" "$bin/curl"; cp "$TMP/docker.stub" "$bin/docker"
+  [ "$tool" = python3 ] || cp "$STUBS/python3" "$bin/"
+  [ "$tool" = jq ] || cp "$STUBS/jq" "$bin/"
+  RC=0
+  OUT=$(cd "$d" && PATH="$bin" E2E_CURL="$bin/curl" bash e2e/lib/detect-env.sh 2>&1) || RC=$?
+}
+
+d=$(new_repo tools); run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"python3": "Python 3.12.1"' && has "$d/e2e/.work/env.json" '"jq": "jq-1.7.1"'; check "tools: python3 and jq versions recorded" $?
+has "$d/e2e/.work/env.json" '"gh": "absent"'; check "tools: gh absent recorded" $?
+[ "$RC" -eq 0 ]; check "tools: gh absent still exits 0 (rc=$RC)" $?
+d=$(new_repo ghin); WITH_GH=1 run_detect "$d" 1
+has "$d/e2e/.work/env.json" '"gh": "gh version 2.50.0 (2026-01-01)"'; check "tools: gh version is the first line" $?
+d=$(new_repo nopy); run_detect_without "$d" python3
+[ "$RC" -eq 2 ]; check "no python3: exit 2 (rc=$RC)" $?
+case "$OUT" in *"missing: python3"*) r=0 ;; *) r=1 ;; esac; check "no python3: names python3" $r
+has "$d/e2e/.work/env.json" '"python3": "absent"'; check "no python3: recorded absent" $?
+d=$(new_repo nojq); run_detect_without "$d" jq
+[ "$RC" -eq 2 ]; check "no jq: exit 2 (rc=$RC)" $?
+case "$OUT" in *"missing: jq"*) r=0 ;; *) r=1 ;; esac; check "no jq: names jq" $r
 
 printf '\n%s passed, %s failed\n' "$T_PASS" "$T_FAIL"
 [ "$T_FAIL" -eq 0 ]

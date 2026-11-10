@@ -168,7 +168,7 @@ Write `custom-labs/<name>/<name>.md` following "Writing the lab" and `custom-lab
    e2e/run-e2e.sh --custom <name> --lint
    ```
 
-   It checks the lab skeleton, links, em dashes, line 1 of the spec, that every `// @req R<n>` line has a `[R<n>]` test title and the reverse, that the literal `shot(page, 'NN-<what>'` names equal the lab's `images/NN-<what>.png` references and the PNG files in `images/`, the `../lib/` import prefix, and that every `--profile` in the lab exists in `setup/docker-compose.yml`. On the first pass, before any run, `images/` is empty, so expect only `missing image:` lines.
+   It checks the lab skeleton, links, em dashes, line 1 of the spec, that every `// @req R<n>` line has a `[R<n>]` test title and the reverse, that the literal `shot(page, 'NN-<what>'` names equal the lab's `images/NN-<what>.png` references and the PNG files in `images/`, the `../lib/` import prefix, and that every `--profile` in the lab exists in `setup/docker-compose.yml`. On the first pass, before any run, `images/` is empty, so expect `missing image:` lines and, for this lab's own screenshots, `broken link: images/NN-<what>.png` lines. Both are expected on the first pass, and only those.
 
 2. Run on a throwaway gateway from the `base` fixture. The run clears `custom-labs/<name>/images/` first and the spec writes every screenshot again:
 

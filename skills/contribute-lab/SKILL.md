@@ -258,7 +258,7 @@ e2e/lint.sh --file labs/<track>/<slug>.md
 
 It must print `lint ok`.
 
-A failure here comes from the move: a path or link the promoter missed, a value you replaced in step 2 that the spec and lab no longer share, or a heading you changed in step 4. Fix that in the promoted files. Never edit an assertion or a requirement. If the cause is anything else, apply `skills/diagnose-failure/SKILL.md` with the id `<track>/<slug>` and go to step 8 if the user stops.
+A failure here comes from the move: a path or link the promoter missed, a value you replaced in step 2 that the spec and lab no longer share, or a heading you changed in step 4. Fix that in the promoted files. Never edit an assertion or a requirement. If the cause is anything else, apply `skills/diagnose-failure/SKILL.md` with the id `<track>/<slug>`, using its "In contribute mode" choices: retry step 5 as written, or stop and go to step 8. Run only the shipped id `<track>/<slug>` here, never `e2e/run-e2e.sh custom/<name>`.
 
 A `LEFTOVER PROJECT: <name>` line fails the run. Show it, and on the user's yes run `docker compose -p <name> down -v`.
 

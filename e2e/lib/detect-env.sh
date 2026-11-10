@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # detect-env.sh: probe the host and write ${E2E_WORK_ROOT:-e2e/.work}/env.json, then print the same as key: value lines.
 #
-# Exit 0 when docker, docker compose, setup/.env and a working OPENAI_API_KEY are all present.
+# Exit 0 when docker, docker compose, python3, jq, setup/.env and a working OPENAI_API_KEY are all present.
 # Exit 2 otherwise, with one line per missing item. E2E_CURL replaces curl (tests).
 set -uo pipefail
 
@@ -74,6 +74,17 @@ node_v=$(node --version 2>/dev/null) || node_v=absent
 pw_mcp=false
 if command -v npx >/dev/null; then run_capped 20 npx --no-install @playwright/mcp --version && pw_mcp=true; fi
 
+# python3 and jq (session-log.sh and the agent's JSON reads), gh (contribute only, informational)
+tool_v() { # tool_v <command> <version args...>: first line of its version output, or absent
+  local c="$1"; shift
+  command -v "$c" >/dev/null 2>&1 || { echo absent; return; }
+  local v; v=$("$c" "$@" 2>/dev/null | head -1)
+  echo "${v:-present}"
+}
+python3_v=$(tool_v python3 --version)
+jq_v=$(tool_v jq --version)
+gh_v=$(tool_v gh --version)
+
 # build env.json
 keys_json=""
 for k in $KEYS; do
@@ -99,6 +110,9 @@ mkdir -p "$WORK_ROOT"
   [ -z "$dirty_err" ] || printf '  "setup_config_dirty_error": "%s",\n' "$dirty_err"
   printf '  "node": %s,\n' "$(json_str "$node_v")"
   printf '  "playwright_mcp": %s,\n' "$pw_mcp"
+  printf '  "python3": %s,\n' "$(json_str "$python3_v")"
+  printf '  "jq": %s,\n' "$(json_str "$jq_v")"
+  printf '  "gh": %s,\n' "$(json_str "$gh_v")"
   printf '  "detected_at": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf '}\n'
 } > "$WORK_ROOT/env.json"
@@ -114,10 +128,15 @@ echo "leftover_projects: ${projects:-none}" | tr '\n' ' ' | sed 's/ $//'; echo
 echo "setup_config_dirty: $dirty"
 echo "node: $node_v"
 echo "playwright_mcp: $pw_mcp"
+echo "python3: $python3_v"
+echo "jq: $jq_v"
+echo "gh: $gh_v"
 
 missing=0
 [ "$docker_v" != absent ] || { echo "missing: docker"; missing=1; }
 [ "$compose_v" != absent ] || { echo "missing: docker compose"; missing=1; }
+[ "$python3_v" != absent ] || { echo "missing: python3 (session-log.sh needs it)"; missing=1; }
+[ "$jq_v" != absent ] || { echo "missing: jq"; missing=1; }
 [ "$env_file" = true ] || { echo "missing: setup/.env (copy setup/.env.example and fill in keys)"; missing=1; }
 [ "${KEY_STATUS_OPENAI_API_KEY:-missing}" = ok ] || { echo "missing: a working OPENAI_API_KEY (${KEY_STATUS_OPENAI_API_KEY:-missing})"; missing=1; }
 [ "$missing" -eq 0 ] || exit 2

@@ -116,8 +116,10 @@ if (!p || p.command !== "npx" || !Array.isArray(p.args)) process.exit(1);
 const pkg = p.args.find((a) => a.startsWith("@playwright/mcp@"));
 if (!pkg || !/^@playwright\/mcp@\d+\.\d+\.\d+$/.test(pkg)) process.exit(1);
 if (Object.keys(s).length !== 2) process.exit(1);
+const oi = p.args.indexOf("--allowed-origins");
+if (oi < 0 || p.args[oi + 1] !== "http://localhost:15000") process.exit(1);
 ' 2>/dev/null
-check ".mcp.json parses, has solo-knowledge and playwright pinned to a version" $?
+check ".mcp.json parses, has solo-knowledge, playwright pinned to a version and limited to localhost:15000" $?
 
 # Lint: clean apart from the three stale metrics-and-tracing PNGs, which are the user's to delete.
 out=$(e2e/lint.sh 2>&1); rc=$?

@@ -29,6 +29,13 @@ The harness has already finished the run and removed its Compose project. `<id>`
    - Stop the session
 
    In adapt mode, `skills/adapt-lab/SKILL.md` replaces these with its own choices.
+
+   In contribute mode, the id is `<track>/<slug>` and the choices are:
+
+   - Retry step 5 as written: `e2e/lib/session-log.sh add decision <track>/<slug> retry`, then `e2e/run-e2e.sh <track>/<slug> --update-screenshots`.
+   - Stop and go to step 8 (undo) in `skills/contribute-lab/SKILL.md`: `e2e/lib/session-log.sh add decision <track>/<slug> stop`.
+
+   There is no skip in contribute mode. Do not run the plain retry command from "What each choice does" below, because it would not regenerate the screenshots.
 4. Run nothing until the user picks.
 5. The harness removed the throwaway gateway when the run ended. Confirm that the run printed no `LEFTOVER PROJECT:` line. If it printed one, name the project and offer `docker compose -p <name> down -v`.
 
