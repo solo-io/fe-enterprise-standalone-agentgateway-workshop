@@ -56,6 +56,8 @@ if [ -n "$CUSTOM" ]; then
     [ -f "$f" ] || { echo "missing custom lab file: custom-labs/$CUSTOM/$(basename "$f") (expected at $f)" >&2; missing=1; }
   done
   [ $missing -eq 0 ] || exit 1
+  # An absolute path, so Docker mounts the folder instead of creating a named volume.
+  CUSTOM_ROOT="$(cd "$CUSTOM_ROOT" && pwd)"
   if [ "$LINT" = 1 ]; then
     exec "$ROOT/e2e/lint.sh" --file "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.md" --spec "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.spec.ts" --custom
   fi

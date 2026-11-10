@@ -58,7 +58,6 @@ RC=0; OUT=$("$E2E/lint.sh" 2>&1) || RC=$?
 other=$(printf '%s\n' "$OUT" | grep -vE '^lint ok$|: (missing image|unreferenced image): ' || true)
 check "shipped: only screenshot-agreement lines or lint ok" $([ -z "$other" ] && echo 0 || echo 1)
 [ -z "$other" ] || printf '%s\n' "$other"
-[ "$RC" -eq 0 ] || printf '  shipped screenshot findings:\n%s\n' "$(printf '%s\n' "$OUT" | sed 's/^/    /')"
 
 printf '\n%s passed, %s failed\n' "$T_PASS" "$T_FAIL"
 [ "$T_FAIL" -eq 0 ]

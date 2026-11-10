@@ -136,6 +136,9 @@ check "custom --lint runs lint only" $([ "$RC" -eq 0 ] && has "lint ok" && ! gre
 mkdir -p "$TMP/croot"; cp -R "$CF/demo" "$TMP/croot/demo"
 E2E_CUSTOM_ROOT="$TMP/croot" run_runner "$REPO" --custom demo
 check "custom root override finds demo and mounts it" $([ "$RC" -eq 0 ] && grep '^run ' "$TMP/docker.log" | grep -qF "$TMP/croot:/repo/custom-labs" && echo 0 || echo 1)
+mkdir -p "$REPO/croot-rel"; cp -R "$CF/demo" "$REPO/croot-rel/demo"
+E2E_CUSTOM_ROOT=croot-rel run_runner "$REPO" --custom demo
+check "relative custom root: mount is an absolute path" $([ "$RC" -eq 0 ] && grep -oE -- '-v [^ ]*:/repo/custom-labs' "$TMP/docker.log" | grep -q '^-v /' && echo 0 || echo 1)
 
 run_runner "$REPO" --report-only
 check "report-only is not built yet" $([ "$RC" -eq 2 ] && has "report builder not available yet" && echo 0 || echo 1)

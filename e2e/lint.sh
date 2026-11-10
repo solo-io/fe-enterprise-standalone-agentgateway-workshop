@@ -93,9 +93,9 @@ screenshot_check() {
   MD_IMAGES="$b"
 }
 
-# The names a custom spec shoots, one per line; sets SHOT_NAMES.
-custom_checks() { # custom_checks <lab.md> <spec.ts> <expected first line>
-  local lab="$1" spec="$2" first="$3" line n p name
+# The custom-spec checks. <md images> is the PNG basenames the markdown references, one per line.
+custom_checks() { # custom_checks <lab.md> <spec.ts> <expected first line> <md images>
+  local lab="$1" spec="$2" first="$3" md_images="$4" line n p name
   [ -f "$spec" ] || { err "$spec" "spec not found"; return; }
   [ "$(head -n1 "$spec")" = "// $first" ] || err "$spec" "first line must be '// $first'"
 
@@ -116,8 +116,8 @@ custom_checks() { # custom_checks <lab.md> <spec.ts> <expected first line>
 
   local shots
   shots=$(grep -oE "shot\([^,]+,[[:space:]]*['\"][^'\"\`]+['\"]" "$spec" | sed -E "s/^shot\([^,]+,[[:space:]]*['\"]//; s/['\"]\$//" | sed 's/$/.png/' | sort -u)
-  while IFS= read -r name; do [ -n "$name" ] && err "$spec" "shot without image reference: $name"; done < <(comm -23 <(echo "$shots") <(echo "$MD_IMAGES"))
-  while IFS= read -r name; do [ -n "$name" ] && err "$spec" "image without shot: $name"; done < <(comm -13 <(echo "$shots") <(echo "$MD_IMAGES"))
+  while IFS= read -r name; do [ -n "$name" ] && err "$spec" "shot without image reference: $name"; done < <(comm -23 <(echo "$shots") <(echo "$md_images"))
+  while IFS= read -r name; do [ -n "$name" ] && err "$spec" "image without shot: $name"; done < <(comm -13 <(echo "$shots") <(echo "$md_images"))
 
   while IFS= read -r line; do
     grep -qE "^[[:space:]]*import .* from " <<<"$line" || continue
@@ -144,7 +144,7 @@ if [ -n "$FILE" ]; then
     spec=$(absolute "$SPEC")
     name=$(basename "$lab" .md)
     screenshot_check "$lab" "$(lab_images_dir "$lab" 1)"
-    custom_checks "$lab" "$spec" "custom-labs/$name/$name.md"
+    custom_checks "$lab" "$spec" "custom-labs/$name/$name.md" "$MD_IMAGES"
   else
     found=""
     if [ -f "$(dirname "$lab")/$(basename "$lab" .md).spec.ts" ]; then found=1

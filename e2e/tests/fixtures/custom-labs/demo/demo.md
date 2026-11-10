@@ -4,7 +4,7 @@ Shows two UI pages.
 
 ## Before you start
 
-Finish [the demo changes](../demo/CHANGES.md)'/CHANGES.md) first.
+Finish [the demo changes](../demo/CHANGES.md) first.
 
 ## Step 1: Open the first page
 
