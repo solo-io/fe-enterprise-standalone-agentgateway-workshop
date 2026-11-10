@@ -5,7 +5,7 @@ description: Handle a spec run that ended with status=fail. Read the Playwright 
 
 # Diagnose a failed run
 
-The harness has already finished the run and removed its Compose project. `<id>` is the lab id, for example `mcp/mcp-rate-limiting`, or `custom/<name>` for a custom lab. `<dir>` is its work folder: `e2e/.work/<id with / as ->/`, for example `e2e/.work/mcp-mcp-rate-limiting/`, or `e2e/.work/custom/<name>/`. Do exactly these five steps.
+The harness has already finished the run and removed its Compose project. `<id>` is the lab id, for example `mcp/mcp-rate-limiting`, or `custom/<name>` for a custom lab. `<dir>` is its work folder: `e2e/.work/<id with / as ->/`, for example `e2e/.work/mcp-mcp-rate-limiting/`, or `e2e/.work/custom/<name>/`. Do these steps, in order, and nothing else.
 
 1. Read what failed:
 

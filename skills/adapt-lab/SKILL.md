@@ -1,6 +1,6 @@
 ---
 name: adapt-lab
-description: Turn one or more shipped labs into a custom lab, a Playwright spec, and the spec's screenshots for the user's own scenario, prove it on a throwaway gateway, and hand it off. Use when the user wants to extend, combine, or reskin a lab for their scenario.
+description: Turn one or more shipped labs into a custom lab, a Playwright spec, and the spec's screenshots for the user's own scenario, prove it on a throwaway gateway, and hand it off. Use when the user wants to extend, compose, or reskin a lab for their scenario.
 ---
 
 # Adapt a lab
@@ -168,7 +168,7 @@ Write `custom-labs/<name>/<name>.md` following "Writing the lab" and `custom-lab
    e2e/run-e2e.sh --custom <name> --lint
    ```
 
-   It checks the lab skeleton, links, em dashes, line 1 of the spec, that every `// @req R<n>` line has a `[R<n>]` test title and the reverse, that the literal `shot(page, 'NN-<what>'` names equal the lab's `images/NN-<what>.png` references and the PNG files in `images/`, the `../lib/` import prefix, and that the spec's `// @profiles` and the lab's `--profile` flags name the same profiles, all defined in `setup/docker-compose.yml`. On the first pass, before any run, `images/` is empty, so expect `missing image:` lines and, for this lab's own screenshots, `broken link: images/NN-<what>.png` lines. Both are expected on the first pass, and only those.
+   It checks the lab skeleton, links, em dashes, line 1 of the spec, that every `// @req R<n>` line has a `[R<n>]` test title and the reverse, that the literal `shot(page, 'NN-<what>'` names equal the lab's `images/NN-<what>.png` references and the PNG files in `images/`, the `../lib/` import prefix, and that the spec's `// @profiles` and the lab's `--profile` flags name the same profiles, all defined in `setup/docker-compose.yml`. On the first pass, before any run, `images/` is empty, so expect `missing image:` lines and, for this lab's own screenshots, `broken link: images/NN-<what>.png` lines. Fix any other line.
 
 2. Run on a throwaway gateway from the `base` fixture. The run moves the PNGs in `custom-labs/<name>/images/` aside first and the spec writes every screenshot again. If the run does not pass, the previous PNGs come back:
 
@@ -228,7 +228,7 @@ It writes `custom-labs/<name>/reports/<YYYYMMDD-HHMMSS>-standalone-custom-<name>
 
 Show the four paths: `custom-labs/<name>/<name>.md`, `custom-labs/<name>/<name>.spec.ts`, `custom-labs/<name>/images/`, and the report. Tell the user they can follow the lab by hand against their own gateway, or re-run the proof with `e2e/run-e2e.sh --custom <name>`. The folder is theirs and stays on their machine. To ship it in the workshop, they run `/contribute-lab <name>`.
 
-There is no keep question. Validation ran on a throwaway gateway that is gone, and the learning phase restored the user's `setup/config.yaml`.
+Nothing needs removing: the throwaway gateway is gone, and the learning phase restored the user's `setup/config.yaml`.
 
 ## Writing the lab
 
@@ -249,7 +249,7 @@ The skeleton, in this order:
 
 Rules:
 
-- Image paths for this lab's own screenshots are `images/NN-<what>.png`, relative to the lab file, numbered in step order from `01`. Each must match a `shot()` name in the spec. Set up screenshots borrowed from an intro lab keep their `../../images/<track>/<slug>/` paths and need no `shot()`.
+- Image paths for this lab's own screenshots are `images/NN-<what>.png`, relative to the lab file, numbered in step order from `01`. Each must match a `shot()` name in the spec. Set up screenshots borrowed from an intro lab keep their `../../images/<track>/<slug>/` paths; the spec takes `shot()` calls only for this lab's own images.
 - Start helpers with the README's command from the `setup` folder, `env UID=$(id -u) GID=$(id -g) docker compose --profile <helper> up -d`, using only profiles `setup/docker-compose.yml` defines. A custom lab adds no host port and no new helper service.
 - Every command the spec runs with `labSh` or `labExec` appears verbatim in a fenced code block of the lab.
 - Secrets come from `setup/.env` by name, for example **Env var** `OPENAI_API_KEY`. The lab never contains a key value, token, hostname, or IP from the user's environment. Values the user supplied, such as team names, models, and limits, belong in the lab.

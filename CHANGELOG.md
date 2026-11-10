@@ -1,12 +1,12 @@
 # Changelog
 
-0.1.2 - (11-9-26)
+0.1.2 - (11-10-26)
 ---
-- Add an evaluation agent (Alpha): an AI agent (Claude Code or Codex) works the workshop on a throwaway gateway. `AGENTS.md` holds the rules and how to start; `skills/`, `.claude/commands/` and `.mcp.json` (the Solo docs server and a Playwright MCP limited to `http://localhost:15000`) back it; the README section `## Alpha: Evaluate with an agent` points at it
+- Add an evaluation agent (Alpha): an AI agent (Claude Code or Codex) runs the workshop labs on a throwaway gateway. `AGENTS.md` holds the rules and how to start, the skills are in `skills/`, the commands in `.claude/commands/`, `.mcp.json` adds the Solo docs server and a Playwright MCP limited to `http://localhost:15000`, and the README section `## Alpha: Evaluate with an agent` points at `AGENTS.md`
   - `/evaluate`: runs the LLM, MCP or Platform track in order, explains each lab before it runs, stops on the first failure, cleans up, and writes a local report
-  - `/adapt-lab`: turns one or more shipped click-ops labs into a custom lab and Playwright spec under `custom-labs/<name>/` for the user's own requirements (extend, combine or reskin), regenerates its screenshots from the spec, proves it, and hands it off with a report
+  - `/adapt-lab`: turns one or more shipped click-ops labs into a custom lab and Playwright spec under `custom-labs/<name>/` for the user's own requirements (extend, compose or reskin), regenerates its screenshots from the spec, proves it, and hands it off with a report
   - `/contribute-lab`: promotes a custom lab that passed to a shipped lab, conforms it to the style guide, proves it as a shipped spec, scrubs it for leaks, commits it on a new version branch, and stops before the push
-- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, lint checks that a lab's images match its spec's screenshots, every `@req` requirement has a test and a custom spec's `@profiles` match its lab, and a key-check result reused for 10 minutes (`E2E_KEYS_TTL`)
+- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, a key-check result reused for 10 minutes (`E2E_KEYS_TTL`), and lint checks that a lab's images match its spec's screenshots, that every `@req` requirement has a test, and that a custom spec's `@profiles` match its lab
 - `.gitignore`: `custom-labs/`, `reports/`, `e2e/.work/`, `e2e/custom/`
 
 0.1.1 - (10-28-26)

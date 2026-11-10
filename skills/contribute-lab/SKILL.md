@@ -9,7 +9,7 @@ Work from the repo root. Follow the steps in order. The four hard rules in `AGEN
 
 Run this only when the user asks for it. Adapt mode never calls it. The user's request covers the local commit in step 6. Nothing is pushed until the user says yes to the diff.
 
-The user's folder `custom-labs/<name>/` is never edited. You scrub a staging copy, and the promoter copies from that staging copy into the repo. The folder stays re-runnable with `e2e/run-e2e.sh --custom <name>`.
+You never edit the user's folder `custom-labs/<name>/`. You scrub a staging copy, and the promoter copies from that staging copy into the repo. The folder stays re-runnable with `e2e/run-e2e.sh --custom <name>`.
 
 Session files live under `e2e/.work/contribute/<name>/`:
 
@@ -112,7 +112,7 @@ Run these checks in order. Stop on the first failure with the message shown, and
 
    Use the confirmed `X.Y.Z` for the CHANGELOG block in step 4, the branch in step 6, and the PR title in step 7.
 
-6. Docker is present, because step 5 runs the promoted spec on a throwaway gateway. No gateway of the user's needs to run:
+6. Docker is present, because step 5 runs the promoted spec on a throwaway gateway. The user's own gateway can be running or stopped:
 
    ```bash
    e2e/lib/detect-env.sh
@@ -178,7 +178,7 @@ S=e2e/.work/contribute/<name>/stage
 node e2e/lib/scrub.mjs --summary --allow <glob> --from-changes $S/CHANGES.md $S/<name>.md $S/<name>.spec.ts $S/CHANGES.md
 ```
 
-Every remaining line must be a match the user ruled as keep. A new hit gets a ruling like the others. Nothing is scrubbed without a ruling.
+Every remaining line must be a match the user ruled as keep. A new hit gets a ruling like the others. Scrub nothing the user has not ruled on.
 
 ## 3. Promote
 
@@ -307,7 +307,7 @@ git rev-list --count main..X.Y.Z
 
 A count above 1 means the PR also carries the start branch's commits; say so. State the PR title `see CHANGELOG (X.Y.Z)` and show the body from `e2e/.work/contribute/<name>/pr-body.md`. Ask one question: push this branch and open the PR, yes or no.
 
-Nothing is pushed until the user says yes to the diff. Any answer other than yes ends the session. The branch stays local. Print the branch name and the `git push` and `gh pr create` commands below so the user can push later by hand.
+Any answer other than yes ends the session. The branch stays local. Print the branch name and the `git push` and `gh pr create` commands below so the user can push later by hand.
 
 On yes, push and open the PR, then log the URL:
 

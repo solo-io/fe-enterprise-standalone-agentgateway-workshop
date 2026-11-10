@@ -87,10 +87,10 @@ done
 
 # README
 alpha=$(grep -n '^## Alpha: Evaluate with an agent$' README.md | cut -d: -f1)
-start=$(grep -n '^## Start here$' README.md | cut -d: -f1)
-prereq=$(grep -n '^## Prerequisites$' README.md | cut -d: -f1)
-[ -n "$alpha" ] && [ -n "$start" ] && [ -n "$prereq" ] && [ "$prereq" -lt "$alpha" ] && [ "$alpha" -lt "$start" ]
-check "README has the Alpha section between Prerequisites and Start here" $?
+helpers=$(grep -n '^## Helper services$' README.md | cut -d: -f1)
+authors=$(grep -n '^## For workshop authors$' README.md | cut -d: -f1)
+[ -n "$alpha" ] && [ -n "$helpers" ] && [ -n "$authors" ] && [ "$helpers" -lt "$alpha" ] && [ "$alpha" -lt "$authors" ]
+check "README has the Alpha section between Helper services and For workshop authors" $?
 sect=$(awk '/^## Alpha: Evaluate with an agent$/{on=1; next} /^## /{on=0} on' README.md)
 printf '%s' "$sect" | grep -qF '[AGENTS.md](AGENTS.md)'; check "README Alpha section links AGENTS.md" $?
 for w in /evaluate /adapt-lab '/contribute-lab <name>' 'custom-labs/<name>/'; do
