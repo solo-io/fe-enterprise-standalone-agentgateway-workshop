@@ -88,7 +88,7 @@ function rewriteLab(text, { name, track, slug, hasImages }, newDir, rewrites, fi
     const hash = target.indexOf('#');
     if (hash !== -1) { path = target.slice(0, hash); frag = target.slice(hash); }
     const resolved = posix.normalize(posix.join(oldDir, path));
-    const next = posix.relative(newDir, resolved) + frag;
+    const next = (posix.relative(newDir, resolved) || '.') + frag;
     if (next !== target) addRewrite(rewrites, file, target, next);
     return `](${next}${title})`;
   });
@@ -107,12 +107,12 @@ function rewriteSpec(text, { name, track, slug }, rewrites, file) {
     addRewrite(rewrites, file, "from '../lib/", "from '../../lib/");
   }
   // New in the port (the Python spec was YAML): the quotes may be single or double but must pair up.
-  const call = new RegExp(`lab\\(\\s*(['"])custom\\1\\s*,\\s*(['"])${name}\\2\\s*\\)`);
-  const m = call.exec(out);
-  if (!m) throw new PromoteError(`the spec has no lab('custom', '${name}') call`);
+  const call = new RegExp(`lab\\(\\s*(['"])custom\\1\\s*,\\s*(['"])${name}\\2\\s*\\)`, 'g');
+  const found = out.match(call);
+  if (!found) throw new PromoteError(`the spec has no lab('custom', '${name}') call`);
   const newCall = `lab('${track}', '${slug}')`;
   out = out.replace(call, newCall);
-  addRewrite(rewrites, file, m[0], newCall);
+  for (const orig of found) addRewrite(rewrites, file, orig, newCall);
   return out;
 }
 

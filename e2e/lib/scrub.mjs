@@ -20,11 +20,12 @@ const DEFAULT_ALLOW = [
   '*.svc', '*.svc.cluster.local', 'example.com', '*.example.com', 'localhost',
   'api.openai.com', 'quay.io', 'docker.io', 'ghcr.io', 'github.com',
   'docs.solo.io', 'agentgateway.dev', '*.kubernetes.io', '*.k8s.io', '*.solo.io',
+  // The localhost:<port> entries are kept to match the plan; the hostname rule never sees them (no TLD after the colon).
   'localhost:15000', 'localhost:4000', 'localhost:4001', 'host.docker.internal',
   'mcr.microsoft.com', 'us-docker.pkg.dev',
 ];
-// Last labels that mean "a file name", not a host. The Python list had py; this repo ships ts specs.
-const FILE_EXTS = new Set(['md', 'ts', 'yaml', 'yml', 'json', 'sh']);
+// Last labels that mean "a file name", not a host. The Python list plus ts, because this repo ships ts specs.
+const FILE_EXTS = new Set(['md', 'yaml', 'yml', 'json', 'sh', 'py', 'ts']);
 const IGNORED_NAMESPACES = new Set(['agentgateway-system', 'default', 'keycloak']);
 const GENERIC_VALUES = new Set(['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SOLO_TRIAL_LICENSE_KEY', 'GATEWAY_IP', 'KUBECONFIG']);
 // Last labels that count as a real TLD besides any 2-letter alphabetic one.

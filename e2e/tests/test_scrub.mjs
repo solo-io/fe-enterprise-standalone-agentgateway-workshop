@@ -38,6 +38,9 @@ test('allowlisted hosts are clean, including the defaults added here', () => {
     + 'localhost:15000 localhost:4000 localhost:4001 host.docker.internal mcr.microsoft.com us-docker.pkg.dev';
   assert.deepEqual(hits(text), []);
 });
+test('py and ts file names are not hostnames', () => {
+  assert.deepEqual(hits('run main.py and app.ts'), []);
+});
 test('filenames are not hostnames', () => {
   assert.deepEqual(hits('open labs/llm/001-base.md and demo.spec.ts and CHANGES.md'), []);
 });

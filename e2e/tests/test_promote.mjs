@@ -53,7 +53,7 @@ function withRepo(fn) {
 }
 const manifest = (c) => JSON.parse(readFileSync(c.work('manifest.json'), 'utf8'));
 
-test('dry run writes nothing and lists three copies plus the rewrites', () => withRepo((c) => {
+test('dry run writes nothing and lists the lab, spec and image copies plus the rewrites', () => withRepo((c) => {
   const before = c.snapshot();
   const r = c.run(['demo', '--track', 'llm', '--dry-run']);
   assert.equal((r.out.match(/^copy /gm) || []).length, 4); // lab, spec, two images
@@ -285,6 +285,18 @@ test('a partial failure is recorded in the manifest and undoable', () => withRep
   const m = manifest(c);
   assert.ok(m.created.includes('labs/llm/demo.md'));
   assert.ok(c.exists('labs/llm/demo.md'));
+  c.run(['demo', '--undo']);
+  assert.equal(c.exists('labs/llm/demo.md'), false);
+  assert.equal(c.exists('e2e/labs/llm/demo.spec.ts'), false);
+}));
+
+test('every lab() call in the spec is rewritten', () => withRepo((c) => {
+  const p = c.work('stage/demo.spec.ts');
+  writeFileSync(p, readFileSync(p, 'utf8') + "const other = lab(\"custom\", 'demo');\n");
+  c.run(['demo', '--track', 'llm']);
+  const spec = c.read('e2e/labs/llm/demo.spec.ts');
+  assert.equal(spec.split("lab('llm', 'demo')").length - 1, 2);
+  assert.ok(!spec.includes("'custom'") && !spec.includes('"custom"'));
 }));
 
 test('rewrite rows are deduplicated', () => withRepo((c) => {
