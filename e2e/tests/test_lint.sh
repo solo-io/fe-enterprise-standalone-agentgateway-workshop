@@ -31,6 +31,27 @@ expect_fail wrong-first-line "first line"
 expect_fail wrong-import "../lib/"
 expect_fail bad-profile "nosuch"
 
+# @profiles in the spec: known names, and the same set the lab starts (indented fences count)
+PTMP="$(mktemp -d)"
+profile_case() { # profile_case <@profiles value or -> <lab profile or ->: lints a demo copy, sets OUT and RC
+  rm -rf "$PTMP/demo"; cp -R "$FIX/demo" "$PTMP/demo"
+  [ "$1" = - ] || sed -i.bak "1a\\
+// @profiles $1
+" "$PTMP/demo/demo.spec.ts"
+  [ "$2" = - ] || printf '\n1. Start the helper:\n\n   ```bash\n   docker compose --profile %s up -d\n   ```\n' "$2" >> "$PTMP/demo/demo.md"
+  rm -f "$PTMP/demo/"*.bak
+  RC=0; OUT=$("$E2E/lint.sh" --file "$PTMP/demo/demo.md" --spec "$PTMP/demo/demo.spec.ts" --custom 2>&1) || RC=$?
+}
+profile_case mock-llmm mock-llm
+check "@profiles typo: flagged" $([ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF "unknown compose profile in @profiles: mock-llmm" && echo 0 || echo 1)
+profile_case - mock-llm
+check "lab profile in an indented fence missing from @profiles: flagged" $([ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF "the lab starts profile mock-llm but @profiles does not list it" && echo 0 || echo 1)
+profile_case mock-llm -
+check "@profiles the lab never starts: flagged" $([ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF "@profiles lists mock-llm but the lab never starts it" && echo 0 || echo 1)
+profile_case mock-llm mock-llm
+check "matching @profiles and lab profile: lint ok" $([ "$RC" -eq 0 ] && echo 0 || echo "1 $OUT")
+rm -rf "$PTMP"
+
 # --file alone finds <dir>/<name>.spec.ts and checks screenshot agreement only
 RC=0; OUT=$("$E2E/lint.sh" --file "$FIX/extra-png/extra-png.md" 2>&1) || RC=$?
 check "--file alone: extra png flagged" $([ "$RC" -eq 1 ] && printf '%s\n' "$OUT" | grep -qF "unreferenced image: 09-x.png" && echo 0 || echo 1)

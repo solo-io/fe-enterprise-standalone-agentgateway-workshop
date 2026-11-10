@@ -4,7 +4,7 @@ Each lab has a spec in `labs/` that performs the lab through the UI, checks ever
 
 ## Run
 
-You need Docker and `setup/.env` with real keys. Each run first checks the keys against their providers. A missing or rejected Anthropic, TypeSafe or AWS key makes the tests that need it skip, with a line saying why; a rejected OpenAI key stops the run.
+You need Docker and `setup/.env` with real keys. Each run first checks the keys against their providers. A missing or rejected Anthropic, TypeSafe or AWS key makes the tests that need it skip, with a line saying why; a rejected OpenAI key stops the run. A result with a working OpenAI key is reused for 10 minutes (`e2e/.work/keys.cache`, which holds no key value) unless a key or `setup/.env` changes; `E2E_KEYS_TTL=<seconds>` sets the time and `E2E_KEYS_TTL=0` checks every run.
 
 ```bash
 e2e/run-e2e.sh 001                                  # one lab

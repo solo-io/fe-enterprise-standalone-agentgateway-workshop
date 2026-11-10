@@ -59,6 +59,27 @@ cp "$TMP/stubs/curl-good" "$SAVE"
 check "bad openai key: list still printed" $([ "$(ids | sed -n 1p)" = mcp/connect-remote-mcp-server ] && echo 0 || echo 1)
 check "bad openai key: key error shown" $(has "OPENAI_API_KEY does not work" && echo 0 || echo 1)
 
+# key-check cache: a later run reuses a good result until a key or setup/.env changes
+rm -f "$REPO/work/keys.cache"
+E2E_KEYS_TTL=600 run_runner "$REPO" --list --track mcp
+check "key cache: first run checks live and writes the cache" $(! has "key checks: reused" && [ -f "$REPO/work/keys.cache" ] && echo 0 || echo 1)
+check "key cache: holds no key value" $(grep -q 'sk-fake' "$REPO/work/keys.cache" && echo 1 || echo 0)
+cp "$TMP/stubs/curl-bad" "$SAVE"
+E2E_KEYS_TTL=600 run_runner "$REPO" --list --track mcp
+check "key cache: second run reuses it and calls no provider" $(has "key checks: reused" && ! has "OPENAI_API_KEY does not work" && echo 0 || echo 1)
+check "key cache: reused run still prints the skip lines" $(has "ANTHROPIC_API_KEY: not set, Anthropic tests skip" && echo 0 || echo 1)
+E2E_KEYS_TTL=0 run_runner "$REPO" --list --track mcp
+check "key cache: E2E_KEYS_TTL=0 checks live" $(has "OPENAI_API_KEY does not work" && echo 0 || echo 1)
+cp "$TMP/stubs/curl-good" "$SAVE"
+E2E_KEYS_TTL=600 run_runner "$REPO" --list --track mcp
+cp "$TMP/stubs/curl-bad" "$SAVE"
+printf 'OPENAI_API_KEY=sk-other\n' > "$REPO/setup/.env"
+E2E_KEYS_TTL=600 run_runner "$REPO" --list --track mcp
+check "key cache: a changed key checks live" $(has "OPENAI_API_KEY does not work" && ! has "key checks: reused" && echo 0 || echo 1)
+cp "$TMP/stubs/curl-good" "$SAVE"
+printf 'OPENAI_API_KEY=sk-fake\n' > "$REPO/setup/.env"
+rm -f "$REPO/work/keys.cache"
+
 # run one id
 export STUB_PW_JSON="$TMP/fixtures-pw/pass.json" STUB_PW_RC=0 STUB_COMPOSE_LS='[]'
 run_runner "$REPO" llm/virtual-api-keys
@@ -138,6 +159,18 @@ run_runner "$REPO" --custom demo
 check "custom without --update-screenshots keeps images" $([ -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
 run_runner "$REPO" --custom demo --update-screenshots
 check "custom --update-screenshots clears stale pngs" $([ ! -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
+check "custom --update-screenshots: no backup left after a pass" $([ ! -e "$REPO/work/custom-shots-before/demo" ] && echo 0 || echo 1)
+: > "$REPO/custom-labs/demo/images/99-stale.png"
+before_pngs=$(ls "$REPO/custom-labs/demo/images" | sort)
+STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --custom demo --update-screenshots
+check "custom --update-screenshots failed run: previous pngs are back" $([ "$RC" -eq 1 ] && [ "$(ls "$REPO/custom-labs/demo/images" | sort)" = "$before_pngs" ] && has "screenshots from before it" && echo 0 || echo 1)
+STUB_UP_RC=1 run_runner "$REPO" --custom demo --update-screenshots
+check "custom --update-screenshots compose up failure: previous pngs are back" $([ "$RC" -eq 1 ] && [ "$(ls "$REPO/custom-labs/demo/images" | sort)" = "$before_pngs" ] && echo 0 || echo 1)
+mkdir -p "$REPO/work/custom-shots-before/demo"
+mv "$REPO/custom-labs/demo/images/99-stale.png" "$REPO/work/custom-shots-before/demo/"
+: > "$REPO/custom-labs/demo/images/50-half-written.png"
+STUB_UP_RC=1 run_runner "$REPO" --custom demo --update-screenshots
+check "custom --update-screenshots: a killed run's backup is restored first" $([ -f "$REPO/custom-labs/demo/images/99-stale.png" ] && [ ! -f "$REPO/custom-labs/demo/images/50-half-written.png" ] && echo 0 || echo 1)
 rm -rf "$REPO/custom-labs/demo"; cp -R "$CF/demo" "$REPO/custom-labs/demo"
 run_runner "$REPO" --custom demo --lint
 check "custom --lint runs lint only" $([ "$RC" -eq 0 ] && has "lint ok" && ! grep -q '^run ' "$TMP/docker.log" && echo 0 || echo 1)

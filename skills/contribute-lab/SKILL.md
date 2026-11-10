@@ -198,7 +198,7 @@ On the user's yes, run it for real with the same arguments:
 node e2e/lib/promote.mjs <name> --track <track> --slug <slug>
 ```
 
-The promoter copies the lab to `labs/<track>/<slug>.md`, the spec to `e2e/labs/<track>/<slug>.spec.ts`, and every PNG under `stage/images/` to `images/<track>/<slug>/`. In the spec it rewrites line 1 to `// labs/<track>/<slug>.md`, the `../lib/` imports to `../../lib/`, and `lab('custom', '<name>')` to `lab('<track>', '<slug>')`, and keeps the `// @req` lines. In the lab it rewrites `images/` paths to `../../images/<track>/<slug>/` and recomputes every other relative link, so the 001 link stays `../../001-set-up-standalone-agentgateway.md`. It writes `e2e/.work/contribute/<name>/manifest.json`. Everything stays uncommitted in the working tree.
+The promoter copies the lab to `labs/<track>/<slug>.md`, the spec to `e2e/labs/<track>/<slug>.spec.ts`, and every file under `stage/images/` to `images/<track>/<slug>/`. In the spec it rewrites line 1 to `// labs/<track>/<slug>.md`, the `../lib/` imports to `../../lib/`, and `lab('custom', '<name>')` to `lab('<track>', '<slug>')`, and keeps the `// @req` lines. In the lab it rewrites `images/` paths in Markdown links and HTML `src` attributes to `../../images/<track>/<slug>/`, refuses a reference to an `images/` file the stage does not have, and recomputes every other relative link, so the 001 link stays `../../001-set-up-standalone-agentgateway.md`. It writes `e2e/.work/contribute/<name>/manifest.json`. Everything stays uncommitted in the working tree.
 
 Before you edit any existing repo file in step 4, record it so `--undo` can restore it. Record `README.md` and `CHANGELOG.md` always:
 

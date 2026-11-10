@@ -1,5 +1,6 @@
 // Reads the tests out of a Playwright JSON report. Shared by outcome.mjs and report.mjs.
 // A test is skipped when every result is skipped, and failed when any result is failed, timedOut or interrupted.
+// A test with no results never started (the run was stopped first): it counts as skipped with the reason "did not run".
 // A missing or unreadable file gives no tests (the run died before Playwright wrote a report).
 import { readFileSync } from 'node:fs';
 
@@ -23,9 +24,13 @@ export function readTests(file) {
     for (const spec of specsOf(suite)) {
       for (const t of spec.tests ?? []) {
         const statuses = (t.results ?? []).map((r) => r.status);
+        if (statuses.length === 0) {
+          out.push({ title: spec.title, status: 'skipped', reason: 'did not run' });
+          continue;
+        }
         let status = 'passed';
         if (statuses.some((s) => BAD.has(s))) status = 'failed';
-        else if (statuses.length > 0 && statuses.every((s) => s === 'skipped')) status = 'skipped';
+        else if (statuses.every((s) => s === 'skipped')) status = 'skipped';
         const skip = (t.annotations ?? []).find((a) => a.type === 'skip' && a.description);
         out.push({ title: spec.title, status, reason: status === 'skipped' ? (skip?.description ?? '') : '' });
       }

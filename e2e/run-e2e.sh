@@ -64,10 +64,9 @@ if [ -n "$CUSTOM" ]; then
   fi
 elif [ "$LINT" = 1 ]; then usage
 fi
-# The agw-e2e-* Compose projects Docker lists, running or not, one per line.
-list_e2e_projects() {
-  "$E2E_DOCKER" compose ls -a --format json 2>/dev/null | grep -oE '"Name" *: *"agw-e2e-[^"]*"' | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/' || true
-}
+# env_val, status_of, check_keys and list_e2e_projects live in e2e/lib/keys.sh, shared with detect-env.sh.
+# shellcheck source=lib/keys.sh
+source "$ROOT/e2e/lib/keys.sh"
 
 # Candidate ids for a track, in order and with repeats: intro labs, README links, then every spec by name.
 candidate_ids() {
@@ -122,13 +121,11 @@ if [ "$REPORT_ONLY" = 1 ]; then
   fi
   # Re-list the projects now: the session-start list in env.json can be out of date. A failed listing records nothing.
   mkdir -p "$RWORK"
-  if "$E2E_DOCKER" compose ls -a --format json >"$RWORK/projects-now.raw" 2>/dev/null; then
-    { grep -oE '"Name" *: *"agw-e2e-[^"]*"' "$RWORK/projects-now.raw" | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/'; } > "$RWORK/projects-now.txt" || true
+  if list_e2e_projects > "$RWORK/projects-now.txt"; then
     rargs+=(--projects-now "$rwork/projects-now.txt")
   else
     rm -f "$RWORK/projects-now.txt"
   fi
-  rm -f "$RWORK/projects-now.raw"
   exec "${runner[@]}" "$rbase/e2e/lib/report.mjs" "${rargs[@]}"
 fi
 if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ]; then usage; fi
@@ -144,10 +141,6 @@ WORK_ROOT="$(cd "$WORK_ROOT" 2>/dev/null && pwd || echo "$WORK_ROOT")"
 if [ "$LIST" = 0 ] && [ ! -d "$ROOT/e2e/node_modules/@playwright/test" ]; then
   "$E2E_DOCKER" run --rm -v "$ROOT:/repo" -w /repo/e2e "$PW_IMAGE" npm install --no-audit --no-fund --loglevel=error
 fi
-
-# env_val, status_of and check_keys live in e2e/lib/keys.sh, shared with detect-env.sh.
-# shellcheck source=lib/keys.sh
-source "$ROOT/e2e/lib/keys.sh"
 
 # Fixture file relative to the repo root; keep in step with fixturePath() in e2e/lib/normalize.mjs.
 fixture_file() { [ "$1" = base ] && echo setup/config.yaml || echo "e2e/fixtures/$1.yaml"; }
@@ -206,7 +199,7 @@ run_one() {
   fi
   local started=$SECONDS
   local before
-  before=$(list_e2e_projects)
+  before=$(list_e2e_projects || true)
 
   # Copy the reader's setup, then swap in the start fixture.
   (cd "$ROOT/setup" && tar cf - --exclude 'data.db*' .) | (cd "$work" && tar xf -)
@@ -311,7 +304,7 @@ leftover_check() {
     else
       echo "PRE-EXISTING PROJECT: $name"
     fi
-  done < <(list_e2e_projects)
+  done < <(list_e2e_projects || true)
 }
 
 # lab_path <id>: the lab's markdown file relative to the repo root.
@@ -344,13 +337,36 @@ if [ -n "$TRACK" ]; then
   echo
   if [ ${#failed[@]} -eq 0 ]; then echo "ALL PASS (${#ids[@]} labs)"; else echo "FAILED: ${failed[*]}"; exit 1; fi
 elif [ -n "$CUSTOM" ]; then
+  # --update-screenshots moves the lab's PNGs aside first, so a shot the spec no longer takes does not linger.
+  # They come back, replacing anything the run wrote, unless the run passes.
+  IMAGES="$CUSTOM_ROOT/$CUSTOM/images"
+  SHOTS_BAK=""; SHOTS_OK=0
+  custom_exit() {
+    rm -f "$ROOT/e2e/custom/$CUSTOM.spec.ts"
+    [ -n "$SHOTS_BAK" ] && [ -d "$SHOTS_BAK" ] || return 0
+    if [ "$SHOTS_OK" = 1 ]; then rm -rf "$SHOTS_BAK"; return 0; fi
+    find "$IMAGES" -maxdepth 1 -name '*.png' -delete
+    find "$SHOTS_BAK" -maxdepth 1 -name '*.png' -exec mv {} "$IMAGES/" \;
+    rm -rf "$SHOTS_BAK"
+    echo "the run did not pass: custom-labs/$CUSTOM/images/ holds the screenshots from before it" >&2
+  }
   # The copy of the spec must not outlive the run, even when the run stops early.
-  trap 'rm -f "$ROOT/e2e/custom/$CUSTOM.spec.ts"' EXIT
+  trap custom_exit EXIT
   if [ "$UPDATE" = 1 ]; then
-    mkdir -p "$CUSTOM_ROOT/$CUSTOM/images"
-    find "$CUSTOM_ROOT/$CUSTOM/images" -maxdepth 1 -name '*.png' -delete
+    mkdir -p "$IMAGES"
+    SHOTS_BAK="$WORK_ROOT/custom-shots-before/$CUSTOM"
+    if [ -d "$SHOTS_BAK" ]; then
+      # A run that was killed before it could restore left these; they are the last good screenshots.
+      find "$IMAGES" -maxdepth 1 -name '*.png' -delete
+      find "$SHOTS_BAK" -maxdepth 1 -name '*.png' -exec mv {} "$IMAGES/" \;
+    fi
+    rm -rf "$SHOTS_BAK"; mkdir -p "$SHOTS_BAK"
+    find "$IMAGES" -maxdepth 1 -name '*.png' -exec mv {} "$SHOTS_BAK/" \;
   fi
-  run_one "custom/$CUSTOM" || exit $?
+  rc=0
+  run_one "custom/$CUSTOM" || rc=$?
+  [ $rc -eq 0 ] && SHOTS_OK=1
+  exit $rc
 else
   run_one "$TARGET" || exit $?
 fi

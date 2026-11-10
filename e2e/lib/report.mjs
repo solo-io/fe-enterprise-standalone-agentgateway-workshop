@@ -9,6 +9,8 @@
 //
 // build writes <stamp>-standalone-<track>.md/.json (or <stamp>-standalone-custom-<name>.md/.json) into --out and prints
 // both paths. A missing env.json or session.jsonl is not an error; those sections say "not recorded".
+// When <work>/session-start exists (session-log.sh start writes it), an outcome file older than it belongs to an
+// earlier session and is left out; a planned id whose only outcome is that old is a NOT RUN row that says so.
 // Key values never reach the report: env.json holds statuses, and only "ok" and "rejected" print as "present".
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -50,9 +52,15 @@ function listDirs(dir) {
   try { return readdirSync(dir).filter((n) => statSync(join(dir, n)).isDirectory()).sort(); } catch { return []; }
 }
 
-function loadRun(dir, id) {
+function mtimeOf(file) {
+  try { return statSync(file).mtimeMs; } catch { return null; }
+}
+
+// A run's outcome, or null when there is none. With since (ms), an outcome older than it is { stale: true }.
+function loadRun(dir, id, since = null) {
   const line = readText(join(dir, 'outcome'));
   if (line === null) return null;
+  if (since !== null && (mtimeOf(join(dir, 'outcome')) ?? 0) < since) return { id, stale: true };
   const o = parseOutcome(line.split('\n')[0]);
   const tests = readTests(join(dir, 'playwright.json'));
   return { id, o, tests };
@@ -69,7 +77,7 @@ function describe({ id, o, tests }) {
       const why = tests.find((t) => t.status === 'skipped' && t.reason)?.reason;
       text = `PASS (${skipped} tests skipped${why ? `: ${why}` : ''})`;
     }
-  } else if (o.config_mismatch === '1') text = 'FAIL (config did not return to base)';
+  } else if (o.config_mismatch === '1') text = `FAIL (config did not return to ${o.expect || 'its expected fixture'})`;
   else text = `FAIL (${o.reason || `rc=${o.rc}`})`;
   const notes = [];
   if (o.reason) notes.push(o.reason);
@@ -86,8 +94,9 @@ function describe({ id, o, tests }) {
   };
 }
 
-function notRun(id) {
-  return { lab: id, status: 'NOT RUN', status_text: 'NOT RUN', duration: 0, tests: 0, skipped: 0, leftover: 0, notes: 'no outcome recorded' };
+function notRun(id, stale = false) {
+  const notes = stale ? 'only an outcome from an earlier session' : 'no outcome recorded';
+  return { lab: id, status: 'NOT RUN', status_text: 'NOT RUN', duration: 0, tests: 0, skipped: 0, leftover: 0, notes };
 }
 
 function readLines(file) {
@@ -95,12 +104,19 @@ function readLines(file) {
   return text === null ? null : text.split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
+// { runs, stale }: stale holds the ids whose outcome predates the session start.
 function loadRuns(work, opts) {
   const runs = [];
+  const stale = new Set();
+  const since = mtimeOf(join(work, 'session-start'));
+  const keep = (run) => {
+    if (!run) return;
+    if (run.stale) stale.add(run.id);
+    else runs.push(run);
+  };
   if (opts.custom) {
-    const run = loadRun(join(work, 'custom', opts.custom), `custom/${opts.custom}`);
-    if (run) runs.push(run);
-    return runs;
+    keep(loadRun(join(work, 'custom', opts.custom), `custom/${opts.custom}`, since));
+    return { runs, stale };
   }
   for (const name of listDirs(work)) {
     if (name === 'custom') continue;
@@ -110,11 +126,10 @@ function loadRuns(work, opts) {
       || track === opts.track
       || (id === '001' && opts.track === 'llm');
     if (!wanted) continue;
-    const run = loadRun(join(work, name), id);
-    if (run) runs.push(run);
+    keep(loadRun(join(work, name), id, since));
   }
   runs.sort((a, b) => (a.id === '001' ? -1 : b.id === '001' ? 1 : a.id.localeCompare(b.id)));
-  return runs;
+  return { runs, stale };
 }
 
 function readEvents(file) {
@@ -250,18 +265,19 @@ function build(argv) {
   if (a.track && ![...TRACKS, 'all'].includes(a.track)) throw new Error(`unknown track: ${a.track}`);
   const custom = a.custom;
   const label = custom ? `custom-${custom}` : a.track;
-  const runs = loadRuns(a.work, { track: a.track, custom });
+  const { runs, stale } = loadRuns(a.work, { track: a.track, custom });
   const results = runs.map(describe);
   const planned = custom ? null : readLines(a.planned);
   if (planned) {
     const have = new Set(results.map((r) => r.lab));
-    for (const id of planned) if (!have.has(id)) { results.push(notRun(id)); have.add(id); }
+    for (const id of planned) if (!have.has(id)) { results.push(notRun(id, stale.has(id))); have.add(id); }
     const at = new Map(planned.map((id, i) => [id, i]));
     results.sort((x, y) => (at.get(x.lab) ?? 1e9) - (at.get(y.lab) ?? 1e9) || x.lab.localeCompare(y.lab));
   }
   const env = environment(a['env-json'], a.compose);
   const events = readEvents(a.session);
-  const ids = new Set(runs.map((r) => r.id));
+  // Events of a planned lab count even when it wrote no outcome: a failure logged for a lab that died early stays.
+  const ids = new Set([...runs.map((r) => r.id), ...(planned ?? [])]);
   const mine = events === null ? null : events.filter((ev) => !ev.lab || ev.lab === '-' || ids.has(ev.lab) || (custom && ev.lab === custom));
   const rep = {
     title: custom ? `Agentgateway standalone custom lab report: ${custom}` : `Agentgateway standalone ${a.track} report`,

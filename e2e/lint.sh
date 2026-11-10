@@ -125,11 +125,24 @@ custom_checks() { # custom_checks <lab.md> <spec.ts> <expected first line> <md i
     case "$p" in .*) case "$p" in ../lib/*) ;; *) err "$spec" "import must start with ../lib/: $p" ;; esac ;; esac
   done < "$spec"
 
-  local profiles known
+  # The spec's @profiles are what run-e2e.sh starts; the lab's --profile flags are what the reader starts.
+  # Both must name known Compose profiles, and the same ones.
+  local known lab_profiles spec_profiles
   known=$(grep -E '^[[:space:]]*profiles:' setup/docker-compose.yml 2>/dev/null | sed -E 's/.*\[//; s/\].*//' | tr ',' '\n' | tr -d ' "' | sort -u)
-  for p in $(awk '/^```/{c=!c;next} c' "$lab" | grep -oE -- '--profile[ =]+[A-Za-z0-9_-]+' | sed -E 's/--profile[ =]+//' | sort -u); do
+  lab_profiles=$(grep -oE -- '--profile[ =]+[A-Za-z0-9_-]+' "$lab" | sed -E 's/--profile[ =]+//' | sort -u)
+  spec_profiles=$(grep -m1 -E '^// @profiles ' "$spec" | sed -E 's|^// @profiles +||' | tr ',' '\n' | tr -d ' ' | sed '/^$/d' | sort -u)
+  for p in $lab_profiles; do
     echo "$known" | grep -qxF "$p" || err "$lab" "unknown compose profile: $p"
   done
+  for p in $spec_profiles; do
+    echo "$known" | grep -qxF "$p" || err "$spec" "unknown compose profile in @profiles: $p"
+  done
+  while IFS= read -r p; do
+    [ -n "$p" ] && err "$spec" "the lab starts profile $p but @profiles does not list it"
+  done < <(comm -23 <(echo "$lab_profiles") <(echo "$spec_profiles"))
+  while IFS= read -r p; do
+    [ -n "$p" ] && err "$spec" "@profiles lists $p but the lab never starts it"
+  done < <(comm -13 <(echo "$lab_profiles") <(echo "$spec_profiles"))
 }
 
 # spec_lab <spec.ts>: the lab path named on line 1 of a shipped spec, relative to the repo root.

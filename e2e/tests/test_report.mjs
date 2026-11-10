@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -181,4 +181,63 @@ test('projects-now empty with env.json listing one shows both labels', () => wit
 test('projects-now absent says not recorded', () => withTmp((out) => {
   const left = section(readFileSync(build(['--track', 'llm'], out)[0], 'utf8'), 'Leftovers');
   assert.match(left, /now: not recorded/);
+}));
+
+// A copy of work-a that a test can change.
+function workCopy(dir) {
+  const work = join(dir, 'work');
+  cpSync(join(fx, 'work-a'), work, { recursive: true });
+  return work;
+}
+function buildIn(work, out, extra, session = join(fx, 'session.jsonl')) {
+  const stdout = execFileSync('node', [script, 'build', '--work', work, '--env-json', join(fx, 'env.json'), '--session', session,
+    '--compose', join(fx, 'compose.yml'), '--stamp', '20261109-101500', '--out', out, ...extra], { encoding: 'utf8' });
+  return readFileSync(stdout.trim().split('\n')[0], 'utf8');
+}
+
+test('a config mismatch names the fixture the spec expected', () => withTmp((dir) => {
+  const work = workCopy(dir);
+  writeFileSync(join(work, 'llm-cfg', 'outcome'),
+    'status=fail rc=2 duration=20 tests=3 skipped=0 fixture=mcp-start expect=mcp-start profiles=- leftover=0 config_mismatch=1 reason=config did not return to mcp-start\n');
+  const text = buildIn(work, dir, ['--track', 'llm']);
+  const row = text.split('\n').find((l) => l.startsWith('| llm/cfg |'));
+  assert.match(row, /FAIL \(config did not return to mcp-start\)/);
+  assert.ok(!row.includes('return to base'));
+}));
+
+test('a failure logged for a planned lab with no outcome reaches Failures', () => withTmp((dir) => {
+  const session = join(dir, 'session.jsonl');
+  writeFileSync(session, `${JSON.stringify({ ts: '2026-11-09T10:09:00Z', kind: 'failure', lab: 'llm/died', text: 'setup copy failed before the run' })}\n`);
+  const planned = join(dir, 'planned.txt');
+  writeFileSync(planned, '001\nllm/died\n');
+  const text = buildIn(join(fx, 'work-a'), dir, ['--track', 'llm', '--planned', planned], session);
+  assert.match(section(text, 'Failures'), /\[llm\/died\] setup copy failed before the run/);
+  assert.match(text, /\| llm\/died \| NOT RUN \|/);
+}));
+
+test('outcomes older than session-start are left out', () => withTmp((dir) => {
+  const work = workCopy(dir);
+  const old = new Date(Date.now() - 3600_000);
+  for (const d of readdirSync(work)) {
+    if (existsSync(join(work, d, 'outcome'))) utimesSync(join(work, d, 'outcome'), old, old);
+  }
+  writeFileSync(join(work, 'session-start'), '');
+  writeFileSync(join(work, 'llm-x', 'outcome'), 'status=pass rc=0 duration=5 tests=3 skipped=0 fixture=base expect=base profiles=- leftover=0\n');
+  const planned = join(dir, 'planned.txt');
+  writeFileSync(planned, '001\nllm/x\nllm/bad\n');
+  const text = buildIn(work, dir, ['--track', 'llm', '--planned', planned]);
+  const rows = text.split('\n').filter((l) => /^\| (001|llm\/)/.test(l));
+  assert.deepEqual(rows.map((l) => l.split('|')[1].trim()), ['001', 'llm/x', 'llm/bad']);
+  assert.match(rows[0], /NOT RUN.*earlier session/);
+  assert.match(rows[1], /\| PASS \|/);
+  assert.match(rows[2], /NOT RUN.*earlier session/);
+  assert.ok(!text.includes('llm/cfg'));
+}));
+
+test('without session-start every outcome counts', () => withTmp((dir) => {
+  const work = workCopy(dir);
+  const old = new Date(Date.now() - 3600_000);
+  utimesSync(join(work, 'llm-cfg', 'outcome'), old, old);
+  const text = buildIn(work, dir, ['--track', 'llm']);
+  assert.ok(text.includes('| llm/cfg |'));
 }));

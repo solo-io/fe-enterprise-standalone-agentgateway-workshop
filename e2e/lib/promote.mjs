@@ -2,17 +2,19 @@
 //
 //   node lib/promote.mjs NAME --track <llm|mcp|platform> [--slug SLUG] [--stage DIR] [--root REPO] [--work DIR] [--dry-run]
 //       copies <stage>/NAME.md to labs/<track>/<slug>.md, <stage>/NAME.spec.ts to e2e/labs/<track>/<slug>.spec.ts and
-//       every <stage>/images/*.png to images/<track>/<slug>/. The slug defaults to NAME. In the spec, line 1 becomes
-//       "// labs/<track>/<slug>.md", "from '../lib/" becomes "from '../../lib/" and lab('custom', 'NAME') becomes
-//       lab('<track>', '<slug>'). In the lab, "](images/" becomes "](../../images/<track>/<slug>/" and every other
-//       relative Markdown link target is recomputed from custom-labs/NAME/ to labs/<track>/ (absolute URLs and
-//       fragments are kept). NAME, the track and the slug are single segments matching ^[a-z0-9][a-z0-9-]*$, and
-//       labs/<track>/ must exist. Refuses to run when any target exists, when the stage lacks the lab or the spec,
-//       when the lab references images/ and the stage has none, or when the rewritten lab or spec still holds
-//       custom-labs/. Prints a warning for each target git ignores. Writes <work>/manifest.json.
+//       every file in <stage>/images/ (PNGs and any other asset, not dotfiles) to images/<track>/<slug>/. The slug
+//       defaults to NAME. In the spec, line 1 becomes "// labs/<track>/<slug>.md", "from '../lib/" becomes
+//       "from '../../lib/" and lab('custom', 'NAME') becomes lab('<track>', '<slug>'). In the lab, "](images/" and an
+//       HTML src="images/" become "../../images/<track>/<slug>/", and every other relative Markdown link target is
+//       recomputed from custom-labs/NAME/ to labs/<track>/ (absolute URLs and fragments are kept). NAME, the track
+//       and the slug are single segments matching ^[a-z0-9][a-z0-9-]*$, and labs/<track>/ must exist. Refuses to run
+//       when any target exists, when the stage lacks the lab or the spec, when the lab references an images/ file the
+//       stage does not have, or when the rewritten lab or spec still holds custom-labs/. Prints a warning for each
+//       target git ignores. Writes <work>/manifest.json.
 //   node lib/promote.mjs NAME --record FILE [--root REPO] [--work DIR]
 //       saves a copy of the repo-relative FILE under <work>/before/ so --undo can restore it after a later hand
-//       edit. Refuses absolute paths and paths outside the repo.
+//       edit. The copy's name is the path percent-encoded, so two paths never share one. Refuses absolute paths and
+//       paths outside the repo.
 //   node lib/promote.mjs NAME --undo [--root REPO] [--work DIR]
 //       restores recorded files, deletes the files a run created, and removes the directories it created once they
 //       are empty. An entry that fails is reported and the rest still run. The saved copies and the manifest are
@@ -35,6 +37,8 @@ import { parseArgs } from 'node:util';
 
 // Same link pattern as the Python tool: the target, then an optional "title".
 const LINK_RE = /\]\(([^)\s#][^)\s]*)(\s+"[^"]*")?\)/g;
+// An HTML image or source tag's src="images/..." (single or double quotes).
+const HTML_SRC_RE = /(\bsrc\s*=\s*)(["'])images\/([^"']*)\2/g;
 const SEGMENT_RE = /^[a-z0-9][a-z0-9-]*$/;
 const TRACKS = ['llm', 'mcp', 'platform'];
 
@@ -61,7 +65,7 @@ function plan({ name, track, slug, stage, root }) {
   const imgDir = join(stage, 'images');
   if (isDir(imgDir)) {
     for (const f of readdirSync(imgDir).sort()) {
-      if (f.endsWith('.png') && isFile(join(imgDir, f))) moves.push({ kind: 'image', src: join(imgDir, f), dst: `images/${track}/${slug}/${f}` });
+      if (!f.startsWith('.') && isFile(join(imgDir, f))) moves.push({ kind: 'image', src: join(imgDir, f), dst: `images/${track}/${slug}/${f}` });
     }
   }
   for (const m of moves) if (lexists(join(root, m.dst))) throw new PromoteError(`refusing to overwrite ${m.dst}`);
@@ -72,12 +76,28 @@ function addRewrite(rewrites, file, from, to) {
   if (!rewrites.some((r) => r.file === file && r.from === from && r.to === to)) rewrites.push({ file, from, to });
 }
 
-function rewriteLab(text, { name, track, slug, hasImages }, newDir, rewrites, file) {
+// The images/ paths a lab references in Markdown links and HTML src attributes, without query or fragment.
+function imageRefs(text) {
+  const refs = [];
+  for (const m of text.matchAll(LINK_RE)) if (m[1].startsWith('images/')) refs.push(m[1].slice('images/'.length));
+  for (const m of text.matchAll(HTML_SRC_RE)) refs.push(m[3]);
+  return refs.map((r) => r.replace(/[?#].*$/, ''));
+}
+
+function rewriteLab(text, { name, track, slug, images }, newDir, rewrites, file) {
   const oldDir = `custom-labs/${name}`;
-  if (/\]\(images\//.test(text) && !hasImages) {
+  const refs = imageRefs(text);
+  if (refs.length && images.size === 0) {
     throw new PromoteError('the lab references images/ but the staging copy has no images');
   }
-  return text.replace(LINK_RE, (whole, target, title = '') => {
+  for (const r of refs) {
+    if (!images.has(r)) throw new PromoteError(`the lab references images/${r} but the staging copy has no such file in images/`);
+  }
+  const html = text.replace(HTML_SRC_RE, (_m, attr, q, rest) => {
+    addRewrite(rewrites, file, `src=${q}images/`, `src=${q}../../images/${track}/${slug}/`);
+    return `${attr}${q}../../images/${track}/${slug}/${rest}${q}`;
+  });
+  return html.replace(LINK_RE, (whole, target, title = '') => {
     if (target.startsWith('images/')) {
       addRewrite(rewrites, file, '](images/', `](../../images/${track}/${slug}/`);
       return `](../../images/${track}/${slug}/${target.slice('images/'.length)}${title})`;
@@ -127,12 +147,12 @@ function checkLeftover(dst, text) {
 function render(moves, ctx) {
   const rewrites = [];
   const contents = {};
-  const hasImages = moves.some((m) => m.kind === 'image');
+  const images = new Set(moves.filter((m) => m.kind === 'image').map((m) => posix.basename(m.dst)));
   for (const m of moves) {
     if (m.kind === 'image') { contents[m.dst] = null; continue; }
     const text = readFileSync(m.src, 'utf8');
     const out = m.kind === 'lab'
-      ? rewriteLab(text, { ...ctx, hasImages }, posix.dirname(m.dst), rewrites, m.dst)
+      ? rewriteLab(text, { ...ctx, images }, posix.dirname(m.dst), rewrites, m.dst)
       : rewriteSpec(text, ctx, rewrites, m.dst);
     checkLeftover(m.dst, out);
     contents[m.dst] = out;
@@ -217,7 +237,7 @@ function record(name, path, root, work) {
   const m = loadManifest(work, name);
   if (m.created.includes(norm)) throw new PromoteError(`${norm} was created by promote; undo deletes it, no need to record`);
   if (m.recorded.some((r) => r.path === norm)) { console.log(`already recorded ${norm}`); return; }
-  const before = `before/${norm.replaceAll('/', '__')}`;
+  const before = `before/${encodeURIComponent(norm)}`;
   const dst = join(work, before);
   mkdirSync(dirname(dst), { recursive: true });
   copyFileSync(src, dst);

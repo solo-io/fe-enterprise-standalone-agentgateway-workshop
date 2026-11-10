@@ -30,6 +30,21 @@ test('timedOut and interrupted count as failed', () => {
       'tests=3 skipped=0 failed=2 first_failure=slow one');
   } finally { rmSync(dir, { recursive: true }); }
 });
+test('a test with no results did not run and is not a pass', async () => {
+  const { readTests } = await import('../lib/playwright-tests.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'outcome-'));
+  try {
+    const file = join(dir, 'p.json');
+    writeFileSync(file, JSON.stringify({ suites: [{ specs: [
+      { title: '[R1] first', tests: [{ results: [{ status: 'interrupted' }] }] },
+      { title: '[R2] never started', tests: [{ results: [] }] },
+    ] }] }));
+    assert.deepEqual(readTests(file).map((t) => [t.status, t.reason]), [['failed', ''], ['skipped', 'did not run']]);
+    assert.equal(
+      execFileSync('node', [join(here, '../lib/outcome.mjs'), file], { encoding: 'utf8' }).trim(),
+      'tests=2 skipped=1 failed=1 first_failure=[R1] first');
+  } finally { rmSync(dir, { recursive: true }); }
+});
 test('a missing file reports zero tests', () => {
   assert.equal(
     execFileSync('node', [join(here, '../lib/outcome.mjs'), join(here, 'fixtures/playwright/nope.json')], { encoding: 'utf8' }).trim(),

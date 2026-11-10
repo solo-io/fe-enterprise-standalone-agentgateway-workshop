@@ -35,7 +35,7 @@ if command -v docker >/dev/null; then
   v=$(docker compose version --short 2>/dev/null) && [ -n "$v" ] && compose_v="$v"
   if [ "$docker_v" != absent ]; then
     docker image inspect "$PW_IMAGE" >/dev/null 2>&1 && image=present
-    projects=$(docker compose ls -a --format json 2>/dev/null | grep -o '"Name":"agw-e2e-[^"]*"' | sed 's/^"Name":"//; s/"$//')
+    projects=$(E2E_DOCKER=docker list_e2e_projects)
   fi
 fi
 
@@ -43,7 +43,8 @@ fi
 env_file=false; [ -f "$ROOT/setup/.env" ] && env_file=true
 KEYS="$KEY_NAMES"
 if [ "$env_file" = true ]; then
-  KEYS_NO_EXIT=1 check_keys >/dev/null 2>&1 || true
+  # A live check every time; it also refreshes the cache that run-e2e.sh reuses.
+  KEYS_NO_EXIT=1 KEYS_LIVE=1 check_keys >/dev/null 2>&1 || true
 else
   for k in $KEYS; do eval "KEY_STATUS_$k=missing"; done
 fi

@@ -10,7 +10,8 @@ ok()   { T_PASS=$((T_PASS+1)); printf 'ok   %s\n' "$1"; }
 fail() { T_FAIL=$((T_FAIL+1)); printf 'FAIL %s\n' "$1"; }
 
 "$LOG" start >/dev/null 2>&1
-[[ ! -e "$F" ]] && ok "start creates nothing until the first add" || fail "start created a file"
+[[ ! -e "$F" ]] && ok "start creates no session.jsonl until the first add" || fail "start created a file"
+[[ -s "${E2E_WORK_ROOT}/session-start" ]] && ok "start writes session-start" || fail "no session-start"
 
 for kind in decision deviation question answer failure run; do
   "$LOG" add "$kind" routing/a "text for $kind" 2>/dev/null

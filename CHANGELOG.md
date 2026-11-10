@@ -6,9 +6,8 @@
   - `/evaluate`: runs the LLM, MCP or Platform track in order, explains each lab before it runs, stops on the first failure, cleans up, and writes a local report
   - `/adapt-lab`: turns one or more shipped click-ops labs into a custom lab and Playwright spec under `custom-labs/<name>/` for the user's own requirements (extend, combine or reskin), regenerates its screenshots from the spec, proves it, and hands it off with a report
   - `/contribute-lab`: promotes a custom lab that passed to a shipped lab, conforms it to the style guide, proves it as a shipped spec, scrubs it for leaks, commits it on a new version branch, and stops before the push
-- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, and lint checks that a lab's images match its spec's screenshots and every `@req` requirement has a test
+- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, lint checks that a lab's images match its spec's screenshots, every `@req` requirement has a test and a custom spec's `@profiles` match its lab, and a key-check result reused for 10 minutes (`E2E_KEYS_TTL`)
 - `.gitignore`: `custom-labs/`, `reports/`, `e2e/.work/`, `e2e/custom/`
-- `images/platform/metrics-and-tracing/`: remove `08-explore-tempo`, `09-trace-search` and `10-trace-opened`, left over from the 0.0.4 renumbering
 
 0.1.1 - (10-28-26)
 ---

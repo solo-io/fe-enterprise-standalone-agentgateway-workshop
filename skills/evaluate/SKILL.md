@@ -77,14 +77,7 @@ Show the labs grouped by the sub-headings of the track's table in `README.md`, i
 - the labs that cost money: every lab that calls a provider. Most call OpenAI with `gpt-6-luna`, which costs little (the README's Prerequisites note); labs that call Anthropic, Bedrock, or TypeSafe bill those accounts too
 - the helper profiles each lab starts, from the third column
 
-Clear the outcomes of earlier runs of this track, so the report holds only this session's labs. These are the harness's own work files:
-
-```bash
-rm -rf e2e/.work/<t>-*                 # llm, mcp or platform
-rm -rf e2e/.work/001                   # llm and all only
-```
-
-For `all`, run the first line once for each of `llm`, `mcp`, and `platform`.
+Outcomes from earlier sessions stay in `e2e/.work/`, but the report leaves out every outcome older than the `session-log.sh start` of step 3, so it holds only this session's labs.
 
 ## 5. Run the labs
 

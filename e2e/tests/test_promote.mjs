@@ -329,3 +329,41 @@ test('the defaults put the work dir under the repo root', () => withRepo((c) => 
   c.run(['demo', '--track', 'llm']);
   assert.ok(statSync(c.work('manifest.json')).isFile());
 }));
+
+test('an HTML img src and a non-PNG asset under images/ ship with working paths', () => withRepo((c) => {
+  const lab = readFileSync(c.work('stage/demo.md'), 'utf8')
+    + '\n<img src="images/01-a.png" width="600">\n\n![Diagram](images/diagram.svg)\n';
+  writeFileSync(c.work('stage/demo.md'), lab);
+  writeFileSync(c.work('stage/images/diagram.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>\n');
+  writeFileSync(c.work('stage/images/.DS_Store'), 'junk');
+  c.run(['demo', '--track', 'llm']);
+  const out = c.read('labs/llm/demo.md');
+  assert.match(out, /<img src="\.\.\/\.\.\/images\/llm\/demo\/01-a\.png" width="600">/);
+  assert.match(out, /!\[Diagram\]\(\.\.\/\.\.\/images\/llm\/demo\/diagram\.svg\)/);
+  assert.ok(!/src="images\//.test(out));
+  assert.ok(c.exists('images/llm/demo/diagram.svg'));
+  assert.equal(c.exists('images/llm/demo/.DS_Store'), false);
+  assert.ok(manifest(c).rewrites.some((r) => r.from === 'src="images/'));
+}));
+
+test('a lab that references an images/ file the stage lacks is refused', () => withRepo((c) => {
+  writeFileSync(c.work('stage/demo.md'), readFileSync(c.work('stage/demo.md'), 'utf8') + "\n<img src='images/09-gone.png'>\n");
+  const r = c.run(['demo', '--track', 'llm'], { ok: false });
+  assert.equal(r.code, 1);
+  assert.match(r.err, /references images\/09-gone\.png but the staging copy has no such file/);
+  assert.equal(c.exists('labs/llm/demo.md'), false);
+}));
+
+test('recorded paths that differ only in / versus __ keep separate saved copies', () => withRepo((c) => {
+  c.write('a/b__c.md', 'first\n');
+  c.write('a__b/c.md', 'second\n');
+  c.run(['demo', '--record', 'a/b__c.md']);
+  c.run(['demo', '--record', 'a__b/c.md']);
+  const saved = manifest(c).recorded.map((r) => r.before);
+  assert.equal(new Set(saved).size, 2);
+  c.write('a/b__c.md', 'edited\n');
+  c.write('a__b/c.md', 'edited\n');
+  c.run(['demo', '--undo']);
+  assert.equal(c.read('a/b__c.md'), 'first\n');
+  assert.equal(c.read('a__b/c.md'), 'second\n');
+}));

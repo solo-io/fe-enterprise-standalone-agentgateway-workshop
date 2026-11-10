@@ -123,9 +123,8 @@ check ".mcp.json parses, has solo-knowledge, playwright pinned to a version and 
 
 # Lint: clean apart from the three stale metrics-and-tracing PNGs, which are the user's to delete.
 out=$(e2e/lint.sh 2>&1); rc=$?
-extra=$(printf '%s\n' "$out" | grep -v '^$' | grep -vxE 'labs/platform/metrics-and-tracing\.md: unreferenced image: (08-explore-tempo|09-trace-search|10-trace-opened)\.png')
-[ -z "$extra" ] && { [ $rc -eq 0 ] || [ -n "$out" ]; }
-check "e2e/lint.sh reports nothing beyond the known stale PNGs${extra:+: $extra}" $?
+[ $rc -eq 0 ] && [ "$out" = "lint ok" ]
+check "e2e/lint.sh passes on the shipped labs${out:+: $out}" $?
 
 printf '\n%s passed, %s failed\n' "$T_PASS" "$T_FAIL"
 [ "$T_FAIL" -eq 0 ]

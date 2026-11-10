@@ -14,6 +14,7 @@
 #   logs              a line of fake gateway log
 #   anything else     exit 0
 # Tests set E2E_OUTCOME_ON_HOST=1 so the runner parses the JSON with the host's node.
+# run_runner turns the key-check cache off (E2E_KEYS_TTL=0) unless the caller sets E2E_KEYS_TTL.
 
 make_stubs() {
   mkdir -p "$TMP/stubs" "$TMP/fixtures-pw"
@@ -78,6 +79,6 @@ run_runner() {
     -u BEDROCK_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN \
     PATH="$TMP/stubs:$(dirname "$(command -v node)"):/usr/bin:/bin" E2E_CURL="$TMP/stubs/curl" \
     E2E_DOCKER="$TMP/stubs/docker" DOCKER_LOG="$TMP/docker.log" TMP_PW="$TMP/fixtures-pw" \
-    E2E_OUTCOME_ON_HOST=1 E2E_WORK_ROOT="$d/work" TMPDIR="$TMP" \
+    E2E_OUTCOME_ON_HOST=1 E2E_WORK_ROOT="$d/work" TMPDIR="$TMP" E2E_KEYS_TTL="${E2E_KEYS_TTL:-0}" \
     bash e2e/run-e2e.sh "$@" 2>&1) || RC=$?
 }

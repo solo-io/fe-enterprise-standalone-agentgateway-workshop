@@ -3,7 +3,8 @@
 #
 # Usage: session-log.sh start
 #          moves an existing session.jsonl aside to session-<UTC stamp>.jsonl, so a
-#          new session's report holds only its own events
+#          new session's report holds only its own events, and writes session-start,
+#          whose time report.mjs uses to leave out outcomes from earlier sessions
 #        session-log.sh add <kind> <lab-key> <text...>
 #   kind: decision | deviation | question | answer | failure | run
 #     run: one attempt at a custom lab (the report lists these under Runs)
@@ -28,6 +29,8 @@ if [[ "${1:-}" == "start" ]]; then
     mv "${WORK_ROOT}/session.jsonl" "$dest"
     printf 'previous session log moved to %s\n' "$dest"
   fi
+  mkdir -p "$WORK_ROOT"
+  date -u +%Y-%m-%dT%H:%M:%SZ > "${WORK_ROOT}/session-start"
   exit 0
 fi
 

@@ -90,6 +90,9 @@ d=$(new_repo left)
 export STUB_COMPOSE_LS='[{"Name":"agw-e2e-llm-x"},{"Name":"other"}]'
 run_detect "$d" 1; unset STUB_COMPOSE_LS
 has "$d/e2e/.work/env.json" '"leftover_projects": ["agw-e2e-llm-x"]'; check "leftover projects: only agw-e2e-* listed" $?
+export STUB_COMPOSE_LS='[{"Name": "agw-e2e-spaced"}]'
+run_detect "$d" 1; unset STUB_COMPOSE_LS
+has "$d/e2e/.work/env.json" '"leftover_projects": ["agw-e2e-spaced"]'; check "leftover projects: JSON with a space after the colon" $?
 
 d=$(new_repo staged); echo "# x" >> "$d/setup/config.yaml"; git -C "$d" add setup/config.yaml; run_detect "$d" 1
 has "$d/e2e/.work/env.json" '"setup_config_dirty": true'; check "staged edit: dirty" $?
