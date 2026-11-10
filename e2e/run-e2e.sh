@@ -77,7 +77,7 @@ if [ "$REPORT_ONLY" = 1 ]; then
     [ -n "${E2E_CUSTOM_ROOT:-}" ] && [ -n "$CUSTOM" ] && mount+=(-v "$CUSTOM_ROOT:/repo/custom-labs")
     runner=("$E2E_DOCKER" run --rm "${mount[@]}" -w /repo/e2e "$PW_IMAGE" node)
   fi
-  rargs=(build --work "$rwork" --env-json "$rwork/env.json" --session "$rwork/session.jsonl" --compose "$rbase/setup/docker-compose.yml" --readme "$rbase/README.md")
+  rargs=(build --work "$rwork" --env-json "$rwork/env.json" --session "$rwork/session.jsonl" --compose "$rbase/setup/docker-compose.yml")
   if [ -n "$CUSTOM" ]; then
     mkdir -p "$CUSTOM_ROOT/$CUSTOM/reports"
     rargs+=(--out "$rcustom/$CUSTOM/reports" --custom "$CUSTOM" --spec "$rcustom/$CUSTOM/$CUSTOM.spec.ts")

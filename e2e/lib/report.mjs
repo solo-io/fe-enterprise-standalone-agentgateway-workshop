@@ -1,7 +1,7 @@
 // Builds the evaluation report from a run's work dir, and compares two reports.
 //
 //   node lib/report.mjs build --work <dir> --env-json <file> --session <file> --out <dir>
-//        (--track <t> | --custom <name>) [--compose <file>] [--readme <file>] [--spec <file>] [--stamp <YYYYMMDD-HHMMSS>]
+//        (--track <t> | --custom <name>) [--compose <file>] [--spec <file>] [--stamp <YYYYMMDD-HHMMSS>]
 //   node lib/report.mjs compare <a.json> <b.json>
 //
 // build writes <stamp>-standalone-<track>.md/.json (or <stamp>-standalone-custom-<name>.md/.json) into --out and prints
@@ -67,7 +67,6 @@ function describe({ id, o, tests }) {
       text = `PASS (${skipped} tests skipped${why ? `: ${why}` : ''})`;
     }
   } else if (o.config_mismatch === '1') text = 'FAIL (config did not return to base)';
-  else if (o.rc === '1' && o.reason) text = `FAIL (${o.reason})`;
   else text = `FAIL (${o.reason || `rc=${o.rc}`})`;
   const notes = [];
   if (o.reason) notes.push(o.reason);
@@ -130,6 +129,7 @@ function environment(envFile, composeFile) {
   if (!env) return { recorded: false, gateway_image_tag: image };
   const keys = {};
   for (const [name, status] of Object.entries(env.keys ?? {})) {
+    // detect-env.sh statuses are ok|missing|rejected; a rejected key is still present.
     keys[name] = status === 'ok' || status === 'rejected' ? 'present' : 'missing';
   }
   return {
@@ -154,7 +154,8 @@ function requirements(specFile, tests) {
   return readSpecRequirements(specFile).map((r) => {
     const mine = tests.filter((t) => [...t.title.matchAll(/\[(R\d+)\]/g)].some((m) => m[1] === r.id));
     let status = 'NOT RUN';
-    if (mine.length > 0) status = mine.some((t) => t.status === 'failed') ? 'FAIL' : 'PASS';
+    if (mine.some((t) => t.status === 'failed')) status = 'FAIL';
+    else if (mine.some((t) => t.status === 'passed')) status = 'PASS';
     return { id: r.id, requirement: r.text, tests: mine.map((t) => t.title), status };
   });
 }
@@ -195,15 +196,16 @@ function render(rep) {
   if (rep.runs) events('Runs', rep.runs);
   L.push('', '## Failures', '');
   const fails = rep.results.filter((r) => r.status === 'FAIL').map((r) => `- ${r.lab}: ${r.status_text}`);
-  if (rep.failures === null && fails.length === 0) L.push('not recorded');
-  else if ((rep.failures ?? []).length + fails.length === 0) L.push('None.');
+  if (rep.failures === null) L.push('Session log: not recorded');
+  if (rep.failures !== null && fails.length + rep.failures.length === 0) L.push('None.');
   else {
     L.push(...fails);
     for (const ev of rep.failures ?? []) L.push(`- ${ev.ts} ${ev.lab && ev.lab !== '-' ? `[${ev.lab}] ` : ''}${ev.text}`);
   }
   L.push('', '## Leftovers', '');
   const left = rep.results.filter((r) => r.leftover > 0).map((r) => `- ${r.lab}: ${r.leftover} leftover project(s)`);
-  for (const p of rep.leftover_projects) left.push(`- project still listed: ${p}`);
+  if (rep.leftover_projects === null) left.push('- pre-existing projects: not recorded');
+  else for (const p of rep.leftover_projects) left.push(`- project still listed: ${p}`);
   L.push(...(left.length ? left : ['None.']));
   return L.join('\n') + '\n';
 }
@@ -249,7 +251,7 @@ function build(argv) {
     results,
     decisions: mine === null ? null : mine.filter((ev) => ['decision', 'deviation', 'question', 'answer'].includes(ev.kind)),
     failures: mine === null ? null : mine.filter((ev) => ev.kind === 'failure'),
-    leftover_projects: env.leftover_projects ?? [],
+    leftover_projects: env.leftover_projects ?? null,
   };
   if (custom) {
     rep.requirements = requirements(a.spec ?? join(REPO, 'custom-labs', custom, `${custom}.spec.ts`), runs[0]?.tests ?? []);

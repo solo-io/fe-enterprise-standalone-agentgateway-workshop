@@ -74,11 +74,20 @@ test('decisions and failures come from the session log, leftovers from outcomes'
   assert.match(text, /## Leftovers[\s\S]*llm\/cfg[\s\S]*agw-e2e-llm-cfg/);
 }));
 
-test('missing session and env are not errors', () => withTmp((out) => {
+const section = (text, name) => text.split(/^## /m).find((p) => p.startsWith(`${name}\n`)) ?? '';
+
+test('missing session and env are recorded as not recorded', () => withTmp((out) => {
   const stdout = execFileSync('node', [script, 'build', '--work', join(fx, 'work-a'), '--env-json', join(out, 'none.json'),
-    '--session', join(out, 'none.jsonl'), '--out', out, '--track', 'llm', '--stamp', '20261109-101500'], { encoding: 'utf8' });
+    '--session', join(out, 'none.jsonl'), '--compose', join(fx, 'compose.yml'), '--out', out, '--track', 'llm',
+    '--stamp', '20261109-101500'], { encoding: 'utf8' });
   const text = readFileSync(stdout.trim().split('\n')[0], 'utf8');
-  assert.match(text, /not recorded/);
+  assert.match(section(text, 'Environment'), /not recorded/);
+  assert.match(section(text, 'Decisions'), /not recorded/);
+  assert.match(section(text, 'Failures'), /not recorded/);
+  const left = section(text, 'Leftovers');
+  assert.match(left, /pre-existing projects: not recorded/);
+  assert.match(left, /llm\/cfg: 1 leftover project\(s\)/);
+  assert.ok(!left.includes('None.'));
 }));
 
 test('custom build has a requirements table', () => withTmp((out) => {
@@ -100,6 +109,13 @@ test('a requirement with no test is NOT RUN', () => withTmp((out) => {
   const [md] = build(['--custom', 'other', '--spec', spec], out);
   const text = readFileSync(md, 'utf8');
   assert.match(text, /\| R9 \| The ninth page loads \| - \| NOT RUN \|/);
+  assert.match(text, /\| R1 \|.*\| PASS \|/);
+}));
+
+test('a requirement whose only test was skipped is NOT RUN', () => withTmp((out) => {
+  const [md] = build(['--custom', 'skipper', '--spec', join(fx, 'r123.spec.ts')], out);
+  const text = readFileSync(md, 'utf8');
+  assert.match(text, /\| R3 \| Needs anthropic \| \[R3\] needs anthropic \| NOT RUN \|/);
   assert.match(text, /\| R1 \|.*\| PASS \|/);
 }));
 
