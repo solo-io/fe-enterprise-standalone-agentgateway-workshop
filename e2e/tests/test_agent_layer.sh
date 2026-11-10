@@ -10,7 +10,7 @@ check() { # check <name> <condition-exit-code>
   else T_FAIL=$((T_FAIL+1)); printf 'FAIL %s\n' "$1"; fi
 }
 
-SKILLS="evaluate adapt-lab contribute-lab explain-lab diagnose-failure ask-the-docs"
+SKILLS="evaluate adapt-lab contribute-lab explain-lab diagnose-failure ask-the-docs detect-environment"
 COMMANDS="evaluate adapt-lab contribute-lab"
 
 # AGENTS.md
@@ -21,7 +21,7 @@ for i in 1 2 3 4; do
   awk '/^## Hard rules$/{on=1; next} /^## /{on=0} on' AGENTS.md 2>/dev/null | grep -qE "^$i\. \*\*[^*]+\*\*" && n=$((n+1))
 done
 [ "$n" -eq 4 ]; check "AGENTS.md hard rules section has rules 1 to 4 ($n found)" $?
-for title in 'Never leave anything behind.' 'Nothing about the user'"'"'s gateway leaves the machine.' 'Least privilege' 'Stop on failure, do not improvise.'; do
+for title in 'Never leave anything behind.' 'Nothing about the user'"'"'s gateway leaves the machine except through the user'"'"'s model provider.' 'Scoped to the agent'"'"'s own containers.' 'Stop on failure, do not improvise.'; do
   grep -qF "**$title" AGENTS.md 2>/dev/null; check "AGENTS.md hard rule: $title" $?
 done
 grep -q 'Alpha' AGENTS.md 2>/dev/null; check "AGENTS.md says Alpha" $?
@@ -70,7 +70,7 @@ while IFS= read -r line; do
   done
 done < <(cat skills/*/SKILL.md AGENTS.md 2>/dev/null)
 [ -z "$bad" ]; check "every harness flag the skills use exists${bad:+:$bad}" $?
-for flag in --track --list --custom --update-screenshots --lint --report-only; do
+for flag in --track --list --custom --update-screenshots --lint --report-only --skip --learn; do
   grep -qE -- "^ *$flag\)" e2e/run-e2e.sh && grep -qF -- "$flag" skills/*/SKILL.md 2>/dev/null
   check "run-e2e.sh flag $flag is handled and used by a skill" $?
 done
@@ -81,7 +81,7 @@ for p in $(cat skills/*/SKILL.md AGENTS.md 2>/dev/null | grep -oE 'e2e/lib/[A-Za
   [ -f "$p" ] || missing="$missing $p"
 done
 [ -z "$missing" ]; check "every e2e/lib path in the skills exists${missing:+:$missing}" $?
-for p in e2e/lib/detect-env.sh e2e/lib/session-log.sh e2e/lib/scrub.mjs e2e/lib/promote.mjs e2e/lib/compare.mjs; do
+for p in e2e/lib/detect-env.sh e2e/lib/session-log.sh e2e/lib/scrub.mjs e2e/lib/promote.mjs; do
   grep -qF "$p" skills/*/SKILL.md 2>/dev/null; check "a skill uses $p" $?
 done
 
@@ -112,16 +112,16 @@ const j = JSON.parse(require("fs").readFileSync(".mcp.json", "utf8"));
 const s = j.mcpServers || {};
 const k = s["solo-knowledge"], p = s.playwright;
 if (!k || k.type !== "http" || k.url !== "https://knowledge-base.soloio-field.com/mcp") process.exit(1);
-if (!p || p.command !== "npx" || !Array.isArray(p.args)) process.exit(1);
-const pkg = p.args.find((a) => a.startsWith("@playwright/mcp@"));
-if (!pkg || !/^@playwright\/mcp@\d+\.\d+\.\d+$/.test(pkg)) process.exit(1);
+if (!p || p.command !== "bash" || JSON.stringify(p.args) !== JSON.stringify(["e2e/lib/playwright-mcp.sh"])) process.exit(1);
 if (Object.keys(s).length !== 2) process.exit(1);
-const oi = p.args.indexOf("--allowed-origins");
-if (oi < 0 || p.args[oi + 1] !== "http://localhost:15000") process.exit(1);
 ' 2>/dev/null
-check ".mcp.json parses, has solo-knowledge, playwright pinned to a version and limited to localhost:15000" $?
+check ".mcp.json parses, has solo-knowledge, and starts playwright through e2e/lib/playwright-mcp.sh" $?
+w=e2e/lib/playwright-mcp.sh
+grep -qE '^IMAGE="mcr\.microsoft\.com/playwright/mcp:v[0-9]+\.[0-9]+\.[0-9]+"$' "$w" 2>/dev/null; check "$w pins the image to a version" $?
+grep -qx 'ORIGIN="http://localhost:15000"' "$w" && grep -qF -- '--allowed-origins "$ORIGIN"' "$w" && grep -qF -- '--network "container:$NETNS"' "$w"
+check "$w limits the browser to localhost:15000 in the learning gateway's network" $?
 
-# Lint: clean apart from the three stale metrics-and-tracing PNGs, which are the user's to delete.
+# Lint: the shipped labs are clean.
 out=$(e2e/lint.sh 2>&1); rc=$?
 [ $rc -eq 0 ] && [ "$out" = "lint ok" ]
 check "e2e/lint.sh passes on the shipped labs${out:+: $out}" $?

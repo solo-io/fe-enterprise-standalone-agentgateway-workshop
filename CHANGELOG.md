@@ -2,12 +2,10 @@
 
 0.1.2 - (11-10-26)
 ---
-- Add an evaluation agent (Alpha): an AI agent (Claude Code or Codex) runs the workshop labs on a throwaway gateway. `AGENTS.md` holds the rules and how to start, the skills are in `skills/`, the commands in `.claude/commands/`, `.mcp.json` adds the Solo docs server and a Playwright MCP limited to `http://localhost:15000`, and the README section `## Alpha: Evaluate with an agent` points at `AGENTS.md`
-  - `/evaluate`: runs the LLM, MCP or Platform track in order, explains each lab before it runs, stops on the first failure, cleans up, and writes a local report
-  - `/adapt-lab`: turns one or more shipped click-ops labs into a custom lab and Playwright spec under `custom-labs/<name>/` for the user's own requirements (extend, compose or reskin), regenerates its screenshots from the spec, proves it, and hands it off with a report
-  - `/contribute-lab`: promotes a custom lab that passed to a shipped lab, conforms it to the style guide, proves it as a shipped spec, scrubs it for leaks, commits it on a new version branch, and stops before the push
-- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, a key-check result reused for 10 minutes (`E2E_KEYS_TTL`), and lint checks that a lab's images match its spec's screenshots, that every `@req` requirement has a test, and that a custom spec's `@profiles` match its lab
-- `.gitignore`: `custom-labs/`, `reports/`, `e2e/.work/`, `e2e/custom/`
+- Add an evaluation agent (Alpha): an AI agent in Claude Code or Codex runs the workshop labs on throwaway gateways, explains each one, and writes a local report. Your own gateway and `setup/config.yaml` stay as they are. Run `/evaluate` in Claude Code, or start from `AGENTS.md` and the README section `## Alpha: Evaluate with an agent`
+  - `/evaluate`: runs the LLM, MCP or Platform track, explains each lab before it runs, asks before labs that bill Anthropic, Bedrock or TypeSafe, stops on the first failure, and writes a local report
+  - `/adapt-lab`: builds a custom lab, its Playwright spec and its screenshots from one or more shipped labs for your own scenario, learns any new UI flow on a throwaway gateway, proves each requirement, and keeps the result in `custom-labs/<name>/` on your machine
+  - `/contribute-lab`: turns a custom lab that passed into a shipped lab and a pull request, from a clone of this repo or of your fork, and pushes only after you approve the diff
 
 0.1.1 - (10-28-26)
 ---

@@ -5,7 +5,7 @@ description: Promote a custom lab that passed adapt mode to a shipped lab, confo
 
 # Contribute a lab
 
-Work from the repo root. Follow the steps in order. The four hard rules in `AGENTS.md` apply throughout. One session promotes one custom lab from `custom-labs/<name>/` into one PR on `solo-io/fe-enterprise-standalone-agentgateway-workshop`.
+Work from the repo root. Follow the steps in order. The four hard rules in `AGENTS.md` apply throughout. One session promotes one custom lab from `custom-labs/<name>/` into one PR on `solo-io/fe-enterprise-standalone-agentgateway-workshop`. It works from a clone of that repo, or from a clone of a fork with the main repo added as the `upstream` remote.
 
 Run this only when the user asks for it. Adapt mode never calls it. The user's request covers the local commit in step 6. Nothing is pushed until the user says yes to the diff.
 
@@ -59,35 +59,51 @@ Run these checks in order. Stop on the first failure with the message shown, and
 
    Never start a new run on top of an old manifest.
 
-3. `gh` is logged in and points at the main repo with default branch `main`:
+3. `gh` is logged in, and the clone reaches the main repo directly or through a fork:
 
    ```bash
    gh auth status
-   gh repo view --json nameWithOwner,defaultBranchRef -q '.nameWithOwner + " " + .defaultBranchRef.name'
+   git remote get-url origin
+   git remote get-url upstream    # fork clones only; it fails in a direct clone
+   gh repo view solo-io/fe-enterprise-standalone-agentgateway-workshop --json defaultBranchRef -q .defaultBranchRef.name
    ```
 
-   - `gh auth status` fails. Stop message: "gh is not logged in to github.com. Run gh auth login, then start again."
-   - The second command prints anything other than `solo-io/fe-enterprise-standalone-agentgateway-workshop main`. Stop message: "gh resolves this checkout to <printed value>, not solo-io/fe-enterprise-standalone-agentgateway-workshop with default branch main. Contribute from a clone of the main repo."
+   A URL names the main repo when it ends in `github.com/solo-io/fe-enterprise-standalone-agentgateway-workshop` or `github.com:solo-io/fe-enterprise-standalone-agentgateway-workshop`, with or without `.git`.
 
-4. The working tree is clean, the branch is `main` or a version branch, and it is level with its remote:
+   - `gh auth status` fails. Stop message: "gh is not logged in to github.com. Run gh auth login, then start again."
+   - `origin` names the main repo: direct mode. `<up>` is `origin`.
+   - `origin` names another repo and `upstream` names the main repo: fork mode. `<up>` is `upstream`, and `<fork>` is the `owner/name` in the `origin` URL. Check that `origin` is a fork of the main repo:
+
+     ```bash
+     gh repo view <fork> --json parent -q .parent.nameWithOwner
+     ```
+
+     It must print `solo-io/fe-enterprise-standalone-agentgateway-workshop`. Stop message: "origin is <origin URL>, which is not a fork of solo-io/fe-enterprise-standalone-agentgateway-workshop. Contribute from a clone of the main repo or of your fork."
+   - Neither. Stop message: "origin is <origin URL>. Contribute from a clone of solo-io/fe-enterprise-standalone-agentgateway-workshop, or from a clone of your fork with the main repo as upstream: git remote add upstream https://github.com/solo-io/fe-enterprise-standalone-agentgateway-workshop.git"
+   - The last command prints anything other than `main`. Stop message: "solo-io/fe-enterprise-standalone-agentgateway-workshop reports default branch <printed value>, not main. Ask the repo owners which branch takes contributions."
+
+   Wherever a step below names `<up>`, use the remote you found here.
+
+4. The working tree is clean, the branch is `main` or a version branch, and it is level with the same branch on `<up>`:
 
    ```bash
    git status --porcelain
    git branch --show-current
-   git fetch origin && git status -sb
+   git fetch <up>
+   git rev-list --left-right --count HEAD...<up>/<branch>
    ```
 
    - `git status --porcelain` prints anything. Stop message: "The working tree has uncommitted changes. Commit or stash them, then start again."
    - The branch is not `main` and does not match `^[0-9]+\.[0-9]+\.[0-9]+$`. Stop message: "The current branch is <branch>. Switch to main or a version branch, then start again."
-   - The first line of `git status -sb` shows `ahead` or `behind`. Stop message: "<branch> differs from origin/<branch>. Pull or push it so the two match, then start again."
+   - The `rev-list` command fails or prints anything other than `0	0`. Stop message: "<branch> differs from <up>/<branch>, or <up> has no such branch. Start from a branch that matches the main repo, then start again."
 
    When the start branch is not `main`, update local `main` so check 5 and the step 7 diff read the current `main`:
 
    ```bash
-   git fetch origin main:main
+   git fetch <up> main:main
    ```
 
-   If that fetch fails, because `main` is checked out in another worktree or has diverged from `origin/main`, tell the user that check 5 and the step 7 diff read a stale `main`, and continue. Also tell the user the PR will carry the start branch's commits, so they can merge that version first if they want a PR with only this lab.
+   If that fetch fails, because `main` is checked out in another worktree or has diverged from `<up>/main`, tell the user that check 5 and the step 7 diff read a stale `main`, and continue. Also tell the user the PR will carry the start branch's commits, so they can merge that version first if they want a PR with only this lab.
 
 5. A free version and branch name exist. Print the highest version among the start branch's CHANGELOG head, `main`'s CHANGELOG head, and every local and remote version branch:
 
@@ -95,20 +111,22 @@ Run these checks in order. Stop on the first failure with the message shown, and
    { grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+ - \(' CHANGELOG.md
      git show main:CHANGELOG.md | grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+ - \('
      git branch --list '[0-9]*.[0-9]*.[0-9]*'
+     git ls-remote --heads <up> '[0-9]*.[0-9]*.[0-9]*'
      git ls-remote --heads origin '[0-9]*.[0-9]*.[0-9]*'
    } | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1
    ```
 
-   Add one to the patch number of the printed version. That is the proposed `X.Y.Z`. Both of these commands must print nothing for it:
+   Add one to the patch number of the printed version. That is the proposed `X.Y.Z`. These commands must print nothing for it. In direct mode the last two read the same remote:
 
    ```bash
    git branch --list X.Y.Z
+   git ls-remote --heads <up> X.Y.Z
    git ls-remote --heads origin X.Y.Z
    ```
 
-   If either prints a line, add one to the patch number again and repeat the two commands. Propose the result to the user, who confirms it or gives another name. Run the two commands on a name the user gives.
+   If any prints a line, add one to the patch number again and repeat the two commands. Propose the result to the user, who confirms it or gives another name. Run the three commands on a name the user gives.
 
-   - The chosen name exists locally or on `origin`. Stop message: "Branch X.Y.Z already exists locally or on origin. Choose a version that is not taken, then start again."
+   - The chosen name exists locally or on `origin`. Stop message: "Branch X.Y.Z already exists locally, on <up>, or on origin. Choose a version that is not taken, then start again."
 
    Use the confirmed `X.Y.Z` for the CHANGELOG block in step 4, the branch in step 6, and the PR title in step 7.
 
@@ -118,7 +136,7 @@ Run these checks in order. Stop on the first failure with the message shown, and
    e2e/lib/detect-env.sh
    ```
 
-   It must exit 0. Stop message: "Docker, Compose, setup/.env, or a working OPENAI_API_KEY is missing: <the lines it printed>. Fix that, then start again."
+   It must exit 0, as `skills/detect-environment/SKILL.md` describes. Stop message: "Docker, Compose, setup/.env, or a working OPENAI_API_KEY is missing: <the lines it printed>. Fix that, then start again."
 
 Record the lint baseline, so step 4 can tell your lint lines from ones that were there before:
 
@@ -131,7 +149,7 @@ Start a fresh session log and record the start:
 
 ```bash
 e2e/lib/session-log.sh start
-e2e/lib/session-log.sh add decision custom/<name> "contribute started"
+e2e/lib/session-log.sh add decision custom/<name> "contribute started: <direct|fork> mode"
 ```
 
 ## 2. Scrub
@@ -248,7 +266,7 @@ Read the outcome line from `e2e/.work/<track>-<slug>/outcome`. Only `status=pass
 e2e/lib/session-log.sh add run <track>/<slug> "<outcome line>"
 ```
 
-Open each PNG under `images/<track>/<slug>/` with the Read tool and check it shows what its step describes, as step 5 of `skills/adapt-lab/SKILL.md` does.
+Open each PNG under `images/<track>/<slug>/` with a file-reading tool that renders images, and check it shows what its step describes, as step 5 of `skills/adapt-lab/SKILL.md` does.
 
 Then check screenshot agreement on the regenerated folder:
 
@@ -307,17 +325,17 @@ git rev-list --count main..X.Y.Z
 
 A count above 1 means the PR also carries the start branch's commits; say so. State the PR title `see CHANGELOG (X.Y.Z)` and show the body from `e2e/.work/contribute/<name>/pr-body.md`. Ask one question: push this branch and open the PR, yes or no.
 
-Any answer other than yes ends the session. The branch stays local. Print the branch name and the `git push` and `gh pr create` commands below so the user can push later by hand.
+Nothing is pushed until the user says yes to the diff. Any answer other than yes ends the session. The branch stays local. Print the branch name and the `git push` and `gh pr create` commands below so the user can push later by hand.
 
-On yes, push and open the PR, then log the URL:
+On yes, push the branch to `origin`, which is the main repo in direct mode and the fork in fork mode, and open the PR on the main repo. `<head>` is `X.Y.Z` in direct mode and `<fork owner>:X.Y.Z` in fork mode. Then log the URL:
 
 ```bash
 git push -u origin X.Y.Z
-gh pr create --base main --head X.Y.Z --title "see CHANGELOG (X.Y.Z)" --body-file e2e/.work/contribute/<name>/pr-body.md
+gh pr create --repo solo-io/fe-enterprise-standalone-agentgateway-workshop --base main --head <head> --title "see CHANGELOG (X.Y.Z)" --body-file e2e/.work/contribute/<name>/pr-body.md
 e2e/lib/session-log.sh add decision custom/<name> "PR opened: <url>"
 ```
 
-Print the PR URL. Tell the user that `custom-labs/<name>/` is still theirs, and that the shipped lab is now the source of truth for the repo. Never force-push, and never amend a pushed commit.
+Print the PR URL. Another contributor can take the same `X.Y.Z` before this PR merges; the reviewer then renumbers the version at merge. Tell the user that `custom-labs/<name>/` is still theirs, and that the shipped lab is now the source of truth for the repo. Never force-push, and never amend a pushed commit.
 
 ## 8. Stopping partway
 

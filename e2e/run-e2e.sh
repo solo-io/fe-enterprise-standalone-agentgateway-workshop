@@ -8,6 +8,10 @@
 #                                             run (or only lint) custom-labs/<name>/, a lab you wrote
 #   e2e/run-e2e.sh --report-only (--track <t> | --custom <name>)
 #                                             rebuild the report from the last run into reports/ (or custom-labs/<name>/reports/)
+#   e2e/run-e2e.sh <id> --skip <id>  |  --track <t> --skip <id> [--skip <id>...]
+#                                             do not run these ids; each gets outcome status=skip reason=declined
+#   e2e/run-e2e.sh --learn <name> [--profiles <p1,p2>] | --learn <name> (--diff | --restart | --stop)
+#                                             the learning gateway for adapt (Compose project agw-e2e-learn), see e2e/lib/learn.sh
 #
 # Each run leaves e2e/.work/<id with / as ->/ with outcome (one status line), playwright.json and,
 # on a failure, gateway.log. E2E_WORK_ROOT replaces e2e/.work; E2E_DOCKER replaces docker.
@@ -28,11 +32,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.64.1-noble"
 
-usage() { echo "usage: $0 <id>|all [--update-screenshots] | --track <llm|mcp|platform|all> | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only (--track <t> | --custom <name>)" >&2; exit 64; }
+usage() { echo "usage: $0 <id>|all [--update-screenshots] [--skip <id>...] | --track <llm|mcp|platform|all> [--skip <id>...] | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only (--track <t> | --custom <name>) | --learn <name> [--profiles <p1,p2> | --diff | --restart | --stop]" >&2; exit 64; }
 CUSTOM_ROOT="${E2E_CUSTOM_ROOT:-$ROOT/custom-labs}"
 CUSTOM=""; LINT=0
 E2E_DOCKER="${E2E_DOCKER:-docker}"
 TARGET=""; TRACK=""; LIST=0; REPORT_ONLY=0; UPDATE=0
+SKIPS=(); LEARN=""; LEARN_ACTION=start; LEARN_PROFILES=""; LEARN_PROFILES_SET=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --update-screenshots) UPDATE=1 ;;
@@ -41,6 +46,10 @@ while [ $# -gt 0 ]; do
     --lint) LINT=1 ;;
     --custom) [ $# -ge 2 ] || usage; CUSTOM="$2"; shift ;;
     --track) [ $# -ge 2 ] || usage; TRACK="$2"; shift ;;
+    --skip) [ $# -ge 2 ] || usage; SKIPS+=("$2"); shift ;;
+    --learn) [ $# -ge 2 ] || usage; LEARN="$2"; shift ;;
+    --diff|--restart|--stop) [ "$LEARN_ACTION" = start ] || usage; LEARN_ACTION="${1#--}" ;;
+    --profiles) [ $# -ge 2 ] || usage; LEARN_PROFILES="$2"; LEARN_PROFILES_SET=1; shift ;;
     -*) usage ;;
     *) [ -z "$TARGET" ] || usage; TARGET="$1" ;;
   esac
@@ -48,9 +57,24 @@ while [ $# -gt 0 ]; do
 done
 [ "$TARGET" = all ] && { TARGET=""; TRACK="${TRACK:-all}"; }
 case "${TRACK:-all}" in llm|mcp|platform|all) ;; *) echo "unknown track: $TRACK (llm, mcp, platform or all)" >&2; exit 64 ;; esac
+# A custom lab name and a learning name: lowercase letters, digits and hyphens, starting with a letter or digit.
+valid_name() { echo "$1" | grep -qE '^[a-z0-9][a-z0-9-]*$'; }
+# --diff, --restart, --stop and --profiles go only with --learn; --learn goes with nothing else.
+if [ -z "$LEARN" ]; then
+  [ "$LEARN_ACTION" = start ] && [ "$LEARN_PROFILES_SET" = 0 ] || usage
+else
+  [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ] && [ "$LIST$REPORT_ONLY$LINT$UPDATE" = 0000 ] && [ ${#SKIPS[@]} -eq 0 ] || usage
+  [ "$LEARN_ACTION" = start ] || [ "$LEARN_PROFILES_SET" = 0 ] || usage
+  valid_name "$LEARN" \
+    || { echo "invalid learning name: $LEARN (lowercase letters, digits and hyphens, starting with a letter or digit)" >&2; exit 64; }
+fi
+# --skip needs a run of an id or a track.
+if [ ${#SKIPS[@]} -gt 0 ]; then
+  { [ -n "$TARGET" ] || [ -n "$TRACK" ]; } && [ -z "$CUSTOM" ] && [ "$LIST$REPORT_ONLY" = 00 ] || usage
+fi
 if [ -n "$CUSTOM" ]; then
   [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ "$LIST" = 0 ] || usage
-  echo "$CUSTOM" | grep -qE '^[a-z0-9][a-z0-9-]*$' \
+  valid_name "$CUSTOM" \
     || { echo "invalid custom lab name: $CUSTOM (lowercase letters, digits and hyphens, starting with a letter or digit)" >&2; exit 64; }
   missing=0
   for f in "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.md" "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.spec.ts"; do
@@ -128,19 +152,25 @@ if [ "$REPORT_ONLY" = 1 ]; then
   fi
   exec "${runner[@]}" "$rbase/e2e/lib/report.mjs" "${rargs[@]}"
 fi
-if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ]; then usage; fi
+if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ] && [ -z "$LEARN" ]; then usage; fi
 if [ -n "$TARGET" ] && [ -n "$TRACK" ]; then usage; fi
-
-[ "$LIST" = 1 ] || [ -f "$ROOT/setup/.env" ] || { echo "missing setup/.env (copy setup/.env.example and fill in keys)" >&2; exit 1; }
 
 WORK_ROOT="${E2E_WORK_ROOT:-$ROOT/e2e/.work}"
 mkdir -p "$WORK_ROOT" 2>/dev/null || true
 WORK_ROOT="$(cd "$WORK_ROOT" 2>/dev/null && pwd || echo "$WORK_ROOT")"
 
-# Install test dependencies once, inside the Linux image.
-if [ "$LIST" = 0 ] && [ ! -d "$ROOT/e2e/node_modules/@playwright/test" ]; then
-  "$E2E_DOCKER" run --rm -v "$ROOT:/repo" -w /repo/e2e "$PW_IMAGE" npm install --no-audit --no-fund --loglevel=error
-fi
+need_env() { [ -f "$ROOT/setup/.env" ] || { echo "missing setup/.env (copy setup/.env.example and fill in keys)" >&2; exit 1; }; }
+
+# What a run needs before its first lab: setup/.env, the test dependencies and the key checks.
+# A run whose ids are all skipped needs none of them.
+prepare_run() {
+  need_env
+  # Install test dependencies once, inside the Linux image.
+  if [ ! -d "$ROOT/e2e/node_modules/@playwright/test" ]; then
+    "$E2E_DOCKER" run --rm -v "$ROOT:/repo" -w /repo/e2e "$PW_IMAGE" npm install --no-audit --no-fund --loglevel=error
+  fi
+  check_keys
+}
 
 # Fixture file relative to the repo root; keep in step with fixturePath() in e2e/lib/normalize.mjs.
 fixture_file() { [ "$1" = base ] && echo setup/config.yaml || echo "e2e/fixtures/$1.yaml"; }
@@ -289,16 +319,36 @@ run_one() {
   return $final
 }
 
+# skip_one <id>: the lab does not run; its outcome says so (status=skip reason=declined).
+skip_one() {
+  local id="$1" spec="$ROOT/e2e/labs/$1.spec.ts" rdir fixture expect profiles
+  [ -f "$spec" ] || { echo "no spec: $spec" >&2; return 1; }
+  fixture=$(header "$spec" fixture base)
+  expect=$(header "$spec" expect "$fixture")
+  profiles=$(header "$spec" profiles "")
+  rdir="$WORK_ROOT/$(echo "$id" | tr '/' '-')"
+  # A fresh dir, so no playwright.json from an earlier run reaches the report.
+  rm -rf "$rdir"; mkdir -p "$rdir"
+  echo "status=skip rc=0 duration=0 tests=0 skipped=0 fixture=$fixture expect=$expect profiles=${profiles:--} leftover=0 reason=declined" > "$rdir/outcome"
+  echo "=== $id: SKIP (declined)"
+}
+
+is_skipped() { local s; for s in ${SKIPS[@]+"${SKIPS[@]}"}; do [ "$s" = "$1" ] && return 0; done; return 1; }
+
 # leftover_check <own project> <projects listed before the run>: lists again after cleanup.
 # A project still listed that is this run's own, or was not there before, prints LEFTOVER PROJECT and
 # counts in LEFTOVER_N. A project listed before and after, not ours, prints PRE-EXISTING PROJECT and does not count.
+# The learning gateway (agw-e2e-learn) is adapt's, started and stopped with --learn: no run makes it,
+# so it never counts, even when it starts during the run.
 LEFTOVER_N=0
 leftover_check() {
   local own="$1" before="$2" name
   LEFTOVER_N=0
   while IFS= read -r name; do
     [ -n "$name" ] || continue
-    if [ "$name" = "$own" ] || ! printf '%s\n' "$before" | grep -qxF -- "$name"; then
+    if [ "$name" = agw-e2e-learn ] && [ "$own" != agw-e2e-learn ]; then
+      echo "LEARNING GATEWAY: agw-e2e-learn (not this run's; stop it with e2e/run-e2e.sh --learn <name> --stop)"
+    elif [ "$name" = "$own" ] || ! printf '%s\n' "$before" | grep -qxF -- "$name"; then
       echo "LEFTOVER PROJECT: $name"
       LEFTOVER_N=$((LEFTOVER_N + 1))
     else
@@ -325,18 +375,32 @@ if [ "$LIST" = 1 ]; then
   exit $?
 fi
 
-check_keys
+if [ -n "$LEARN" ]; then
+  # shellcheck source=lib/learn.sh
+  source "$ROOT/e2e/lib/learn.sh"
+  learn_main "$LEARN" "$LEARN_ACTION" "$LEARN_PROFILES"
+  exit $?
+fi
 
 if [ -n "$TRACK" ]; then
   ids=()
   while IFS= read -r id; do ids+=("$id"); done < <(order_ids "$TRACK")
-  failed=()
+  # Every --skip must name an id of the track, so a typo does not run the lab it meant to skip.
+  for s in ${SKIPS[@]+"${SKIPS[@]}"}; do
+    printf '%s\n' ${ids[@]+"${ids[@]}"} | grep -qxF -- "$s" || { echo "--skip $s: not a lab of track $TRACK" >&2; exit 64; }
+  done
+  for id in ${ids[@]+"${ids[@]}"}; do is_skipped "$id" || { prepare_run; break; }; done
+  failed=(); nskip=0
   for id in ${ids[@]+"${ids[@]}"}; do
+    if is_skipped "$id"; then skip_one "$id"; nskip=$((nskip + 1)); continue; fi
     run_one "$id" || failed+=("$id")
   done
   echo
-  if [ ${#failed[@]} -eq 0 ]; then echo "ALL PASS (${#ids[@]} labs)"; else echo "FAILED: ${failed[*]}"; exit 1; fi
+  if [ ${#failed[@]} -eq 0 ]; then
+    echo "ALL PASS ($((${#ids[@]} - nskip)) labs$([ $nskip -gt 0 ] && echo ", $nskip skipped"))"
+  else echo "FAILED: ${failed[*]}"; exit 1; fi
 elif [ -n "$CUSTOM" ]; then
+  prepare_run
   # --update-screenshots moves the lab's PNGs aside first, so a shot the spec no longer takes does not linger.
   # They come back, replacing anything the run wrote, unless the run passes.
   IMAGES="$CUSTOM_ROOT/$CUSTOM/images"
@@ -368,5 +432,10 @@ elif [ -n "$CUSTOM" ]; then
   [ $rc -eq 0 ] && SHOTS_OK=1
   exit $rc
 else
+  for s in ${SKIPS[@]+"${SKIPS[@]}"}; do
+    [ "$s" = "$TARGET" ] || { echo "--skip $s: this run covers only $TARGET" >&2; exit 64; }
+  done
+  if is_skipped "$TARGET"; then skip_one "$TARGET"; exit $?; fi
+  prepare_run
   run_one "$TARGET" || exit $?
 fi

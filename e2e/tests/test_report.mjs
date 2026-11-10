@@ -241,3 +241,16 @@ test('without session-start every outcome counts', () => withTmp((dir) => {
   const text = buildIn(work, dir, ['--track', 'llm']);
   assert.ok(text.includes('| llm/cfg |'));
 }));
+
+test('a declined lab (run-e2e.sh --skip) renders as SKIP (declined), not a failure', () => withTmp((dir) => {
+  const work = workCopy(dir);
+  writeFileSync(join(work, 'llm-x', 'outcome'),
+    'status=skip rc=0 duration=0 tests=0 skipped=0 fixture=base expect=base profiles=- leftover=0 reason=declined\n');
+  const text = buildIn(work, dir, ['--track', 'llm']);
+  assert.ok(text.split('\n').includes('| llm/x | SKIP (declined) | - | declined |'));
+  assert.ok(!section(text, 'Failures').includes('llm/x'));
+  const json = JSON.parse(readFileSync(join(dir, '20261109-101500-standalone-llm.json'), 'utf8'));
+  const row = json.results.find((r) => r.lab === 'llm/x');
+  assert.equal(row.status, 'SKIP');
+  assert.equal(row.status_text, 'SKIP (declined)');
+}));

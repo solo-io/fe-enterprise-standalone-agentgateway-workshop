@@ -13,31 +13,18 @@ Tell the user, in four sentences:
 
 - The labs run on a throwaway gateway that Docker Compose starts for each lab, so their own gateway on port `15000` is untouched.
 - Every run tears its Compose project down, and you report any project left behind.
-- Nothing about their gateway leaves the machine; the only outbound call is a generic product question to the Solo docs server.
+- Nothing about their gateway leaves the machine except through their model provider, and the only service you query is the Solo docs server, with generic product questions.
 - If a lab fails, you stop, explain, and they decide what happens next.
 
 ## 2. Detect the environment
 
-Run:
+Start a fresh session log, so the report holds only this session's labs:
 
 ```bash
-e2e/lib/detect-env.sh
+e2e/lib/session-log.sh start
 ```
 
-Exit 0: continue. Exit 2: stop and show the lines it printed; each names a missing item (Docker, the Compose plugin, `setup/.env`, or a working `OPENAI_API_KEY`). Ask the user to fix it and start again.
-
-Read `e2e/.work/env.json`:
-
-- `leftover_projects`: if it lists any `agw-e2e-*` project, name each one and offer to remove it. On a yes, for each name:
-
-  ```bash
-  docker compose -p <name> down -v
-  ```
-
-  Remove nothing outside the `agw-e2e-` prefix.
-- `playwright_image`: `pull needed` means the first run pulls the Playwright image, which takes a few minutes. Say so.
-- `user_gateway`: informational. Evaluate never uses it.
-- `keys`: a key that is `missing` or `rejected` makes the tests that need it skip.
+Apply `skills/detect-environment/SKILL.md`. Continue only when detection exits 0, every leftover project it found is handled, and `setup_config_dirty` is `false` or the user said the change is intended.
 
 ## 3. Choose track and mode
 
@@ -48,20 +35,11 @@ Ask for the mode:
 - `enablement` (default): one spec per call, an explanation before each lab, and a stop on the first failure.
 - `rig`: one `--track` call runs every spec, keeps going after a failure, and you report every failure at the end.
 
-Start a fresh session log, then record the answer, with `<t>` as the track and `<m>` as the mode:
+Record the answer, with `<t>` as the track and `<m>` as the mode:
 
 ```bash
-e2e/lib/session-log.sh start
 e2e/lib/session-log.sh add decision - "track=<t> mode=<m>"
 ```
-
-If `setup_config_dirty` in `e2e/.work/env.json` is `true`, stop here. Tell the user why: the harness uses the working-tree `setup/config.yaml` as the `base` fixture, and their own gateway writes to that file on every click, so every throwaway run would start from and be checked against the wrong state. They can see the change with `git diff -- setup/config.yaml`. Restoring the file is their decision and their command; never restore it yourself. Continue only when they have restored it and `e2e/lib/detect-env.sh` reports `setup_config_dirty: false`, or they say the change is intended. Log the answer:
-
-```bash
-e2e/lib/session-log.sh add decision - "setup/config.yaml differs from HEAD: <restored|intended>"
-```
-
-If `setup_config_dirty_error` is set, show it and stop; the check could not read git.
 
 ## 4. Show the plan
 
@@ -74,24 +52,28 @@ It runs nothing. Each lab is one tab-separated line: the id, the lab path, and t
 Show the labs grouped by the sub-headings of the track's table in `README.md`, in the order the list prints them. Name:
 
 - the labs whose tests will skip for a missing or rejected key: join the key-check lines against the **Needs** column of `README.md`
-- the labs that cost money: every lab that calls a provider. Most call OpenAI with `gpt-6-luna`, which costs little (the README's Prerequisites note); labs that call Anthropic, Bedrock, or TypeSafe bill those accounts too
+- the labs that cost money: every lab that calls a provider. Most call OpenAI with `gpt-6-luna`, which costs little (the README's Prerequisites note). Ask before running each lab that also bills Anthropic, Bedrock, or TypeSafe. For each one the user declines, log it and pass `--skip <id>` on every later `run-e2e.sh` call; the report shows it as `SKIP (declined)`:
+
+  ```bash
+  e2e/lib/session-log.sh add decision <id> declined
+  ```
 - the helper profiles each lab starts, from the third column
 
-Outcomes from earlier sessions stay in `e2e/.work/`, but the report leaves out every outcome older than the `session-log.sh start` of step 3, so it holds only this session's labs.
+Outcomes from earlier sessions stay in `e2e/.work/`, but the report leaves out every outcome older than the `session-log.sh start` of step 2, so it holds only this session's labs.
 
 ## 5. Run the labs
 
-`rig` mode:
+`rig` mode, with one `--skip <id>` per declined lab (leave `--skip` out when there are none):
 
 ```bash
-e2e/run-e2e.sh --track <t>
+e2e/run-e2e.sh --track <t> --skip <id>
 ```
 
 The run ends with `ALL PASS (<n> labs)` or `FAILED: <ids>`. For each id under `FAILED:`, follow steps 1 and 2 of `skills/diagnose-failure/SKILL.md` and record the failure. Then offer the choices from that skill once, for the whole set, and run nothing until the user picks.
 
 `enablement` mode: for each id from the list, in order:
 
-1. Apply `skills/explain-lab/SKILL.md` to the lab.
+1. If the user declined the lab, run `e2e/run-e2e.sh <id> --skip <id>` to record it and move on. Otherwise apply `skills/explain-lab/SKILL.md` to the lab.
 2. Run the spec and show the `=== <id>: PASS` or `FAIL` line:
 
    ```bash

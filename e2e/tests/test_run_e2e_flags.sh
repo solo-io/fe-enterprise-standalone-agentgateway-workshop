@@ -181,6 +181,56 @@ mkdir -p "$REPO/croot-rel"; cp -R "$CF/demo" "$REPO/croot-rel/demo"
 E2E_CUSTOM_ROOT=croot-rel run_runner "$REPO" --custom demo
 check "relative custom root: mount is an absolute path" $([ "$RC" -eq 0 ] && grep -oE -- '-v [^ ]*:/repo/custom-labs' "$TMP/docker.log" | grep -q '^-v /' && echo 0 || echo 1)
 
+# --skip: the lab does not run and its outcome is a skip with reason declined
+export STUB_PW_JSON="$TMP/fixtures-pw/pass.json" STUB_PW_RC=0 STUB_COMPOSE_LS='[]'
+mkdir -p "$REPO/work/llm-virtual-api-keys"; : > "$REPO/work/llm-virtual-api-keys/playwright.json"
+run_runner "$REPO" llm/virtual-api-keys --skip llm/virtual-api-keys
+check "skip one id: exit 0 and SKIP line" $([ "$RC" -eq 0 ] && has "=== llm/virtual-api-keys: SKIP (declined)" && echo 0 || echo 1)
+check "skip one id: outcome line" $(outcome llm-virtual-api-keys | grep -qx 'status=skip rc=0 duration=0 tests=0 skipped=0 fixture=base expect=base profiles=- leftover=0 reason=declined' && echo 0 || echo 1)
+check "skip one id: no container, no compose, no key check" $([ ! -s "$TMP/docker.log" ] && ! has "ANTHROPIC_API_KEY" && echo 0 || echo 1)
+check "skip one id: an old playwright.json is gone" $([ ! -e "$REPO/work/llm-virtual-api-keys/playwright.json" ] && echo 0 || echo 1)
+mv "$REPO/setup/.env" "$REPO/setup/.env.off"
+run_runner "$REPO" llm/virtual-api-keys --skip llm/virtual-api-keys
+check "skip one id: needs no setup/.env" $([ "$RC" -eq 0 ] && echo 0 || echo 1)
+mv "$REPO/setup/.env.off" "$REPO/setup/.env"
+run_runner "$REPO" llm/virtual-api-keys --skip llm/other
+check "skip of an id the run does not cover: exit 64, nothing runs" $([ "$RC" -eq 64 ] && has "--skip llm/other" && ! grep -q '^run ' "$TMP/docker.log" && echo 0 || echo 1)
+run_runner "$REPO" --skip llm/virtual-api-keys
+check "skip alone: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+run_runner "$REPO" --custom demo --skip llm/virtual-api-keys
+check "skip with --custom: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+run_runner "$REPO" llm/virtual-api-keys --skip
+check "skip without an id: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+plat=$(cd "$REPO" && find e2e/labs/platform -name '*.spec.ts' | sort | sed -E 's|^e2e/labs/||; s|\.spec\.ts$||')
+p1=$(echo "$plat" | sed -n 1p); p2=$(echo "$plat" | sed -n 2p); pn=$(echo "$plat" | grep -c .)
+run_runner "$REPO" --track platform --skip "$p1" --skip "$p2"
+check "track skip: exit 0, both SKIP lines" $([ "$RC" -eq 0 ] && has "=== $p1: SKIP (declined)" && has "=== $p2: SKIP (declined)" && echo 0 || echo 1)
+check "track skip: skipped ids start no project" $(grep -E 'compose .* up ' "$TMP/docker.log" | grep -qe "agw-e2e-$(echo "$p1" | tr '/' '-') " -e "agw-e2e-$(echo "$p2" | tr '/' '-') " && echo 1 || echo 0)
+check "track skip: the other ids run" $([ "$(grep -cE 'compose .* up ' "$TMP/docker.log")" -eq $((pn - 2)) ] && echo 0 || echo 1)
+check "track skip: outcomes are skip lines" $(outcome "$(echo "$p2" | tr '/' '-')" | grep -q '^status=skip .* reason=declined$' && echo 0 || echo 1)
+check "track skip: summary counts the skips" $(has "ALL PASS ($((pn - 2)) labs, 2 skipped)" && echo 0 || echo 1)
+run_runner "$REPO" --track platform --skip llm/virtual-api-keys
+check "track skip of an id outside the track: exit 64" $([ "$RC" -eq 64 ] && has "not a lab of track platform" && echo 0 || echo 1)
+args=(); for id in $plat; do args+=(--skip "$id"); done
+run_runner "$REPO" --track platform "${args[@]}"
+check "track with every id skipped: no key check, no container" $([ "$RC" -eq 0 ] && ! has "ANTHROPIC_API_KEY" && [ ! -s "$TMP/docker.log" ] && has "ALL PASS (0 labs, $pn skipped)" && echo 0 || echo 1)
+
+# --learn argument checks (the rest is in test_learn.sh)
+run_runner "$REPO" --learn Bad_Name
+check "learn bad name: exit 64" $([ "$RC" -eq 64 ] && has "invalid learning name" && echo 0 || echo 1)
+run_runner "$REPO" --learn x --track llm
+check "learn with --track: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+run_runner "$REPO" --learn x --diff --profiles mock-llm
+check "learn --profiles with --diff: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+run_runner "$REPO" --learn x --diff --stop
+check "learn with two actions: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+run_runner "$REPO" llm/virtual-api-keys --stop
+check "--stop without --learn: usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+
+# a learning gateway listed during a spec run is not that run's leftover
+STUB_COMPOSE_LS_BEFORE='[]' STUB_COMPOSE_LS_AFTER='[{"Name":"agw-e2e-learn"}]' run_runner "$REPO" llm/virtual-api-keys
+check "learning gateway during a run: not a leftover" $([ "$RC" -eq 0 ] && has "LEARNING GATEWAY: agw-e2e-learn" && ! has "LEFTOVER PROJECT:" && outcome llm-virtual-api-keys | grep -q 'leftover=0' && echo 0 || echo 1)
+
 # --report-only calls report.mjs build with the right track or custom lab and out dir
 mkdir -p "$TMP/nodestub"
 cat > "$TMP/nodestub/node" <<'STUB'

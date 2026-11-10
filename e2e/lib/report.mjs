@@ -66,7 +66,14 @@ function loadRun(dir, id, since = null) {
   return { id, o, tests };
 }
 
+// A lab the run did not run (run-e2e.sh --skip): status=skip reason=declined.
+function describeSkip(id, o) {
+  const why = o.reason || 'skipped';
+  return { lab: id, status: 'SKIP', status_text: `SKIP (${why})`, duration: 0, tests: 0, skipped: 0, leftover: 0, notes: why };
+}
+
 function describe({ id, o, tests }) {
+  if (o.status === 'skip') return describeSkip(id, o);
   const pass = o.status === 'pass';
   const leftover = Number(o.leftover ?? 0);
   const skipped = Number(o.skipped ?? 0);
@@ -206,7 +213,7 @@ function render(rep) {
   }
   L.push('', '## Results', '');
   if (rep.results.length === 0) L.push('No outcomes found in the work dir.');
-  else L.push(...table(['Lab', 'Status', 'Duration', 'Notes'], rep.results.map((r) => [r.lab, r.status_text, r.status === 'NOT RUN' ? '-' : `${r.duration}s`, r.notes])));
+  else L.push(...table(['Lab', 'Status', 'Duration', 'Notes'], rep.results.map((r) => [r.lab, r.status_text, r.status === 'NOT RUN' || r.status === 'SKIP' ? '-' : `${r.duration}s`, r.notes])));
   if (rep.requirements) {
     L.push('', '## Requirements', '');
     if (rep.requirements.length === 0) L.push('No @req lines found in the spec.');

@@ -17,13 +17,13 @@ The UI writes the gateway's `config.yaml`; the source labs' "What the UI wrote" 
 
 ## The leak rule
 
-`solo-knowledge` is the only outbound lookup in a session. Do not use web search, web fetch, or any other MCP server, even if the harness offers them. The Playwright MCP server runs locally and is used only in adapt's learning phase.
+`solo-knowledge` is the only service you query for product information. Do not use web search, web fetch, or any other MCP server, even if the harness offers them. `.claude/settings.json` denies web search and web fetch in Claude Code. The Playwright MCP server runs in a local container and is used only in adapt's learning phase.
 
 No config, logs, screenshots, report content, or `custom-labs/` content goes into a query. Before you send one, check that it contains none of these:
 
 - IP addresses
 - hostnames and URLs other than `localhost`
-- the user's company, team, cloud account, project, or ARN identifiers
+- the user's company, team, cloud account, project, subscription, or ARN identifiers
 - names the user chose: model aliases, virtual key names, team names, MCP server names, route names
 - API keys, tokens, JWTs, and license keys
 - any text copied from command output, gateway logs, Playwright errors, or screenshots

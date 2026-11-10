@@ -45,7 +45,7 @@ chmod +x "$STUBS/curl" "$STUBS/python3" "$STUBS/jq" "$STUBS/gh" "$TMP/docker.stu
 new_repo() {
   local d="$TMP/$1"
   mkdir -p "$d/e2e/lib" "$d/setup"
-  cp "$E2E/lib/detect-env.sh" "$E2E/lib/keys.sh" "$d/e2e/lib/" 2>/dev/null
+  cp "$E2E/lib/detect-env.sh" "$E2E/lib/keys.sh" "$E2E/lib/playwright-mcp.sh" "$d/e2e/lib/" 2>/dev/null
   cp "$REPO/setup/.env.example" "$d/setup/.env"
   printf 'a: 1\n' > "$d/setup/config.yaml"
   (cd "$d" && git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -q -m init)
@@ -68,6 +68,7 @@ d=$(new_repo all); run_detect "$d" 1; J="$d/e2e/.work/env.json"
 has "$J" '"user_gateway": {"state":"running","version":"v2026.10.0"}'; check "all present: user gateway running" $?
 has "$J" '"setup_config_dirty": false'; check "all present: config not dirty" $?
 has "$J" '"playwright_image": "present"'; check "all present: image present" $?
+has "$J" '"playwright_mcp_image": "present"'; check "all present: Playwright MCP image present" $?
 has "$J" '"OPENAI_API_KEY": "ok"'; check "all present: openai key ok" $?
 case "$OUT" in *"docker: 27.0.1"*) r=0 ;; *) r=1 ;; esac; check "all present: prints key: value lines" $r
 

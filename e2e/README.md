@@ -25,6 +25,21 @@ A spec that restarts the gateway, such as `platform/postgres-backend`, sets `// 
 
 The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`.
 
+`--skip <id>` (repeatable) records a lab as `SKIP (declined)` without running it, for example `e2e/run-e2e.sh --track llm --skip llm/connect-anthropic`. An id the run does not cover exits 64.
+
+## Learning gateway
+
+Adapt mode learns a new UI flow on a throwaway gateway, never on yours. `e2e/lib/playwright-mcp.sh` runs the Playwright MCP server in that gateway's network namespace.
+
+```bash
+e2e/run-e2e.sh --learn <name> --profiles <p1,p2>   # start agw-e2e-learn from base; ends with LEARN READY agw-e2e-learn
+e2e/run-e2e.sh --learn <name> --diff               # config changes since start: exit 0 none, 2 some, 1 error
+e2e/run-e2e.sh --learn <name> --restart            # restart the gateway; the netns container stays
+e2e/run-e2e.sh --learn <name> --stop               # save config.after.yaml and remove the project
+```
+
+The project uses the restart override, so its namespace container is `agw-e2e-learn-netns-1`. Files go to `e2e/.work/adapt/<name>/`. A spec run never counts `agw-e2e-learn` as its own leftover; `detect-env.sh` still lists it.
+
 ## Fixtures
 
 Every lab starts from and returns to `base`, which is `setup/config.yaml` itself (the state after `001`). Other fixtures, if a spec needs one, go in `e2e/fixtures/<name>.yaml`. `e2e/lib/setup.ts` has the shared **Set up** and cleanup steps: add and delete the `openai/*` model, turn on MCP, add an MCP server, apply the Tool Playground CORS policy, turn off MCP.

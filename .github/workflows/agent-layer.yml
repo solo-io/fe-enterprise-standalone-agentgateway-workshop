@@ -1,0 +1,52 @@
+# Static tests of the agent layer and the e2e harness: e2e/tests/*.sh and e2e/tests/*.mjs.
+# They stub docker and curl, so this job needs no Docker, no network beyond npm, and no keys.
+# The lab specs themselves (e2e/run-e2e.sh) need Docker and real keys and do not run here.
+name: agent-layer
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  static-tests:
+    runs-on: ubuntu-latest
+    env:
+      # @playwright/test is a dependency, but no test here starts a browser.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      # report.mjs, promote.mjs and learn-diff.mjs import yaml from e2e/node_modules.
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci --no-audit --no-fund
+
+      # jq and python3 come with the runner image; install jq if a future image drops it.
+      - name: Check tools
+        run: |
+          command -v jq >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q jq; }
+          jq --version
+          python3 --version
+          git --version
+
+      - name: Shell tests (e2e/tests/*.sh)
+        run: |
+          rc=0
+          for t in e2e/tests/*.sh; do
+            echo "::group::$t"
+            bash "$t" || { rc=1; echo "::error file=$t::$t failed"; }
+            echo "::endgroup::"
+          done
+          exit $rc
+
+      - name: Node tests (e2e/tests/*.mjs)
+        run: node --test e2e/tests/*.mjs

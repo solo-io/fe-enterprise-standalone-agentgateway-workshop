@@ -8,7 +8,10 @@
 #   compose ls        first call per run: $STUB_COMPOSE_LS_BEFORE, later calls: $STUB_COMPOSE_LS_AFTER,
 #                     each falling back to $STUB_COMPOSE_LS (default [])
 #   compose ps -q     a fake container id
+#   compose ps --services   the names in $STUB_SERVICES (default: agentgateway netns), one per line
 #   compose up        exits $STUB_UP_RC (default 0)
+#   inspect           no such container (exit 1) unless $STUB_NETNS_DIR is set: then .State.Running prints
+#                     $STUB_NETNS_RUNNING (default true) and the working_dir label prints $STUB_NETNS_DIR
 #   run               writes a canned playwright.json to the host side of the -v that holds the
 #                     JSON output path, then exits $STUB_PW_RC (default 0); $STUB_PW_JSON names the canned file
 #   logs              a line of fake gateway log
@@ -35,9 +38,13 @@ case "$1" in
         if [ "$n" -eq 0 ]; then echo "${STUB_COMPOSE_LS_BEFORE:-${STUB_COMPOSE_LS:-[]}}"
         else echo "${STUB_COMPOSE_LS_AFTER:-${STUB_COMPOSE_LS:-[]}}"; fi ;;
       *" ps -q "*) echo fakecontainerid ;;
+      *" ps --services "*) printf '%s\n' ${STUB_SERVICES:-agentgateway netns} ;;
       *" up "*) exit "${STUB_UP_RC:-0}" ;;
     esac ;;
   logs) echo "fake gateway log line" ;;
+  inspect)
+    [ -n "${STUB_NETNS_DIR:-}" ] || exit 1
+    case "$*" in *State.Running*) echo "${STUB_NETNS_RUNNING:-true}" ;; *working_dir*) echo "$STUB_NETNS_DIR" ;; esac ;;
   run)
     out=""; hostdir=""
     for a in "$@"; do
@@ -61,6 +68,8 @@ new_runner_repo() {
   mkdir -p "$d/e2e/lib" "$d/e2e/fixtures" "$d/e2e/node_modules/@playwright/test" "$d/setup"
   cp "$E2E/run-e2e.sh" "$d/e2e/"
   cp "$E2E/lib/"*.sh "$E2E/lib/"*.mjs "$d/e2e/lib/" 2>/dev/null
+  # learn-diff.mjs imports yaml; the copy resolves it through this link.
+  ln -s "$E2E/node_modules/yaml" "$d/e2e/node_modules/yaml"
   cp "$E2E/compose.e2e.yaml" "$E2E/compose.e2e-restart.yaml" "$d/e2e/"
   cp -R "$E2E/labs" "$d/e2e/labs"
   cp "$E2E/../README.md" "$d/README.md"

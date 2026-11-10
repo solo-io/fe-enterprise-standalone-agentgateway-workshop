@@ -5,8 +5,8 @@
       "url": "https://knowledge-base.soloio-field.com/mcp"
     },
     "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@0.0.84", "--allowed-origins", "http://localhost:15000"]
+      "command": "bash",
+      "args": ["e2e/lib/playwright-mcp.sh"]
     }
   }
 }

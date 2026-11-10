@@ -12,7 +12,7 @@ The harness has already finished the run and removed its Compose project. `<id>`
    - `<dir>/outcome`: the status line. `rc=1` is a failing test, and `reason=` names the first failing test. `rc=2` with `config_mismatch=1` means the tests passed but the config did not return to the expected fixture; the run printed the config differences. `leftover=<n>` above 0 means a Compose project outlived the run.
    - `<dir>/playwright.json`: Playwright's JSON report. Find the test whose status is `failed` or `timedOut` and read its error message and the location in the spec.
    - `<dir>/gateway.log`: the gateway's log from the failed run.
-   - The failure screenshot, trace, and error context under `e2e/.last/pw-results/agw-e2e-<id with / as ->/`. Open the PNG with the Read tool, which renders images.
+   - The failure screenshot, trace, and error context under `e2e/.last/pw-results/agw-e2e-<id with / as ->/`. Open the PNG with a file-reading tool that renders images, so you see it.
    - The lab markdown for the step the failing test performs.
 
    Then record the failure:

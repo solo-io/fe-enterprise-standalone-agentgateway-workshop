@@ -26,35 +26,20 @@ Tell the user, in four sentences:
 
 - Nothing is written or clicked until they approve a written proposal.
 - The result is a lab they can follow by hand, a Playwright spec that replays it, and the screenshots the spec wrote, all under `custom-labs/<name>/`.
-- If the lab needs a UI flow the shipped specs do not cover, you click through it on their own gateway in a learning phase, with a backup of `setup/config.yaml` taken first and restored after.
-- Validation runs on a throwaway gateway, so the screenshots in the lab come from a clean `base` state, and nothing about their gateway or requirements leaves the machine except a generic product question to the Solo docs server.
+- If the lab needs a UI flow the shipped specs do not cover, you click through it in a learning phase on a separate throwaway gateway, never on their own.
+- Validation runs on a throwaway gateway, so the screenshots in the lab come from a clean `base` state, and nothing about their gateway or requirements leaves the machine except through their model provider. The only service you query is the Solo docs server, with generic product questions.
 
 ## 2. Intake
-
-Run:
-
-```bash
-e2e/lib/detect-env.sh
-```
-
-Exit 0: continue. Exit 2: handle it as step 2 of `skills/evaluate/SKILL.md` does. Then read `e2e/.work/env.json`:
-
-- `setup_config_dirty: true`: stop and tell the user why, as step 3 of `skills/evaluate/SKILL.md` does. Continue only when they have restored the file or say the change is intended.
-- `leftover_projects`: offer to remove each one, as step 2 of `skills/evaluate/SKILL.md` does.
-- `node` and `playwright_mcp`: the learning phase needs Node 20 or later and the Playwright MCP server. If either is missing, say so now; the user installs Node and runs `npx playwright install chromium`. You may still build a lab whose UI flows the shipped specs already cover.
-- `user_gateway`: the learning phase needs `{"state":"running"}`. If it is `absent`, tell the user to start their gateway from `setup/` and wait until they say it is up:
-
-  ```bash
-  env UID=$(id -u) GID=$(id -g) docker compose up -d
-  ```
-
-Recommend once that the user run the source labs, or their track, with `/evaluate` first, so the custom work starts from labs known to pass. They may decline.
 
 Start a fresh session log:
 
 ```bash
 e2e/lib/session-log.sh start
 ```
+
+Apply `skills/detect-environment/SKILL.md`. Continue only when detection exits 0, every leftover project it found is handled, and `setup_config_dirty` is `false` or the user said the change is intended. If `playwright_mcp_image` is `pull needed` and the lab turns out to need a learning phase, say that the phase pulls the image first, which takes a few minutes.
+
+Recommend once that the user run the source labs, or their track, with `/evaluate` first, so the custom work starts from labs known to pass. They may decline.
 
 The user names one or more source labs or describes the scenario. When they describe it, find the closest labs from the track tables in `README.md`, read each candidate lab and its spec under `e2e/labs/<track>/`, and confirm the choice with the user. The request is usually one of these:
 
@@ -103,7 +88,7 @@ Write `custom-labs/<name>/CHANGES.md` from this template and show it:
 - Helper profiles: <list from setup/docker-compose.yml, or none>
 - Host ports: <the gateway ports the lab uses; a custom lab adds no new host port>
 - External endpoints: <list, marking each one that costs money>
-- The user's gateway in the learning phase: <the UI flows you will click through there, or none>
+- Learning phase: <the UI flows you will click through on the learning gateway, or none>
 
 ## Changes during validation
 
@@ -122,40 +107,42 @@ e2e/lib/session-log.sh add decision custom/<name> "proposal approved: sources=<l
 
 Run this only after approval, and only for UI flows the source specs do not already cover. If the shipped specs already click every control the lab needs, take their locators from the specs and skip to step 5.
 
-The Playwright MCP server is used only here, and only against `http://localhost:15000/ui`. Never point it at any other URL.
+The learning phase runs on a throwaway gateway, the Compose project `agw-e2e-learn`, started from the `base` fixture. The user's own gateway takes no part. The Playwright MCP server runs in a container on the learning gateway's network, where `http://localhost:15000` is the learning gateway, and `--allowed-origins` blocks every other origin. Drive only `http://localhost:15000/ui`.
 
-1. Back up the user's config:
-
-   ```bash
-   mkdir -p e2e/.work/adapt/<name>
-   cp setup/config.yaml e2e/.work/adapt/<name>/config.before.yaml
-   ```
-
-2. Drive `http://localhost:15000/ui` with the Playwright MCP: navigate, take a snapshot, click, and read labels. For each control the lab uses, record the page path, its role, and its accessible name in `e2e/.work/adapt/<name>/ui-notes.md`, for example `/llm/keys: button "New key"; dialog textbox "Name"`. The spec needs these for `getByRole` locators. Note any toast or dialog that appears after a save.
-3. Undo in the UI everything you changed, in reverse order.
-4. Compare the config with the backup:
+1. Start the learning gateway with the helper profiles from the proposal's Footprint. Leave out `--profiles` when there are none:
 
    ```bash
-   node e2e/lib/compare.mjs setup/config.yaml e2e/.work/adapt/<name>/config.before.yaml
+   e2e/run-e2e.sh --learn <name> --profiles <profile>,<profile>
    ```
 
-   The first argument is the config to check and the second is the expected one. UI metadata is ignored. Exit 0 prints `config matches ...`. Exit 2 prints the differences on stderr. Any other exit means a file could not be read; show the error and stop.
-5. On exit 2, show the differences to the user and restore the file:
+   It ends with `LEARN READY agw-e2e-learn` and saves the starting config to `e2e/.work/adapt/<name>/config.before.yaml`. It refuses to start when `agw-e2e-learn` already exists and prints how to stop it.
+2. Connect the browser. In Claude Code, ask the user to run `/mcp` and reconnect the `playwright` server, and wait until they say it is connected. In Codex, ask the user to restart Codex. Before the learning gateway is up, the server exits with a message that no learning gateway is running.
+3. Drive `http://localhost:15000/ui` with the Playwright MCP: navigate, take a snapshot, click, and read labels. For each control the lab uses, record the page path, its role, and its accessible name in `e2e/.work/adapt/<name>/ui-notes.md`, for example `/llm/keys: button "New key"; dialog textbox "Name"`. The spec needs these for `getByRole` locators. Note any toast or dialog that appears after a save. The browser is headless; take a screenshot with the MCP when you need to see a page.
+4. Read what the UI wrote:
 
    ```bash
-   cp e2e/.work/adapt/<name>/config.before.yaml setup/config.yaml
+   e2e/run-e2e.sh --learn <name> --diff
    ```
 
-   Run the compare again; it must exit 0. Tell the user. If their UI does not show the restored state, the gateway may need a restart. Ask before you run it, and run it only on a yes, from `setup/`:
+   It saves `e2e/.work/adapt/<name>/config.after.yaml` and prints the differences against `config.before.yaml`, ignoring UI metadata. Exit 0 means the clicks changed nothing; exit 2 means they did. Check the "What the UI writes" table in `CHANGES.md` against the differences and correct it.
+5. If a flow takes effect only after a gateway restart, restart the learning gateway. The browser keeps its network:
 
    ```bash
-   docker compose restart agentgateway
+   e2e/run-e2e.sh --learn <name> --restart
    ```
+
+6. Stop the learning gateway:
+
+   ```bash
+   e2e/run-e2e.sh --learn <name> --stop
+   ```
+
+   It saves the final config and removes `agw-e2e-learn`. A `LEFTOVER PROJECT: agw-e2e-learn` line means the project is still there: show it, and on the user's yes run `docker compose -p agw-e2e-learn down -v`.
 
 Log the result:
 
 ```bash
-e2e/lib/session-log.sh add decision custom/<name> "learning phase: config <matched|restored>"
+e2e/lib/session-log.sh add decision custom/<name> "learning phase: <flows learned>, config diff <none|recorded>"
 ```
 
 ## 5. Build and validate
@@ -184,7 +171,7 @@ Write `custom-labs/<name>/<name>.md` following "Writing the lab" and `custom-lab
 
    Only `status=pass` with `rc=0` counts. `skipped=<n>` above 0 is not a pass: a skipped `[R<n>]` test leaves that requirement unproven. `rc=2` with `config_mismatch=1` is a Clean up bug: the config did not return to `base`. Fix the lab's Clean up section and the spec's `clean up` test, then run again.
 
-3. Review every screenshot the run wrote. Open each PNG under `custom-labs/<name>/images/` with the Read tool, which renders images. Each must show the page and dialog the step describes, with the red outline on the control the step names. A screenshot of a loading state, an error toast the step does not describe, or the wrong page is an authoring bug: move or re-target the `shot()` call and run step 2 again.
+3. Review every screenshot the run wrote. Open each PNG under `custom-labs/<name>/images/` with a file-reading tool that renders images, so you see it. Each must show the page and dialog the step describes, with the red outline on the control the step names. A screenshot of a loading state, an error toast the step does not describe, or the wrong page is an authoring bug: move or re-target the `shot()` call and run step 2 again.
 
 4. On a failing test, apply `skills/diagnose-failure/SKILL.md` with the id `custom/<name>`: read the Playwright JSON, the trace, and the failure screenshot under `e2e/.last/pw-results/agw-e2e-custom-<name>/`, and explain what the UI did against what the lab expected. Replace that skill's choices with these:
 
@@ -228,7 +215,7 @@ It writes `custom-labs/<name>/reports/<YYYYMMDD-HHMMSS>-standalone-custom-<name>
 
 Show the four paths: `custom-labs/<name>/<name>.md`, `custom-labs/<name>/<name>.spec.ts`, `custom-labs/<name>/images/`, and the report. Tell the user they can follow the lab by hand against their own gateway, or re-run the proof with `e2e/run-e2e.sh --custom <name>`. The folder is theirs and stays on their machine. To ship it in the workshop, they run `/contribute-lab <name>`.
 
-Nothing needs removing: the throwaway gateway is gone, and the learning phase restored the user's `setup/config.yaml`.
+Nothing needs removing: the throwaway gateways are gone, and the user's gateway and `setup/config.yaml` were never changed.
 
 ## Writing the lab
 
