@@ -82,3 +82,9 @@ setup/data.db*
 # Workshop TLS files (tls-termination, sni-matching): made by setup/tls/make-certs.sh, shipped on purpose
 !setup/tls/*.crt
 !setup/tls/*.key
+
+# Agent layer: custom labs, reports, harness work files
+/custom-labs/
+/reports/
+/e2e/.work/
+/e2e/custom/

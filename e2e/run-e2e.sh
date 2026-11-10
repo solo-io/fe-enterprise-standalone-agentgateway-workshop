@@ -37,61 +37,9 @@ if [ ! -d "$ROOT/e2e/node_modules/@playwright/test" ]; then
   docker run --rm -v "$ROOT:/repo" -w /repo/e2e "$PW_IMAGE" npm install --no-audit --no-fund --loglevel=error
 fi
 
-# A key's value: exported in the shell first, then setup/.env, as in Docker Compose.
-env_val() {
-  local v="${!1:-}"
-  [ -n "$v" ] || v=$(grep -E "^$1=" "$ROOT/setup/.env" | tail -1 | cut -d= -f2- | sed -E "s/^['\"]//; s/['\"]$//")
-  echo "$v"
-}
-
-# HTTP status of a request, 000 when the host does not answer.
-status_of() { curl -s -o /dev/null -m 15 -w '%{http_code}' "$@" || true; }
-
-# Checks each key once per run against its provider. Specs skip the parts that need a key that is
-# missing or rejected; an OpenAI key that does not work stops the run, since almost every lab needs it.
-check_keys() {
-  local k code
-  k=$(env_val OPENAI_API_KEY)
-  code=$(status_of https://api.openai.com/v1/models -H "Authorization: Bearer $k")
-  [ "$code" = 200 ] || { echo "OPENAI_API_KEY does not work (HTTP $code); fix it in setup/.env" >&2; exit 1; }
-
-  HAS_ANTHROPIC=0
-  k=$(env_val ANTHROPIC_API_KEY)
-  if [ -z "$k" ]; then echo "ANTHROPIC_API_KEY: not set, Anthropic tests skip"
-  else
-    code=$(status_of https://api.anthropic.com/v1/models -H "x-api-key: $k" -H 'anthropic-version: 2023-06-01')
-    if [ "$code" = 200 ]; then HAS_ANTHROPIC=1; else echo "ANTHROPIC_API_KEY: rejected (HTTP $code), Anthropic tests skip"; fi
-  fi
-
-  # A valid key gets past authentication and fails on the empty body.
-  HAS_TYPESAFE=0
-  k=$(env_val TYPESAFE_AI_API_KEY)
-  if [ -z "$k" ]; then echo "TYPESAFE_AI_API_KEY: not set, Jev tests skip"
-  else
-    code=$(status_of -X POST https://api.typesafe.ai/v1/systemone -H "Authorization: Bearer $k" -H 'Content-Type: application/json' -d '{}')
-    case "$code" in 000|401|403) echo "TYPESAFE_AI_API_KEY: rejected (HTTP $code), Jev tests skip" ;; *) HAS_TYPESAFE=1 ;; esac
-  fi
-
-  # AWS credentials are often short-lived SSO exports; check them with the AWS CLI when it is installed.
-  HAS_AWS=0
-  if [ -z "$(env_val AWS_ACCESS_KEY_ID)" ]; then echo "AWS_ACCESS_KEY_ID: not set, Bedrock tests skip"
-  elif ! command -v aws >/dev/null; then HAS_AWS=1
-  elif AWS_ACCESS_KEY_ID=$(env_val AWS_ACCESS_KEY_ID) AWS_SECRET_ACCESS_KEY=$(env_val AWS_SECRET_ACCESS_KEY) \
-    AWS_SESSION_TOKEN=$(env_val AWS_SESSION_TOKEN) AWS_PROFILE='' AWS_REGION=us-east-1 \
-    aws sts get-caller-identity >/dev/null 2>&1; then HAS_AWS=1
-  else echo "AWS credentials: rejected or expired, Bedrock tests skip"
-  fi
-
-  # No cheap check for a Bedrock API key without a region and model; only check it is set.
-  HAS_BEDROCK_KEY=0
-  [ -n "$(env_val BEDROCK_API_KEY)" ] && HAS_BEDROCK_KEY=1
-
-  # A Claude subscription token (claude setup-token). Anthropic accepts it only from Claude Code, so only check it is set.
-  CLAUDE_CODE_OAUTH_TOKEN=$(env_val CLAUDE_CODE_OAUTH_TOKEN)
-  HAS_CLAUDE_OAUTH=0
-  if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then HAS_CLAUDE_OAUTH=1; else echo "CLAUDE_CODE_OAUTH_TOKEN: not set, Claude subscription tests skip"; fi
-  return 0
-}
+# env_val, status_of and check_keys live in e2e/lib/keys.sh, shared with detect-env.sh.
+# shellcheck source=lib/keys.sh
+source "$ROOT/e2e/lib/keys.sh"
 
 # Fixture file relative to the repo root; keep in step with fixturePath() in e2e/lib/normalize.mjs.
 fixture_file() { [ "$1" = base ] && echo setup/config.yaml || echo "e2e/fixtures/$1.yaml"; }
