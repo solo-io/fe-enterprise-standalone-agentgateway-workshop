@@ -109,6 +109,34 @@ STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --trac
 check "track run lists failures" $(has "FAILED: platform/" && echo 0 || echo 1)
 check "track run goes on after a failure" $([ "$(printf '%s\n' "$OUT" | grep -c '^=== platform/.*: FAIL')" -gt 1 ] && echo 0 || echo 1)
 
+# custom labs
+CF="$E2E/tests/fixtures/custom-labs"
+mkdir -p "$REPO/custom-labs"; cp -R "$CF/demo" "$REPO/custom-labs/demo"
+cp "$E2E/lint.sh" "$E2E/check-ports.sh" "$REPO/e2e/"
+export STUB_PW_JSON="$TMP/fixtures-pw/pass.json" STUB_PW_RC=0 STUB_COMPOSE_LS='[]'
+run_runner "$REPO" --custom Bad_Name
+check "custom bad name: exit 64 and mentions name" $([ "$RC" -eq 64 ] && has "name" && echo 0 || echo 1)
+run_runner "$REPO" --custom nothere
+check "custom missing files: exit 1 and names paths" $([ "$RC" -eq 1 ] && has "custom-labs/nothere/nothere.md" && has "custom-labs/nothere/nothere.spec.ts" && echo 0 || echo 1)
+run_runner "$REPO" --custom demo
+check "custom run passes" $([ "$RC" -eq 0 ] && echo 0 || echo 1)
+check "custom copy removed after run" $([ ! -e "$REPO/e2e/custom/demo.spec.ts" ] && echo 0 || echo 1)
+check "custom run argv has PW_TEST_DIR, LAB_IMAGES_DIR and the test file" $(grep -qF -- '-e PW_TEST_DIR=custom' "$TMP/docker.log" && grep -qF -- '-e LAB_IMAGES_DIR=/repo/custom-labs/demo/images' "$TMP/docker.log" && grep -qF 'custom/demo.spec.ts' "$TMP/docker.log" && echo 0 || echo 1)
+check "custom outcome in work/custom/demo" $(grep -q '^status=pass ' "$REPO/work/custom/demo/outcome" 2>/dev/null && echo 0 || echo 1)
+STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --custom demo
+check "custom copy removed after a failed run" $([ "$RC" -eq 1 ] && [ ! -e "$REPO/e2e/custom/demo.spec.ts" ] && echo 0 || echo 1)
+: > "$REPO/custom-labs/demo/images/99-stale.png"
+run_runner "$REPO" --custom demo
+check "custom without --update-screenshots keeps images" $([ -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
+run_runner "$REPO" --custom demo --update-screenshots
+check "custom --update-screenshots clears stale pngs" $([ ! -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
+rm -rf "$REPO/custom-labs/demo"; cp -R "$CF/demo" "$REPO/custom-labs/demo"
+run_runner "$REPO" --custom demo --lint
+check "custom --lint runs lint only" $([ "$RC" -eq 0 ] && has "lint ok" && ! grep -q '^run ' "$TMP/docker.log" && echo 0 || echo 1)
+mkdir -p "$TMP/croot"; cp -R "$CF/demo" "$TMP/croot/demo"
+E2E_CUSTOM_ROOT="$TMP/croot" run_runner "$REPO" --custom demo
+check "custom root override finds demo and mounts it" $([ "$RC" -eq 0 ] && grep '^run ' "$TMP/docker.log" | grep -qF "$TMP/croot:/repo/custom-labs" && echo 0 || echo 1)
+
 run_runner "$REPO" --report-only
 check "report-only is not built yet" $([ "$RC" -eq 2 ] && has "report builder not available yet" && echo 0 || echo 1)
 

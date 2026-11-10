@@ -4,6 +4,8 @@
 #   e2e/run-e2e.sh <id>|all [--update-screenshots]
 #   e2e/run-e2e.sh --track <llm|mcp|platform|all> [--update-screenshots]
 #   e2e/run-e2e.sh --list [--track <t>]       one line per spec: id, lab path, profiles; runs nothing
+#   e2e/run-e2e.sh --custom <name> [--update-screenshots] [--lint]
+#                                             run (or only lint) custom-labs/<name>/, a lab you wrote
 #   e2e/run-e2e.sh --report-only              rebuild the report from the last run (not built yet)
 #
 # Each run leaves e2e/.work/<id with / as ->/ with outcome (one status line), playwright.json and,
@@ -25,7 +27,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.64.1-noble"
 
-usage() { echo "usage: $0 <id>|all [--update-screenshots] | --track <llm|mcp|platform|all> | --list [--track <t>] | --report-only" >&2; exit 64; }
+usage() { echo "usage: $0 <id>|all [--update-screenshots] | --track <llm|mcp|platform|all> | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only" >&2; exit 64; }
+CUSTOM_ROOT="${E2E_CUSTOM_ROOT:-$ROOT/custom-labs}"
+CUSTOM=""; LINT=0
 E2E_DOCKER="${E2E_DOCKER:-docker}"
 TARGET=""; TRACK=""; LIST=0; REPORT_ONLY=0; UPDATE=0
 while [ $# -gt 0 ]; do
@@ -33,6 +37,8 @@ while [ $# -gt 0 ]; do
     --update-screenshots) UPDATE=1 ;;
     --list) LIST=1 ;;
     --report-only) REPORT_ONLY=1 ;;
+    --lint) LINT=1 ;;
+    --custom) [ $# -ge 2 ] || usage; CUSTOM="$2"; shift ;;
     --track) [ $# -ge 2 ] || usage; TRACK="$2"; shift ;;
     -*) usage ;;
     *) [ -z "$TARGET" ] || usage; TARGET="$1" ;;
@@ -41,8 +47,22 @@ while [ $# -gt 0 ]; do
 done
 [ "$TARGET" = all ] && { TARGET=""; TRACK="${TRACK:-all}"; }
 case "${TRACK:-all}" in llm|mcp|platform|all) ;; *) echo "unknown track: $TRACK (llm, mcp, platform or all)" >&2; exit 64 ;; esac
+if [ -n "$CUSTOM" ]; then
+  [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ "$LIST" = 0 ] && [ "$REPORT_ONLY" = 0 ] || usage
+  echo "$CUSTOM" | grep -qE '^[a-z0-9][a-z0-9-]*$' \
+    || { echo "invalid custom lab name: $CUSTOM (lowercase letters, digits and hyphens, starting with a letter or digit)" >&2; exit 64; }
+  missing=0
+  for f in "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.md" "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.spec.ts"; do
+    [ -f "$f" ] || { echo "missing custom lab file: custom-labs/$CUSTOM/$(basename "$f") (expected at $f)" >&2; missing=1; }
+  done
+  [ $missing -eq 0 ] || exit 1
+  if [ "$LINT" = 1 ]; then
+    exec "$ROOT/e2e/lint.sh" --file "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.md" --spec "$CUSTOM_ROOT/$CUSTOM/$CUSTOM.spec.ts" --custom
+  fi
+elif [ "$LINT" = 1 ]; then usage
+fi
 if [ "$REPORT_ONLY" = 1 ]; then echo "report builder not available yet" >&2; exit 2; fi
-if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ]; then usage; fi
+if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ]; then usage; fi
 if [ -n "$TARGET" ] && [ -n "$TRACK" ]; then usage; fi
 
 [ "$LIST" = 1 ] || [ -f "$ROOT/setup/.env" ] || { echo "missing setup/.env (copy setup/.env.example and fill in keys)" >&2; exit 1; }
@@ -72,6 +92,14 @@ header() { # header <spec> <key> <default>
 run_one() {
   local id="$1"
   local spec="$ROOT/e2e/labs/$id.spec.ts"
+  local custom=0 test_file="labs/$id.spec.ts" rel
+  rel="$(echo "$id" | tr '/' '-')"
+  local custom_env=() custom_mount=()
+  if [ "$id" != "${id#custom/}" ]; then
+    custom=1; spec="$CUSTOM_ROOT/${id#custom/}/${id#custom/}.spec.ts"; test_file="custom/${id#custom/}.spec.ts"; rel="$id"
+    custom_env=(-e PW_TEST_DIR=custom -e "LAB_IMAGES_DIR=/repo/custom-labs/${id#custom/}/images")
+    [ -n "${E2E_CUSTOM_ROOT:-}" ] && custom_mount=(-v "$CUSTOM_ROOT:/repo/custom-labs")
+  fi
   [ -f "$spec" ] || { echo "no spec: $spec" >&2; return 1; }
 
   local fixture expect profiles
@@ -95,13 +123,18 @@ run_one() {
   [ "$restarts" = gateway ] && files+=(-f "$ROOT/e2e/compose.e2e-restart.yaml")
 
   cleanup_one() {
+    [ $custom -eq 1 ] && rm -f "$ROOT/e2e/$test_file"
     "$E2E_DOCKER" compose -p "$project" --project-directory "$work" "${files[@]}" \
       --profile "*" down -v --remove-orphans >/dev/null 2>&1 || true
     rm -rf "$work"
   }
   trap cleanup_one RETURN
-  local rdir="$WORK_ROOT/$(echo "$id" | tr '/' '-')"
+  local rdir="$WORK_ROOT/$rel"
   rm -rf "$rdir"; mkdir -p "$rdir"
+  if [ $custom -eq 1 ]; then
+    mkdir -p "$ROOT/e2e/custom"
+    cp "$spec" "$ROOT/e2e/$test_file"
+  fi
   local started=$SECONDS
   local before
   before=$(list_e2e_projects)
@@ -127,20 +160,21 @@ run_one() {
 
   # The container runs the test, then summarises the Playwright JSON into $rdir/outcome-parse
   # (unless the host parses it, E2E_OUTCOME_ON_HOST=1), then compares the final config.
-  local cdir="/repo/e2e/.work/$(basename "$rdir")"
+  local cdir="/repo/e2e/.work/$rel"
   local json_in_container="$cdir/playwright.json"
   local parse_cmd="node lib/outcome.mjs '$json_in_container' > '$cdir/outcome-parse'"
   [ "${E2E_OUTCOME_ON_HOST:-0}" = 1 ] && parse_cmd=true
   set +e
   "$E2E_DOCKER" run --rm --network "container:$net" \
-    -v "$ROOT:/repo" -v "$rdir:$cdir" -v "$work:/work" ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
+    -v "$ROOT:/repo" -v "$rdir:$cdir" -v "$work:/work" ${custom_mount[@]+"${custom_mount[@]}"} ${docker_args[@]+"${docker_args[@]}"} -w /repo/e2e \
+    ${custom_env[@]+"${custom_env[@]}"} \
     -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$HAS_ANTHROPIC" -e HAS_AWS="$HAS_AWS" -e HAS_BEDROCK_KEY="$HAS_BEDROCK_KEY" -e HAS_TYPESAFE="$HAS_TYPESAFE" \
     -e HAS_CLAUDE_OAUTH="$HAS_CLAUDE_OAUTH" -e CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" -e LAB_FIXTURE="$fixture" \
     -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \
     -e PLAYWRIGHT_JSON_OUTPUT_NAME="$json_in_container" \
     "$PW_IMAGE" bash -c "
       for i in \$(seq 1 60); do curl -sf localhost:15000/api/runtime >/dev/null && break; sleep 1; done
-      npx playwright test 'labs/$id.spec.ts' --reporter=list,json; t=\$?
+      npx playwright test '$test_file' --reporter=list,json; t=\$?
       $parse_cmd
       [ \$t -eq 0 ] || exit 1
       node lib/compare.mjs /work/config.yaml '/repo/$(fixture_file "$expect")' || exit 2
@@ -259,6 +293,14 @@ if [ -n "$TRACK" ]; then
   done
   echo
   if [ ${#failed[@]} -eq 0 ]; then echo "ALL PASS (${#ids[@]} labs)"; else echo "FAILED: ${failed[*]}"; exit 1; fi
+elif [ -n "$CUSTOM" ]; then
+  # The copy of the spec must not outlive the run, even when the run stops early.
+  trap 'rm -f "$ROOT/e2e/custom/$CUSTOM.spec.ts"' EXIT
+  if [ "$UPDATE" = 1 ]; then
+    mkdir -p "$CUSTOM_ROOT/$CUSTOM/images"
+    find "$CUSTOM_ROOT/$CUSTOM/images" -maxdepth 1 -name '*.png' -delete
+  fi
+  run_one "custom/$CUSTOM"
 else
   run_one "$TARGET"
 fi
