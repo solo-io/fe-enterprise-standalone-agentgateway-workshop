@@ -6,7 +6,8 @@
 #   e2e/run-e2e.sh --list [--track <t>]       one line per spec: id, lab path, profiles; runs nothing
 #   e2e/run-e2e.sh --custom <name> [--update-screenshots] [--lint]
 #                                             run (or only lint) custom-labs/<name>/, a lab you wrote
-#   e2e/run-e2e.sh --report-only              rebuild the report from the last run (not built yet)
+#   e2e/run-e2e.sh --report-only (--track <t> | --custom <name>)
+#                                             rebuild the report from the last run into reports/ (or custom-labs/<name>/reports/)
 #
 # Each run leaves e2e/.work/<id with / as ->/ with outcome (one status line), playwright.json and,
 # on a failure, gateway.log. E2E_WORK_ROOT replaces e2e/.work; E2E_DOCKER replaces docker.
@@ -27,7 +28,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.64.1-noble"
 
-usage() { echo "usage: $0 <id>|all [--update-screenshots] | --track <llm|mcp|platform|all> | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only" >&2; exit 64; }
+usage() { echo "usage: $0 <id>|all [--update-screenshots] | --track <llm|mcp|platform|all> | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only (--track <t> | --custom <name>)" >&2; exit 64; }
 CUSTOM_ROOT="${E2E_CUSTOM_ROOT:-$ROOT/custom-labs}"
 CUSTOM=""; LINT=0
 E2E_DOCKER="${E2E_DOCKER:-docker}"
@@ -48,7 +49,7 @@ done
 [ "$TARGET" = all ] && { TARGET=""; TRACK="${TRACK:-all}"; }
 case "${TRACK:-all}" in llm|mcp|platform|all) ;; *) echo "unknown track: $TRACK (llm, mcp, platform or all)" >&2; exit 64 ;; esac
 if [ -n "$CUSTOM" ]; then
-  [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ "$LIST" = 0 ] && [ "$REPORT_ONLY" = 0 ] || usage
+  [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ "$LIST" = 0 ] || usage
   echo "$CUSTOM" | grep -qE '^[a-z0-9][a-z0-9-]*$' \
     || { echo "invalid custom lab name: $CUSTOM (lowercase letters, digits and hyphens, starting with a letter or digit)" >&2; exit 64; }
   missing=0
@@ -63,7 +64,29 @@ if [ -n "$CUSTOM" ]; then
   fi
 elif [ "$LINT" = 1 ]; then usage
 fi
-if [ "$REPORT_ONLY" = 1 ]; then echo "report builder not available yet" >&2; exit 2; fi
+if [ "$REPORT_ONLY" = 1 ]; then
+  [ -z "$TARGET" ] && [ "$LIST" = 0 ] && { [ -n "$TRACK" ] || [ -n "$CUSTOM" ]; } || usage
+  RWORK="${E2E_WORK_ROOT:-$ROOT/e2e/.work}"
+  RWORK="$(cd "$RWORK" 2>/dev/null && pwd || echo "$RWORK")"
+  # The host runs node when it has it; otherwise the Playwright image does, with the repo at /repo and the work dir at /work.
+  if command -v node >/dev/null 2>&1; then
+    rbase="$ROOT"; rcustom="$CUSTOM_ROOT"; rwork="$RWORK"; runner=(node)
+  else
+    rbase=/repo; rcustom=/repo/custom-labs; rwork=/work
+    mount=(-v "$ROOT:/repo" -v "$RWORK:/work")
+    [ -n "${E2E_CUSTOM_ROOT:-}" ] && [ -n "$CUSTOM" ] && mount+=(-v "$CUSTOM_ROOT:/repo/custom-labs")
+    runner=("$E2E_DOCKER" run --rm "${mount[@]}" -w /repo/e2e "$PW_IMAGE" node)
+  fi
+  rargs=(build --work "$rwork" --env-json "$rwork/env.json" --session "$rwork/session.jsonl" --compose "$rbase/setup/docker-compose.yml" --readme "$rbase/README.md")
+  if [ -n "$CUSTOM" ]; then
+    mkdir -p "$CUSTOM_ROOT/$CUSTOM/reports"
+    rargs+=(--out "$rcustom/$CUSTOM/reports" --custom "$CUSTOM" --spec "$rcustom/$CUSTOM/$CUSTOM.spec.ts")
+  else
+    mkdir -p "$ROOT/reports"
+    rargs+=(--out "$rbase/reports" --track "$TRACK")
+  fi
+  exec "${runner[@]}" "$rbase/e2e/lib/report.mjs" "${rargs[@]}"
+fi
 if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ]; then usage; fi
 if [ -n "$TARGET" ] && [ -n "$TRACK" ]; then usage; fi
 

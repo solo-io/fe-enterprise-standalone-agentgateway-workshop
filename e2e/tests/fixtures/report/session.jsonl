@@ -1,0 +1,5 @@
+{"ts":"2026-11-09T10:01:00Z","kind":"decision","lab":"llm/x","text":"Used the mock provider for the llm labs"}
+{"ts":"2026-11-09T10:02:00Z","kind":"deviation","lab":"-","text":"Skipped the TypeSafe lab, no key"}
+{"ts":"2026-11-09T10:03:00Z","kind":"failure","lab":"llm/bad","text":"Route returned 500 on first try"}
+{"ts":"2026-11-09T10:04:00Z","kind":"decision","lab":"mcp/y","text":"mcp only decision"}
+{"ts":"2026-11-09T10:05:00Z","kind":"run","lab":"custom/demo","text":"First attempt, R2 failed"}

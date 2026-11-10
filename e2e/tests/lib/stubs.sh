@@ -57,7 +57,7 @@ new_runner_repo() {
   local d="$TMP/$1"
   mkdir -p "$d/e2e/lib" "$d/e2e/fixtures" "$d/e2e/node_modules/@playwright/test" "$d/setup"
   cp "$E2E/run-e2e.sh" "$d/e2e/"
-  cp "$E2E/lib/"*.sh "$E2E/lib/outcome.mjs" "$d/e2e/lib/" 2>/dev/null
+  cp "$E2E/lib/"*.sh "$E2E/lib/"*.mjs "$d/e2e/lib/" 2>/dev/null
   cp "$E2E/compose.e2e.yaml" "$E2E/compose.e2e-restart.yaml" "$d/e2e/"
   cp -R "$E2E/labs" "$d/e2e/labs"
   cp "$E2E/../README.md" "$d/README.md"

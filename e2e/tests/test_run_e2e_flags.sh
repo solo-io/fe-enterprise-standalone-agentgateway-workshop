@@ -140,8 +140,27 @@ mkdir -p "$REPO/croot-rel"; cp -R "$CF/demo" "$REPO/croot-rel/demo"
 E2E_CUSTOM_ROOT=croot-rel run_runner "$REPO" --custom demo
 check "relative custom root: mount is an absolute path" $([ "$RC" -eq 0 ] && grep -oE -- '-v [^ ]*:/repo/custom-labs' "$TMP/docker.log" | grep -q '^-v /' && echo 0 || echo 1)
 
-run_runner "$REPO" --report-only
-check "report-only is not built yet" $([ "$RC" -eq 2 ] && has "report builder not available yet" && echo 0 || echo 1)
+# --report-only calls report.mjs build with the right track or custom lab and out dir
+mkdir -p "$TMP/nodestub"
+cat > "$TMP/nodestub/node" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$NODE_LOG"
+STUB
+chmod +x "$TMP/nodestub/node"
+report_only() {
+  : > "$TMP/node.log"; RC=0
+  OUT=$(cd "$REPO" && env PATH="$TMP/nodestub:$TMP/stubs:$PATH" NODE_LOG="$TMP/node.log" E2E_DOCKER="$TMP/stubs/docker" \
+    E2E_WORK_ROOT="$REPO/work" bash e2e/run-e2e.sh --report-only "$@" 2>&1) || RC=$?
+}
+report_only --track llm
+check "report-only track: build call with track and reports dir" $([ "$RC" -eq 0 ] && grep -q 'report.mjs build' "$TMP/node.log" && grep -q -- '--track llm' "$TMP/node.log" && grep -qF -- "--out $REPO/reports" "$TMP/node.log" && echo 0 || echo 1)
+check "report-only track: work, env, session paths" $(grep -qF -- "--work $REPO/work --env-json $REPO/work/env.json --session $REPO/work/session.jsonl" "$TMP/node.log" && echo 0 || echo 1)
+report_only --custom demo
+check "report-only custom: build call with custom name, reports dir and spec" $([ "$RC" -eq 0 ] && grep -q -- '--custom demo' "$TMP/node.log" && grep -qF -- "--out $REPO/custom-labs/demo/reports" "$TMP/node.log" && grep -qF -- "--spec $REPO/custom-labs/demo/demo.spec.ts" "$TMP/node.log" && echo 0 || echo 1)
+report_only
+check "report-only with no target is a usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+report_only --track nope
+check "report-only unknown track fails" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
 
 printf '\n%s passed, %s failed\n' "$T_PASS" "$T_FAIL"
 [ "$T_FAIL" -eq 0 ]
