@@ -154,10 +154,12 @@ e2e/lib/session-log.sh add decision custom/<name> "contribute started: <direct|f
 
 ## 2. Scrub
 
-Make the staging copy:
+Make the staging copy. It leaves out `custom-labs/<name>/.work/`, the lab's run and learning files: traces, logs, and, while a learning gateway runs, a copy of `setup/.env`. If `custom-labs/<name>/.work/learn/project/` exists, a learning gateway is still running: stop and ask the user to run `e2e/run-e2e.sh --learn <name> --stop` first.
 
 ```bash
-rm -rf e2e/.work/contribute/<name>/stage && cp -R custom-labs/<name> e2e/.work/contribute/<name>/stage
+test ! -e custom-labs/<name>/.work/learn/project || echo "learning gateway still running: stop it first"
+rm -rf e2e/.work/contribute/<name>/stage && mkdir -p e2e/.work/contribute/<name>/stage
+(cd custom-labs/<name> && tar cf - --exclude ./.work .) | (cd e2e/.work/contribute/<name>/stage && tar xf -)
 ```
 
 Run the scanner on the lab, spec, and CHANGES.md in the staging copy:

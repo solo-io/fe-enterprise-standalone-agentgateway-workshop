@@ -151,7 +151,10 @@ run_runner "$REPO" --custom demo
 check "custom run passes" $([ "$RC" -eq 0 ] && echo 0 || echo 1)
 check "custom copy removed after run" $([ ! -e "$REPO/e2e/custom/demo.spec.ts" ] && echo 0 || echo 1)
 check "custom run argv has PW_TEST_DIR, LAB_IMAGES_DIR and the test file" $(grep -qF -- '-e PW_TEST_DIR=custom' "$TMP/docker.log" && grep -qF -- '-e LAB_IMAGES_DIR=/repo/custom-labs/demo/images' "$TMP/docker.log" && grep -qF 'custom/demo.spec.ts' "$TMP/docker.log" && echo 0 || echo 1)
-check "custom outcome in work/custom/demo" $(grep -q '^status=pass ' "$REPO/work/custom/demo/outcome" 2>/dev/null && echo 0 || echo 1)
+check "custom outcome in custom-labs/demo/.work/run" $(grep -q '^status=pass ' "$REPO/custom-labs/demo/.work/run/outcome" 2>/dev/null && echo 0 || echo 1)
+check "custom run: nothing under work/custom" $([ ! -e "$REPO/work/custom" ] && echo 0 || echo 1)
+check "custom run: final config in the lab's .work/run" $([ -f "$REPO/custom-labs/demo/.work/run/config.yaml" ] && [ ! -e "$REPO/e2e/.last/custom-demo.yaml" ] && echo 0 || echo 1)
+check "custom run: Playwright output dir in the lab's .work" $(grep '^run ' "$TMP/docker.log" | grep -qF -- '-e PW_OUTPUT_DIR=/repo/custom-labs/demo/.work/pw-results' && echo 0 || echo 1)
 STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --custom demo
 check "custom copy removed after a failed run" $([ "$RC" -eq 1 ] && [ ! -e "$REPO/e2e/custom/demo.spec.ts" ] && echo 0 || echo 1)
 : > "$REPO/custom-labs/demo/images/99-stale.png"
@@ -159,15 +162,15 @@ run_runner "$REPO" --custom demo
 check "custom without --update-screenshots keeps images" $([ -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
 run_runner "$REPO" --custom demo --update-screenshots
 check "custom --update-screenshots clears stale pngs" $([ ! -f "$REPO/custom-labs/demo/images/99-stale.png" ] && echo 0 || echo 1)
-check "custom --update-screenshots: no backup left after a pass" $([ ! -e "$REPO/work/custom-shots-before/demo" ] && echo 0 || echo 1)
+check "custom --update-screenshots: no backup left after a pass" $([ ! -e "$REPO/custom-labs/demo/.work/shots-before" ] && echo 0 || echo 1)
 : > "$REPO/custom-labs/demo/images/99-stale.png"
 before_pngs=$(ls "$REPO/custom-labs/demo/images" | sort)
 STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/fail.json" run_runner "$REPO" --custom demo --update-screenshots
 check "custom --update-screenshots failed run: previous pngs are back" $([ "$RC" -eq 1 ] && [ "$(ls "$REPO/custom-labs/demo/images" | sort)" = "$before_pngs" ] && has "screenshots from before it" && echo 0 || echo 1)
 STUB_UP_RC=1 run_runner "$REPO" --custom demo --update-screenshots
 check "custom --update-screenshots compose up failure: previous pngs are back" $([ "$RC" -eq 1 ] && [ "$(ls "$REPO/custom-labs/demo/images" | sort)" = "$before_pngs" ] && echo 0 || echo 1)
-mkdir -p "$REPO/work/custom-shots-before/demo"
-mv "$REPO/custom-labs/demo/images/99-stale.png" "$REPO/work/custom-shots-before/demo/"
+mkdir -p "$REPO/custom-labs/demo/.work/shots-before"
+mv "$REPO/custom-labs/demo/images/99-stale.png" "$REPO/custom-labs/demo/.work/shots-before/"
 : > "$REPO/custom-labs/demo/images/50-half-written.png"
 STUB_UP_RC=1 run_runner "$REPO" --custom demo --update-screenshots
 check "custom --update-screenshots: a killed run's backup is restored first" $([ -f "$REPO/custom-labs/demo/images/99-stale.png" ] && [ ! -f "$REPO/custom-labs/demo/images/50-half-written.png" ] && echo 0 || echo 1)
@@ -253,6 +256,7 @@ check "report-only track: projects-now holds only agw-e2e-* names" $([ "$(cat "$
 report_only --custom demo
 check "report-only custom: no planned file" $(grep -q -- '--planned' "$TMP/node.log" && echo 1 || echo 0)
 check "report-only custom: build call with custom name, reports dir and spec" $([ "$RC" -eq 0 ] && grep -q -- '--custom demo' "$TMP/node.log" && grep -qF -- "--out $REPO/custom-labs/demo/reports" "$TMP/node.log" && grep -qF -- "--spec $REPO/custom-labs/demo/demo.spec.ts" "$TMP/node.log" && echo 0 || echo 1)
+check "report-only custom: run dir is the lab's .work/run" $(grep -qF -- "--run $REPO/custom-labs/demo/.work/run" "$TMP/node.log" && echo 0 || echo 1)
 report_only
 check "report-only with no target is a usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
 report_only --track nope

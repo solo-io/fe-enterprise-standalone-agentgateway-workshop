@@ -7,7 +7,7 @@ description: Turn one or more shipped labs into a custom lab, a Playwright spec,
 
 Work from the repo root. Follow the steps in order. The four hard rules in `AGENTS.md` apply throughout. One session builds one custom lab.
 
-A custom lab lives in `custom-labs/<name>/`, which is gitignored:
+A custom lab lives in `custom-labs/<name>/`, which is gitignored. Everything the harness writes for the lab stays in that folder, so deleting it removes the lab and all its run files:
 
 ```
 custom-labs/<name>/
@@ -16,7 +16,12 @@ custom-labs/<name>/
   images/          NN-<what>.png, written by the spec
   CHANGES.md       source labs, deltas, requirement-to-test table
   reports/         written by --report-only
+  .work/learn/     the learning phase: config.before.yaml, config.after.yaml, ui-notes.md
+  .work/run/       the last run: outcome, playwright.json, config.yaml, gateway.log on a failure
+  .work/pw-results/  failure screenshots and traces from the last run
 ```
+
+Put any other file the lab needs, such as test tokens, in the same folder.
 
 Never edit a shipped lab under `labs/`, a shipped spec under `e2e/labs/`, or a shipped screenshot under `images/`.
 
@@ -115,16 +120,16 @@ The learning phase runs on a throwaway gateway, the Compose project `agw-e2e-lea
    e2e/run-e2e.sh --learn <name> --profiles <profile>,<profile>
    ```
 
-   It ends with `LEARN READY agw-e2e-learn` and saves the starting config to `e2e/.work/adapt/<name>/config.before.yaml`. It refuses to start when `agw-e2e-learn` already exists and prints how to stop it.
+   It ends with `LEARN READY agw-e2e-learn` and saves the starting config to `custom-labs/<name>/.work/learn/config.before.yaml`. It refuses to start when `agw-e2e-learn` already exists and prints how to stop it.
 2. Connect the browser. In Claude Code, ask the user to run `/mcp` and reconnect the `playwright` server, and wait until they say it is connected. In Codex, ask the user to restart Codex. Before the learning gateway is up, the server exits with a message that no learning gateway is running.
-3. Drive `http://localhost:15000/ui` with the Playwright MCP: navigate, take a snapshot, click, and read labels. For each control the lab uses, record the page path, its role, and its accessible name in `e2e/.work/adapt/<name>/ui-notes.md`, for example `/llm/keys: button "New key"; dialog textbox "Name"`. The spec needs these for `getByRole` locators. Note any toast or dialog that appears after a save. The browser is headless; take a screenshot with the MCP when you need to see a page.
+3. Drive `http://localhost:15000/ui` with the Playwright MCP: navigate, take a snapshot, click, and read labels. For each control the lab uses, record the page path, its role, and its accessible name in `custom-labs/<name>/.work/learn/ui-notes.md`, for example `/llm/keys: button "New key"; dialog textbox "Name"`. The spec needs these for `getByRole` locators. Note any toast or dialog that appears after a save. The browser is headless; take a screenshot with the MCP when you need to see a page.
 4. Read what the UI wrote:
 
    ```bash
    e2e/run-e2e.sh --learn <name> --diff
    ```
 
-   It saves `e2e/.work/adapt/<name>/config.after.yaml` and prints the differences against `config.before.yaml`, ignoring UI metadata. Exit 0 means the clicks changed nothing; exit 2 means they did. Check the "What the UI writes" table in `CHANGES.md` against the differences and correct it.
+   It saves `custom-labs/<name>/.work/learn/config.after.yaml` and prints the differences against `config.before.yaml`, ignoring UI metadata. Exit 0 means the clicks changed nothing; exit 2 means they did. Check the "What the UI writes" table in `CHANGES.md` against the differences and correct it.
 5. If a flow takes effect only after a gateway restart, restart the learning gateway. The browser keeps its network:
 
    ```bash
@@ -163,7 +168,7 @@ Write `custom-labs/<name>/<name>.md` following "Writing the lab" and `custom-lab
    e2e/run-e2e.sh --custom <name> --update-screenshots
    ```
 
-   Read the outcome line from `e2e/.work/custom/<name>/outcome` and log it:
+   Read the outcome line from `custom-labs/<name>/.work/run/outcome` and log it:
 
    ```bash
    e2e/lib/session-log.sh add run custom/<name> "<outcome line>"
@@ -173,7 +178,7 @@ Write `custom-labs/<name>/<name>.md` following "Writing the lab" and `custom-lab
 
 3. Review every screenshot the run wrote. Open each PNG under `custom-labs/<name>/images/` with a file-reading tool that renders images, so you see it. Each must show the page and dialog the step describes, with the red outline on the control the step names. A screenshot of a loading state, an error toast the step does not describe, or the wrong page is an authoring bug: move or re-target the `shot()` call and run step 2 again.
 
-4. On a failing test, apply `skills/diagnose-failure/SKILL.md` with the id `custom/<name>`: read the Playwright JSON, the trace, and the failure screenshot under `e2e/.last/pw-results/agw-e2e-custom-<name>/`, and explain what the UI did against what the lab expected. Replace that skill's choices with these:
+4. On a failing test, apply `skills/diagnose-failure/SKILL.md` with the id `custom/<name>`: read the Playwright JSON, the trace, and the failure screenshot under `custom-labs/<name>/.work/pw-results/`, and explain what the UI did against what the lab expected. Replace that skill's choices with these:
 
    - Fix the authoring, within the rule below
    - Record a gap
@@ -292,6 +297,6 @@ Rules:
 - `const { go, shot, save } = lab('custom', '<name>')`. `go(page, '/llm/keys')` opens a UI page and waits for it. `save(page, 'Save')` clicks a save button and waits for the save to land.
 - `test.describe.configure({ mode: 'serial' })`. One `set up` test with the shared helpers from `../lib/setup` (`addOpenAIModel`, `enableMcp`, `addMcpServer`, `applyMcpCors`, `setUpSoloDocs`). Step tests titled `[R<n>] <what it proves>`. One `clean up` test that ends with `expectMatchesFixture('base')`.
 - Screenshots: `shot(page, 'NN-<what>', <locator>)` with the name as a string literal, numbered in step order, with a target locator wherever the step names a control, so the image shows the red outline on it. Take the shot after the page has settled on the state the step describes.
-- Locators use `getByRole` with the roles and accessible names from the source specs or `e2e/.work/adapt/<name>/ui-notes.md`, scoped to `page.locator('main')` or `page.getByRole('dialog')`.
+- Locators use `getByRole` with the roles and accessible names from the source specs or `custom-labs/<name>/.work/learn/ui-notes.md`, scoped to `page.locator('main')` or `page.getByRole('dialog')`.
 - Assertions use `expect` on the UI, and `chatRequest` or `labSh` for the curl checks. `labSh` runs the lab's exact command from `setup/` and fails if the command is not in a code block of the lab. A `tools/call` denial on MCP is HTTP 200 with `"isError":true` in the body, as `e2e/labs/mcp/mcp-rate-limiting.spec.ts` shows, so check the body, not the status.
 - Tests that need a key other than `OPENAI_API_KEY` call `test.skip(!HAS_ANTHROPIC, 'ANTHROPIC_API_KEY not set')` or the matching `HAS_*` flag from `../lib/lab`. A skipped `[R<n>]` test does not prove its requirement.

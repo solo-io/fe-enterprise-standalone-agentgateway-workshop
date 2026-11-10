@@ -7,6 +7,7 @@
   - `/adapt-lab`: builds a custom lab, its Playwright spec and its screenshots from one or more shipped labs for your own scenario, learns any new UI flow on a throwaway gateway, proves each requirement, and keeps the result in `custom-labs/<name>/` on your machine
   - `/contribute-lab`: turns a custom lab that passed into a shipped lab and a pull request, from a clone of this repo or of your fork, and pushes only after you approve the diff
   - The agent writes its prose, labs, and pull requests by `skills/stop-slop/SKILL.md`: plain words, no filler, no em dashes
+  - A custom lab keeps everything the harness writes for it in its own folder, under `custom-labs/<name>/.work/`: the learning phase in `learn/`, the last run in `run/`, failure screenshots and traces in `pw-results/`. Delete `custom-labs/<name>/` to remove all of it. `/contribute-lab` leaves `.work/` out of its staging copy
 
 0.1.1 - (10-28-26)
 ---

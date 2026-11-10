@@ -23,7 +23,7 @@ e2e/lint.sh                                         # markdown checks
 
 A spec that restarts the gateway, such as `platform/postgres-backend`, sets `// @restarts gateway`. The run then adds `compose.e2e-restart.yaml`: a pause container holds the network namespace and the gateways join it, so Playwright keeps its network when the gateway container restarts.
 
-The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`.
+The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`. A custom lab keeps these in its own folder instead: `custom-labs/<name>/.work/run/` (outcome, Playwright JSON, final `config.yaml`) and `custom-labs/<name>/.work/pw-results/`.
 
 `--skip <id>` (repeatable) records a lab as `SKIP (declined)` without running it, for example `e2e/run-e2e.sh --track llm --skip llm/connect-anthropic`. An id the run does not cover exits 64.
 
@@ -38,7 +38,7 @@ e2e/run-e2e.sh --learn <name> --restart            # restart the gateway; the ne
 e2e/run-e2e.sh --learn <name> --stop               # save config.after.yaml and remove the project
 ```
 
-The project uses the restart override, so its namespace container is `agw-e2e-learn-netns-1`. Files go to `e2e/.work/adapt/<name>/`. A spec run never counts `agw-e2e-learn` as its own leftover; `detect-env.sh` still lists it.
+The project uses the restart override, so its namespace container is `agw-e2e-learn-netns-1`. Files go to `custom-labs/<name>/.work/learn/`. A spec run never counts `agw-e2e-learn` as its own leftover; `detect-env.sh` still lists it.
 
 ## Fixtures
 

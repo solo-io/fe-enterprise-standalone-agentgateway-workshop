@@ -89,7 +89,7 @@ Codex starts MCP servers when it starts, so in adapt's learning phase restart Co
 ## Output
 
 - Track reports: `reports/<YYYYMMDD-HHMMSS>-standalone-<track>.md` and `.json`, time in UTC, with `-1`, `-2` appended when the name exists. `reports/` is gitignored. A paid lab the user declined shows as `SKIP (declined)`.
-- Custom labs: `custom-labs/<name>/` with `<name>.md`, `<name>.spec.ts`, `images/`, `CHANGES.md`, and reports in `custom-labs/<name>/reports/`. `custom-labs/` is gitignored.
-- Per-run work files: `e2e/.work/<id with / as ->/` (`outcome`, `playwright.json`, and `gateway.log` on a failure), and `e2e/.work/custom/<name>/` for a custom lab. Failure screenshots and traces: `e2e/.last/pw-results/<compose project>/`.
+- Custom labs: `custom-labs/<name>/` with `<name>.md`, `<name>.spec.ts`, `images/`, `CHANGES.md`, and reports in `custom-labs/<name>/reports/`. `custom-labs/` is gitignored. Everything the harness writes for a custom lab stays in its folder, under `custom-labs/<name>/.work/`: the learning phase in `learn/`, the last run in `run/`, failure screenshots and traces in `pw-results/`. Deleting `custom-labs/<name>/` removes all of it.
+- Per-run work files for a shipped lab: `e2e/.work/<id with / as ->/` (`outcome`, `playwright.json`, and `gateway.log` on a failure). Failure screenshots and traces: `e2e/.last/pw-results/<compose project>/`.
 - Session log: `e2e/.work/session.jsonl`. Environment: `e2e/.work/env.json`.
-- Adapt's learning phase: `e2e/.work/adapt/<name>/` (`config.before.yaml`, `config.after.yaml`, `ui-notes.md`). Contribute: `e2e/.work/contribute/<name>/`.
+- Adapt's learning phase: `custom-labs/<name>/.work/learn/` (`config.before.yaml`, `config.after.yaml`, `ui-notes.md`). Contribute: `e2e/.work/contribute/<name>/`, which stays after the lab folder is deleted, since its manifest tracks the repo changes.

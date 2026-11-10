@@ -25,7 +25,7 @@ printf 'config:\n  adminAddr: 0.0.0.0:15000\nllm:\n  port: 4000\n' > "$REPO/setu
 : > "$REPO/setup/data.db"
 has() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 log_has() { grep -qF -- "$1" "$TMP/docker.log"; }
-A="$REPO/work/adapt/demo"
+A="$REPO/custom-labs/demo/.work/learn"
 export STUB_COMPOSE_LS='[]' STUB_PW_RC=0
 unset STUB_NETNS_DIR
 
@@ -37,6 +37,7 @@ check "start: the given profile" $(grep -E 'compose .* up ' "$TMP/docker.log" | 
 check "start: waits for the gateway inside the netns" $(grep '^run ' "$TMP/docker.log" | grep -F -- '--network container:agw-e2e-learn-netns-1' | grep -qF 'localhost:15000/api/runtime' && echo 0 || echo 1)
 check "start: config.before.yaml is the base fixture" $(cmp -s "$A/config.before.yaml" "$REPO/setup/config.yaml" && echo 0 || echo 1)
 check "start: project dir is a setup copy without data.db" $([ -f "$A/project/docker-compose.yml" ] && [ ! -e "$A/project/data.db" ] && echo 0 || echo 1)
+check "start: files in the lab folder, nothing under work/adapt" $([ -d "$A/project" ] && [ ! -e "$REPO/work/adapt" ] && echo 0 || echo 1)
 check "start: leaves it running (no down)" $(grep -qE 'compose .* down ' "$TMP/docker.log" && echo 1 || echo 0)
 check "start: no key check" $(has "ANTHROPIC_API_KEY" && echo 1 || echo 0)
 
@@ -46,7 +47,7 @@ check "start without --profiles: no --profile flag" $([ "$RC" -eq 0 ] && ! grep 
 run_runner "$REPO" --learn demo --profiles mock-llm,nope
 check "start: unknown profile exits 64 before anything starts" $([ "$RC" -eq 64 ] && has "unknown compose profile: 'nope'" && [ ! -s "$TMP/docker.log" ] && echo 0 || echo 1)
 
-STUB_COMPOSE_LS='[{"Name":"agw-e2e-learn"}]' STUB_NETNS_DIR="$REPO/work/adapt/other/project" run_runner "$REPO" --learn demo
+STUB_COMPOSE_LS='[{"Name":"agw-e2e-learn"}]' STUB_NETNS_DIR="$REPO/custom-labs/other/.work/learn/project" run_runner "$REPO" --learn demo
 check "start: refuses when agw-e2e-learn exists and names the stop command" $([ "$RC" -eq 1 ] && has "already exists" && has "e2e/run-e2e.sh --learn other --stop" && ! grep -qE 'compose .* up ' "$TMP/docker.log" && echo 0 || echo 1)
 
 STUB_UP_RC=1 run_runner "$REPO" --learn demo
@@ -80,7 +81,7 @@ check "diff: config.after.yaml is the gateway's config" $(cmp -s "$A/config.afte
 printf 'config:\n  adminAddr: 0.0.0.0:15000\nllm:\n  port: 4001\n' > "$A/project/config.yaml"
 run_runner "$REPO" --learn demo --diff
 check "diff: a changed value prints old -> new" $([ "$RC" -eq 2 ] && has '~ llm.port: 4000 -> 4001' && echo 0 || echo 1)
-STUB_NETNS_DIR="$REPO/work/adapt/other/project" run_runner "$REPO" --learn demo --diff
+STUB_NETNS_DIR="$REPO/custom-labs/other/.work/learn/project" run_runner "$REPO" --learn demo --diff
 check "diff: refuses a gateway started for another name" $([ "$RC" -eq 1 ] && has "started for another name" && echo 0 || echo 1)
 run_runner "$REPO" --learn nothere --diff
 check "diff: no gateway for the name exits 1" $([ "$RC" -eq 1 ] && has "no learning gateway for nothere" && echo 0 || echo 1)

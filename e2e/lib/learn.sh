@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # The learning gateway for adapt's learning phase: a throwaway gateway that the Playwright MCP server
 # (playwright-mcp.sh) drives, so the user's own gateway on host port 15000 is never touched.
-# run-e2e.sh sources this file for --learn and calls learn_main; it needs ROOT, WORK_ROOT, E2E_DOCKER, PW_IMAGE,
+# run-e2e.sh sources this file for --learn and calls learn_main; it needs ROOT, CUSTOM_ROOT, E2E_DOCKER, PW_IMAGE,
 # need_env, fixture_file and list_e2e_projects from run-e2e.sh and keys.sh.
 #
 #   --learn <name> [--profiles <p1,p2>]  start: the base fixture and the helper profiles, as a spec run starts them,
@@ -15,8 +15,9 @@
 #
 # The project is always agw-e2e-learn with compose.e2e-restart.yaml, so the pause container is agw-e2e-learn-netns-1,
 # the container playwright-mcp.sh joins. Only one learning gateway runs at a time.
-# Files: e2e/.work/adapt/<name>/config.before.yaml, config.after.yaml, profiles, and project/ (the Compose project
-# dir: a copy of setup/ with the gateway's live config.yaml; --stop removes it, since it holds a copy of setup/.env).
+# Files: custom-labs/<name>/.work/learn/config.before.yaml, config.after.yaml, profiles, and project/ (the Compose
+# project dir: a copy of setup/ with the gateway's live config.yaml; --stop removes it, since it holds a copy of
+# setup/.env). They live in the custom lab's folder, so deleting custom-labs/<name>/ removes them too.
 
 LEARN_PROJECT=agw-e2e-learn
 LEARN_NETNS="$LEARN_PROJECT-netns-1"
@@ -38,13 +39,16 @@ learn_owner_dir() {
   "$E2E_DOCKER" inspect -f '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$LEARN_NETNS" 2>/dev/null || true
 }
 
+# learn_owner_name <project dir>: the learning name of a project dir, custom-labs/<name>/.work/learn/project.
+learn_owner_name() { basename "$(dirname "$(dirname "$(dirname "$1")")")"; }
+
 # learn_check_owner: refuses (exit 1) when agw-e2e-learn was started for another name.
 learn_check_owner() {
   local owner
   owner=$(learn_owner_dir)
   [ -z "$owner" ] || [ "$owner" = "$LEARN_DIR/project" ] && return 0
   echo "$LEARN_PROJECT was started for another name ($owner), not $LEARN_NAME" >&2
-  echo "use: e2e/run-e2e.sh --learn $(basename "$(dirname "$owner")") --diff|--restart|--stop" >&2
+  echo "use: e2e/run-e2e.sh --learn $(learn_owner_name "$owner") --diff|--restart|--stop" >&2
   exit 1
 }
 
@@ -84,7 +88,7 @@ learn_start() {
   if printf '%s\n' "$projects" | grep -qxF "$LEARN_PROJECT"; then
     owner=$(learn_owner_dir)
     echo "a learning gateway already exists (Compose project $LEARN_PROJECT). Stop it first:" >&2
-    if [ -n "$owner" ]; then echo "  e2e/run-e2e.sh --learn $(basename "$(dirname "$owner")") --stop" >&2
+    if [ -n "$owner" ]; then echo "  e2e/run-e2e.sh --learn $(learn_owner_name "$owner") --stop" >&2
     else echo "  e2e/run-e2e.sh --learn <name> --stop   (or: docker compose -p $LEARN_PROJECT down -v)" >&2; fi
     exit 1
   fi
@@ -167,7 +171,7 @@ learn_stop() {
 # learn_main <name> <start|diff|restart|stop> <profiles>
 learn_main() {
   LEARN_NAME="$1"
-  LEARN_DIR="$WORK_ROOT/adapt/$1"
+  LEARN_DIR="$CUSTOM_ROOT/$1/.work/learn"
   case "$2" in
     start) learn_start "$3" ;;
     diff) learn_diff ;;

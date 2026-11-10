@@ -2,7 +2,8 @@
 //
 //   node lib/report.mjs build --work <dir> --env-json <file> --session <file> --out <dir>
 //        (--track <t> | --custom <name>) [--compose <file>] [--spec <file>] [--stamp <YYYYMMDD-HHMMSS>]
-//        [--planned <file>] [--projects-now <file>]
+//        [--planned <file>] [--projects-now <file>] [--run <dir>]
+//   --run: a custom lab's run dir, where run-e2e.sh writes it (custom-labs/<name>/.work/run); default <work>/custom/<name>.
 //   --planned: newline-separated ids the run was meant to cover; an id with no outcome is a NOT RUN row.
 //   --projects-now: agw-e2e-* projects Docker lists now, one per line; absent means "not recorded".
 //   node lib/report.mjs compare <a.json> <b.json>
@@ -122,7 +123,7 @@ function loadRuns(work, opts) {
     else runs.push(run);
   };
   if (opts.custom) {
-    keep(loadRun(join(work, 'custom', opts.custom), `custom/${opts.custom}`, since));
+    keep(loadRun(opts.run ?? join(work, 'custom', opts.custom), `custom/${opts.custom}`, since));
     return { runs, stale };
   }
   for (const name of listDirs(work)) {
@@ -272,7 +273,7 @@ function build(argv) {
   if (a.track && ![...TRACKS, 'all'].includes(a.track)) throw new Error(`unknown track: ${a.track}`);
   const custom = a.custom;
   const label = custom ? `custom-${custom}` : a.track;
-  const { runs, stale } = loadRuns(a.work, { track: a.track, custom });
+  const { runs, stale } = loadRuns(a.work, { track: a.track, custom, run: a.run });
   const results = runs.map(describe);
   const planned = custom ? null : readLines(a.planned);
   if (planned) {

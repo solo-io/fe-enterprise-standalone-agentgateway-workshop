@@ -15,6 +15,9 @@
 #
 # Each run leaves e2e/.work/<id with / as ->/ with outcome (one status line), playwright.json and,
 # on a failure, gateway.log. E2E_WORK_ROOT replaces e2e/.work; E2E_DOCKER replaces docker.
+# A custom lab keeps everything a run or a learning phase writes inside its own folder, so deleting
+# custom-labs/<name>/ removes all of it: custom-labs/<name>/.work/run/ (outcome, playwright.json, gateway.log,
+# config.yaml), .work/pw-results/ (failure screenshots and traces), .work/learn/ (--learn) and .work/shots-before/.
 #
 # <id> is a spec path under e2e/labs without the suffix: 001, llm/virtual-api-keys, mcp/openapi-to-mcp.
 # A spec declares what it needs in header comments:
@@ -134,7 +137,7 @@ if [ "$REPORT_ONLY" = 1 ]; then
   rargs=(build --work "$rwork" --env-json "$rwork/env.json" --session "$rwork/session.jsonl" --compose "$rbase/setup/docker-compose.yml")
   if [ -n "$CUSTOM" ]; then
     mkdir -p "$CUSTOM_ROOT/$CUSTOM/reports"
-    rargs+=(--out "$rcustom/$CUSTOM/reports" --custom "$CUSTOM" --spec "$rcustom/$CUSTOM/$CUSTOM.spec.ts")
+    rargs+=(--out "$rcustom/$CUSTOM/reports" --custom "$CUSTOM" --spec "$rcustom/$CUSTOM/$CUSTOM.spec.ts" --run "$rcustom/$CUSTOM/.work/run")
   else
     mkdir -p "$ROOT/reports"
     rargs+=(--out "$rbase/reports" --track "$TRACK")
@@ -187,8 +190,12 @@ run_one() {
   local custom=0 test_file="labs/$id.spec.ts" rel
   rel="$(echo "$id" | tr '/' '-')"
   local custom_env=() custom_mount=()
+  # Where this run's files go: e2e/.work/<rel> and e2e/.last/ for a shipped lab, the lab's own .work/ for a custom lab.
+  local rdir="$WORK_ROOT/$rel" cdir="/repo/e2e/.work/$rel" pw_out="" last_cfg="$ROOT/e2e/.last/$rel.yaml"
   if [ "$id" != "${id#custom/}" ]; then
     custom=1; spec="$CUSTOM_ROOT/${id#custom/}/${id#custom/}.spec.ts"; test_file="custom/${id#custom/}.spec.ts"; rel="$id"
+    rdir="$CUSTOM_ROOT/${id#custom/}/.work/run"; cdir="/repo/custom-labs/${id#custom/}/.work/run"
+    pw_out="/repo/custom-labs/${id#custom/}/.work/pw-results"; last_cfg="$rdir/config.yaml"
     custom_env=(-e PW_TEST_DIR=custom -e "LAB_IMAGES_DIR=/repo/custom-labs/${id#custom/}/images")
     [ -n "${E2E_CUSTOM_ROOT:-}" ] && custom_mount=(-v "$CUSTOM_ROOT:/repo/custom-labs")
   fi
@@ -208,6 +215,7 @@ run_one() {
   done
 
   local project="agw-e2e-$(echo "$id" | tr '/' '-' | tr -c 'a-z0-9-\n' '-')"
+  [ -n "$pw_out" ] || pw_out="/repo/e2e/.last/pw-results/$project"
   local work
   work=$(mktemp -d "${TMPDIR:-/tmp}/agw-e2e.XXXXXX")
 
@@ -221,7 +229,6 @@ run_one() {
     rm -rf "$work"
   }
   trap cleanup_one RETURN
-  local rdir="$WORK_ROOT/$rel"
   rm -rf "$rdir"; mkdir -p "$rdir"
   if [ $custom -eq 1 ]; then
     mkdir -p "$ROOT/e2e/custom"
@@ -262,7 +269,6 @@ run_one() {
 
   # The container runs the test, then summarises the Playwright JSON into $rdir/outcome-parse
   # (unless the host parses it, E2E_OUTCOME_ON_HOST=1), then compares the final config.
-  local cdir="/repo/e2e/.work/$rel"
   local json_in_container="$cdir/playwright.json"
   local parse_cmd="node lib/outcome.mjs '$json_in_container' > '$cdir/outcome-parse'"
   [ "${E2E_OUTCOME_ON_HOST:-0}" = 1 ] && parse_cmd=true
@@ -272,7 +278,7 @@ run_one() {
     ${custom_env[@]+"${custom_env[@]}"} \
     -e UPDATE_SCREENSHOTS="$UPDATE" -e HAS_ANTHROPIC="$HAS_ANTHROPIC" -e HAS_AWS="$HAS_AWS" -e HAS_BEDROCK_KEY="$HAS_BEDROCK_KEY" -e HAS_TYPESAFE="$HAS_TYPESAFE" \
     -e HAS_CLAUDE_OAUTH="$HAS_CLAUDE_OAUTH" -e CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" -e LAB_FIXTURE="$fixture" \
-    -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="/repo/e2e/.last/pw-results/$project" \
+    -e COMPOSE_PROJECT="$project" -e NPM_CONFIG_UPDATE_NOTIFIER=false -e PW_OUTPUT_DIR="$pw_out" \
     -e PLAYWRIGHT_JSON_OUTPUT_NAME="$json_in_container" \
     "$PW_IMAGE" bash -c "
       for i in \$(seq 1 60); do curl -sf localhost:15000/api/runtime >/dev/null && break; sleep 1; done
@@ -284,8 +290,8 @@ run_one() {
   local rc=$?
   set -e
   # Keep the final config for writing fixtures and debugging.
-  mkdir -p "$ROOT/e2e/.last"
-  cp "$work/config.yaml" "$ROOT/e2e/.last/$(echo "$id" | tr '/' '-').yaml"
+  mkdir -p "$(dirname "$last_cfg")"
+  cp "$work/config.yaml" "$last_cfg"
   if [ $rc -ne 0 ]; then
     "$E2E_DOCKER" logs "$gw" > "$rdir/gateway.log" 2>&1 || true
     echo "--- gateway log (last 40 lines)"
@@ -376,6 +382,8 @@ if [ "$LIST" = 1 ]; then
 fi
 
 if [ -n "$LEARN" ]; then
+  # The learning files live in custom-labs/<name>/.work/learn/; an absolute root, so Compose and Docker get absolute paths.
+  mkdir -p "$CUSTOM_ROOT" && CUSTOM_ROOT="$(cd "$CUSTOM_ROOT" && pwd)"
   # shellcheck source=lib/learn.sh
   source "$ROOT/e2e/lib/learn.sh"
   learn_main "$LEARN" "$LEARN_ACTION" "$LEARN_PROFILES"
@@ -418,7 +426,7 @@ elif [ -n "$CUSTOM" ]; then
   trap custom_exit EXIT
   if [ "$UPDATE" = 1 ]; then
     mkdir -p "$IMAGES"
-    SHOTS_BAK="$WORK_ROOT/custom-shots-before/$CUSTOM"
+    SHOTS_BAK="$CUSTOM_ROOT/$CUSTOM/.work/shots-before"
     if [ -d "$SHOTS_BAK" ]; then
       # A run that was killed before it could restore left these; they are the last good screenshots.
       find "$IMAGES" -maxdepth 1 -name '*.png' -delete

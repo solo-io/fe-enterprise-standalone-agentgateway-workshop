@@ -104,6 +104,17 @@ test('custom build has a requirements table', () => withTmp((out) => {
   assert.ok(!text.includes('mcp only decision'));
 }));
 
+test('custom build reads the run from --run, the lab folder', () => withTmp((out) => {
+  const spec = join(here, 'fixtures/custom-labs/demo/demo.spec.ts');
+  const run = join(out, 'demo-lab', '.work', 'run');
+  cpSync(join(fx, 'work-a', 'custom', 'demo'), run, { recursive: true });
+  const elsewhere = join(out, 'empty-work');
+  const [md] = build(['--custom', 'demo', '--spec', spec, '--work', elsewhere, '--run', run], out);
+  const text = readFileSync(md, 'utf8');
+  assert.match(text, /\| R1 \| The first page loads \| \[R1\] alice is allowed \| PASS \|/);
+  assert.ok(!text.includes('No outcomes found'));
+}));
+
 test('a requirement with no test is NOT RUN', () => withTmp((out) => {
   const spec = join(fx, 'r9.spec.ts');
   const [md] = build(['--custom', 'other', '--spec', spec], out);
