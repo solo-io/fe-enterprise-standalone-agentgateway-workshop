@@ -315,9 +315,11 @@ leftover_check() {
 }
 
 # lab_path <id>: the lab's markdown file relative to the repo root.
+# The lab a spec documents: its first line is "// <lab>.md" (see e2e/lib/lab.ts labMarkdown).
 lab_path() {
-  if [ -f "$ROOT/labs/$1.md" ]; then echo "labs/$1.md"
-  else f=$(ls "$ROOT"/labs/"$1"-*.md 2>/dev/null | head -1); echo "labs/$(basename "${f:-$1.md}")"; fi
+  local first
+  first=$(head -1 "$ROOT/e2e/labs/$1.spec.ts" 2>/dev/null | sed -n 's|^// \([^ ]*\.md\).*|\1|p')
+  echo "${first:-labs/$1.md}"
 }
 
 if [ "$LIST" = 1 ]; then

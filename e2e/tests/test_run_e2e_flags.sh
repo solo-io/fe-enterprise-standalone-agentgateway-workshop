@@ -31,6 +31,7 @@ check "list names every llm spec once" $missing
 check "list has no mcp id" $(ids | grep -q '^mcp/' && echo 1 || echo 0)
 row=$(printf '\t')
 check "list data line has lab path and profiles" $(printf '%s\n' "$OUT" | grep -qF "llm/virtual-api-keys${row}labs/llm/virtual-api-keys.md${row}-" && echo 0 || echo 1)
+check "list reads the 001 lab path from the spec first line" $(printf '%s\n' "$OUT" | grep -qF "001${row}001-set-up-standalone-agentgateway.md${row}-" && echo 0 || echo 1)
 check "list prints key-check lines after the data" $(has "ANTHROPIC_API_KEY: not set" && echo 0 || echo 1)
 check "list starts nothing" $(grep -q 'compose.* up' "$TMP/docker.log" && echo 1 || echo 0)
 
