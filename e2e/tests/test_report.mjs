@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -146,3 +146,39 @@ test('compare says no changes', () => {
 test('a bad command exits 64', () => {
   assert.equal(spawnSync('node', [script, 'nope']).status, 64);
 });
+
+test('events written by session-log.sh with the - lab key reach Decisions', () => withTmp((out) => {
+  const root = mkdtempSync(join(tmpdir(), 'wr-'));
+  try {
+    const env = { ...process.env, E2E_WORK_ROOT: root };
+    const log = join(here, '../lib/session-log.sh');
+    execFileSync('bash', [log, 'add', 'decision', '-', 'Global one from the writer'], { env });
+    execFileSync('bash', [log, 'add', 'decision', '-', 'Global two from the writer'], { env });
+    const stdout = execFileSync('node', [script, 'build', '--work', join(fx, 'work-a'), '--env-json', join(fx, 'env.json'),
+      '--session', join(root, 'session.jsonl'), '--out', out, '--track', 'llm', '--stamp', '20261109-101500'], { encoding: 'utf8' });
+    const dec = section(readFileSync(stdout.trim().split('\n')[0], 'utf8'), 'Decisions');
+    assert.match(dec, /Global one from the writer/);
+    assert.match(dec, /Global two from the writer/);
+  } finally { rmSync(root, { recursive: true }); }
+}));
+
+test('planned ids with no outcome render as NOT RUN rows', () => withTmp((out) => {
+  const planned = join(out, 'planned.txt');
+  writeFileSync(planned, '001\nllm/x\nllm/never-ran\n');
+  const text = readFileSync(build(['--track', 'llm', '--planned', planned], out)[0], 'utf8');
+  const rows = text.split('\n').filter((l) => l.includes('NOT RUN'));
+  assert.deepEqual(rows, ['| llm/never-ran | NOT RUN | - | no outcome recorded |']);
+}));
+
+test('projects-now empty with env.json listing one shows both labels', () => withTmp((out) => {
+  const now = join(out, 'now.txt');
+  writeFileSync(now, '');
+  const left = section(readFileSync(build(['--track', 'llm', '--projects-now', now], out)[0], 'utf8'), 'Leftovers');
+  assert.match(left, /at session start: agw-e2e-llm-cfg/);
+  assert.match(left, /now: none/);
+}));
+
+test('projects-now absent says not recorded', () => withTmp((out) => {
+  const left = section(readFileSync(build(['--track', 'llm'], out)[0], 'utf8'), 'Leftovers');
+  assert.match(left, /now: not recorded/);
+}));

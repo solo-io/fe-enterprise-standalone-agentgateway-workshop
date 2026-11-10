@@ -64,6 +64,37 @@ if [ -n "$CUSTOM" ]; then
   fi
 elif [ "$LINT" = 1 ]; then usage
 fi
+# The agw-e2e-* Compose projects Docker lists, running or not, one per line.
+list_e2e_projects() {
+  "$E2E_DOCKER" compose ls -a --format json 2>/dev/null | grep -oE '"Name" *: *"agw-e2e-[^"]*"' | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/' || true
+}
+
+# Candidate ids for a track, in order and with repeats: intro labs, README links, then every spec by name.
+candidate_ids() {
+  case "$1" in
+    llm) printf '%s\n' 001 llm/connect-llm-providers ;;
+    mcp) printf '%s\n' mcp/connect-remote-mcp-server ;;
+    platform) ;;
+    *) printf '%s\n' 001 llm/connect-llm-providers mcp/connect-remote-mcp-server ;;
+  esac
+  grep -oE '\]\(labs/[a-z0-9-]+/[a-z0-9-]+\.md\)' "$ROOT/README.md" | sed -E 's/^\]\(labs\/(.*)\.md\)$/\1/'
+  find "$ROOT/e2e/labs" -name '*.spec.ts' | sort | sed -E "s|^$ROOT/e2e/labs/||; s|\.spec\.ts\$||"
+}
+
+# The ids of the specs for a track, one per line: the intro labs of the track, then README order,
+# then any other spec by name. Specs without a file are dropped.
+order_ids() {
+  local track="$1" seen=$'\n' id
+  while IFS= read -r id; do
+    [ "$id" = smoke ] && continue
+    [ "$track" = all ] || case "$id" in "$track"/*) ;; 001) [ "$track" = llm ] || continue ;; *) continue ;; esac
+    [ -f "$ROOT/e2e/labs/$id.spec.ts" ] || continue
+    case "$seen" in *$'\n'"$id"$'\n'*) continue ;; esac
+    seen="$seen$id"$'\n'
+    echo "$id"
+  done < <(candidate_ids "$track")
+}
+
 if [ "$REPORT_ONLY" = 1 ]; then
   [ -z "$TARGET" ] && [ "$LIST" = 0 ] && { [ -n "$TRACK" ] || [ -n "$CUSTOM" ]; } || usage
   RWORK="${E2E_WORK_ROOT:-$ROOT/e2e/.work}"
@@ -84,7 +115,20 @@ if [ "$REPORT_ONLY" = 1 ]; then
   else
     mkdir -p "$ROOT/reports"
     rargs+=(--out "$rbase/reports" --track "$TRACK")
+    # The ids the track covers, so a lab that never ran still gets a row.
+    mkdir -p "$RWORK"
+    order_ids "$TRACK" > "$RWORK/planned-$TRACK.txt"
+    rargs+=(--planned "$rwork/planned-$TRACK.txt")
   fi
+  # Re-list the projects now: the session-start list in env.json can be out of date. A failed listing records nothing.
+  mkdir -p "$RWORK"
+  if "$E2E_DOCKER" compose ls -a --format json >"$RWORK/projects-now.raw" 2>/dev/null; then
+    { grep -oE '"Name" *: *"agw-e2e-[^"]*"' "$RWORK/projects-now.raw" | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/'; } > "$RWORK/projects-now.txt" || true
+    rargs+=(--projects-now "$rwork/projects-now.txt")
+  else
+    rm -f "$RWORK/projects-now.txt"
+  fi
+  rm -f "$RWORK/projects-now.raw"
   exec "${runner[@]}" "$rbase/e2e/lib/report.mjs" "${rargs[@]}"
 fi
 if [ "$LIST" = 0 ] && [ -z "$TARGET" ] && [ -z "$TRACK" ] && [ -z "$CUSTOM" ]; then usage; fi
@@ -175,8 +219,18 @@ run_one() {
   fi
 
   echo "=== $id (fixture: $fixture, expect: $expect, profiles: ${profiles:-none})"
+  local up_rc=0
   env UID="$(id -u)" GID="$(id -g)" "$E2E_DOCKER" compose -p "$project" --project-directory "$work" \
-    "${files[@]}" ${profile_args[@]+"${profile_args[@]}"} --progress quiet up -d --quiet-pull
+    "${files[@]}" ${profile_args[@]+"${profile_args[@]}"} --progress quiet up -d --quiet-pull || up_rc=$?
+  if [ $up_rc -ne 0 ]; then
+    echo "compose up failed (exit $up_rc)" >&2
+    cleanup_one
+    trap - RETURN
+    leftover_check "$project" "$before"
+    echo "status=fail rc=1 duration=$((SECONDS - started)) tests=0 skipped=0 fixture=$fixture expect=$expect profiles=${profiles:--} leftover=$LEFTOVER_N reason=compose up failed" > "$rdir/outcome"
+    echo "=== $id: FAIL (rc=1)"
+    return 1
+  fi
 
   local gw net
   gw=$("$E2E_DOCKER" compose -p "$project" --project-directory "$work" "${files[@]}" ps -q agentgateway)
@@ -242,11 +296,6 @@ run_one() {
   return $final
 }
 
-# The agw-e2e-* Compose projects Docker lists, running or not, one per line.
-list_e2e_projects() {
-  "$E2E_DOCKER" compose ls -a --format json 2>/dev/null | grep -oE '"Name" *: *"agw-e2e-[^"]*"' | sed -E 's/.*"(agw-e2e-[^"]*)"/\1/' || true
-}
-
 # leftover_check <own project> <projects listed before the run>: lists again after cleanup.
 # A project still listed that is this run's own, or was not there before, prints LEFTOVER PROJECT and
 # counts in LEFTOVER_N. A project listed before and after, not ours, prints PRE-EXISTING PROJECT and does not count.
@@ -263,32 +312,6 @@ leftover_check() {
       echo "PRE-EXISTING PROJECT: $name"
     fi
   done < <(list_e2e_projects)
-}
-
-# Candidate ids for a track, in order and with repeats: intro labs, README links, then every spec by name.
-candidate_ids() {
-  case "$1" in
-    llm) printf '%s\n' 001 llm/connect-llm-providers ;;
-    mcp) printf '%s\n' mcp/connect-remote-mcp-server ;;
-    platform) ;;
-    *) printf '%s\n' 001 llm/connect-llm-providers mcp/connect-remote-mcp-server ;;
-  esac
-  grep -oE '\]\(labs/[a-z0-9-]+/[a-z0-9-]+\.md\)' "$ROOT/README.md" | sed -E 's/^\]\(labs\/(.*)\.md\)$/\1/'
-  find "$ROOT/e2e/labs" -name '*.spec.ts' | sort | sed -E "s|^$ROOT/e2e/labs/||; s|\.spec\.ts\$||"
-}
-
-# The ids of the specs for a track, one per line: the intro labs of the track, then README order,
-# then any other spec by name. Specs without a file are dropped.
-order_ids() {
-  local track="$1" seen=$'\n' id
-  while IFS= read -r id; do
-    [ "$id" = smoke ] && continue
-    [ "$track" = all ] || case "$id" in "$track"/*) ;; 001) [ "$track" = llm ] || continue ;; *) continue ;; esac
-    [ -f "$ROOT/e2e/labs/$id.spec.ts" ] || continue
-    case "$seen" in *$'\n'"$id"$'\n'*) continue ;; esac
-    seen="$seen$id"$'\n'
-    echo "$id"
-  done < <(candidate_ids "$track")
 }
 
 # lab_path <id>: the lab's markdown file relative to the repo root.
@@ -325,7 +348,7 @@ elif [ -n "$CUSTOM" ]; then
     mkdir -p "$CUSTOM_ROOT/$CUSTOM/images"
     find "$CUSTOM_ROOT/$CUSTOM/images" -maxdepth 1 -name '*.png' -delete
   fi
-  run_one "custom/$CUSTOM"
+  run_one "custom/$CUSTOM" || exit $?
 else
-  run_one "$TARGET"
+  run_one "$TARGET" || exit $?
 fi

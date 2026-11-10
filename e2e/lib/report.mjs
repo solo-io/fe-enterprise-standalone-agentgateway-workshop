@@ -2,6 +2,9 @@
 //
 //   node lib/report.mjs build --work <dir> --env-json <file> --session <file> --out <dir>
 //        (--track <t> | --custom <name>) [--compose <file>] [--spec <file>] [--stamp <YYYYMMDD-HHMMSS>]
+//        [--planned <file>] [--projects-now <file>]
+//   --planned: newline-separated ids the run was meant to cover; an id with no outcome is a NOT RUN row.
+//   --projects-now: agw-e2e-* projects Docker lists now, one per line; absent means "not recorded".
 //   node lib/report.mjs compare <a.json> <b.json>
 //
 // build writes <stamp>-standalone-<track>.md/.json (or <stamp>-standalone-custom-<name>.md/.json) into --out and prints
@@ -81,6 +84,15 @@ function describe({ id, o, tests }) {
     leftover,
     notes: notes.join('; '),
   };
+}
+
+function notRun(id) {
+  return { lab: id, status: 'NOT RUN', status_text: 'NOT RUN', duration: 0, tests: 0, skipped: 0, leftover: 0, notes: 'no outcome recorded' };
+}
+
+function readLines(file) {
+  const text = file ? readText(file) : null;
+  return text === null ? null : text.split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
 function loadRuns(work, opts) {
@@ -179,7 +191,7 @@ function render(rep) {
   }
   L.push('', '## Results', '');
   if (rep.results.length === 0) L.push('No outcomes found in the work dir.');
-  else L.push(...table(['Lab', 'Status', 'Duration', 'Notes'], rep.results.map((r) => [r.lab, r.status_text, `${r.duration}s`, r.notes])));
+  else L.push(...table(['Lab', 'Status', 'Duration', 'Notes'], rep.results.map((r) => [r.lab, r.status_text, r.status === 'NOT RUN' ? '-' : `${r.duration}s`, r.notes])));
   if (rep.requirements) {
     L.push('', '## Requirements', '');
     if (rep.requirements.length === 0) L.push('No @req lines found in the spec.');
@@ -205,7 +217,9 @@ function render(rep) {
   L.push('', '## Leftovers', '');
   const left = rep.results.filter((r) => r.leftover > 0).map((r) => `- ${r.lab}: ${r.leftover} leftover project(s)`);
   if (rep.leftover_projects === null) left.push('- pre-existing projects: not recorded');
-  else for (const p of rep.leftover_projects) left.push(`- project still listed: ${p}`);
+  else left.push(`- projects at session start: ${rep.leftover_projects.join(', ') || 'none'}`);
+  if (rep.projects_now === null) left.push('- projects still listed now: not recorded');
+  else left.push(`- projects still listed now: ${rep.projects_now.join(', ') || 'none'}`);
   L.push(...(left.length ? left : ['None.']));
   return L.join('\n') + '\n';
 }
@@ -238,10 +252,17 @@ function build(argv) {
   const label = custom ? `custom-${custom}` : a.track;
   const runs = loadRuns(a.work, { track: a.track, custom });
   const results = runs.map(describe);
+  const planned = custom ? null : readLines(a.planned);
+  if (planned) {
+    const have = new Set(results.map((r) => r.lab));
+    for (const id of planned) if (!have.has(id)) { results.push(notRun(id)); have.add(id); }
+    const at = new Map(planned.map((id, i) => [id, i]));
+    results.sort((x, y) => (at.get(x.lab) ?? 1e9) - (at.get(y.lab) ?? 1e9) || x.lab.localeCompare(y.lab));
+  }
   const env = environment(a['env-json'], a.compose);
   const events = readEvents(a.session);
   const ids = new Set(runs.map((r) => r.id));
-  const mine = events === null ? null : events.filter((ev) => ev.lab === '-' || ids.has(ev.lab) || (custom && ev.lab === custom));
+  const mine = events === null ? null : events.filter((ev) => !ev.lab || ev.lab === '-' || ids.has(ev.lab) || (custom && ev.lab === custom));
   const rep = {
     title: custom ? `Agentgateway standalone custom lab report: ${custom}` : `Agentgateway standalone ${a.track} report`,
     generated: new Date().toISOString(),
@@ -252,6 +273,7 @@ function build(argv) {
     decisions: mine === null ? null : mine.filter((ev) => ['decision', 'deviation', 'question', 'answer'].includes(ev.kind)),
     failures: mine === null ? null : mine.filter((ev) => ev.kind === 'failure'),
     leftover_projects: env.leftover_projects ?? null,
+    projects_now: readLines(a['projects-now']),
   };
   if (custom) {
     rep.requirements = requirements(a.spec ?? join(REPO, 'custom-labs', custom, `${custom}.spec.ts`), runs[0]?.tests ?? []);

@@ -8,6 +8,7 @@
 #   compose ls        first call per run: $STUB_COMPOSE_LS_BEFORE, later calls: $STUB_COMPOSE_LS_AFTER,
 #                     each falling back to $STUB_COMPOSE_LS (default [])
 #   compose ps -q     a fake container id
+#   compose up        exits $STUB_UP_RC (default 0)
 #   run               writes a canned playwright.json to the host side of the -v that holds the
 #                     JSON output path, then exits $STUB_PW_RC (default 0); $STUB_PW_JSON names the canned file
 #   logs              a line of fake gateway log
@@ -33,6 +34,7 @@ case "$1" in
         if [ "$n" -eq 0 ]; then echo "${STUB_COMPOSE_LS_BEFORE:-${STUB_COMPOSE_LS:-[]}}"
         else echo "${STUB_COMPOSE_LS_AFTER:-${STUB_COMPOSE_LS:-[]}}"; fi ;;
       *" ps -q "*) echo fakecontainerid ;;
+      *" up "*) exit "${STUB_UP_RC:-0}" ;;
     esac ;;
   logs) echo "fake gateway log line" ;;
   run)

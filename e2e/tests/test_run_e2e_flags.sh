@@ -99,6 +99,13 @@ STUB_COMPOSE_LS_BEFORE='[{"Name":"agw-e2e-old"}]' STUB_COMPOSE_LS_AFTER='[{"Name
 check "old plus own: only own is leftover" $(has "LEFTOVER PROJECT: agw-e2e-llm-virtual-api-keys" && ! has "LEFTOVER PROJECT: agw-e2e-old" && has "PRE-EXISTING PROJECT: agw-e2e-old" && outcome llm-virtual-api-keys | grep -q 'leftover=1' && echo 0 || echo 1)
 check "old plus own: exit 1" $([ "$RC" -eq 1 ] && echo 0 || echo 1)
 
+# compose up fails: outcome written, project torn down, exit 1
+STUB_UP_RC=1 run_runner "$REPO" llm/virtual-api-keys
+check "compose up failure: outcome says compose up failed" $(outcome llm-virtual-api-keys | grep -q '^status=fail rc=1 .*reason=compose up failed$' && echo 0 || echo 1)
+check "compose up failure: down was recorded" $(grep -E 'compose .* down ' "$TMP/docker.log" | grep -q 'agw-e2e-llm-virtual-api-keys' && echo 0 || echo 1)
+check "compose up failure: script exits 1" $([ "$RC" -eq 1 ] && echo 0 || echo 1)
+check "compose up failure: no test container ran" $(grep -q '^run ' "$TMP/docker.log" && echo 1 || echo 0)
+
 # a failing title that looks like outcome fields must not corrupt the counts
 STUB_PW_RC=1 STUB_PW_JSON="$TMP/fixtures-pw/trap.json" run_runner "$REPO" llm/virtual-api-keys
 check "trap title: counts intact" $(outcome llm-virtual-api-keys | grep -q ' tests=2 skipped=0 ' && echo 0 || echo 1)
@@ -148,14 +155,19 @@ printf '%s\n' "$*" >> "$NODE_LOG"
 STUB
 chmod +x "$TMP/nodestub/node"
 report_only() {
-  : > "$TMP/node.log"; RC=0
-  OUT=$(cd "$REPO" && env PATH="$TMP/nodestub:$TMP/stubs:$PATH" NODE_LOG="$TMP/node.log" E2E_DOCKER="$TMP/stubs/docker" \
+  : > "$TMP/node.log"; RC=0; rm -f "$TMP/fixtures-pw/lscount"
+  OUT=$(cd "$REPO" && env PATH="$TMP/nodestub:$TMP/stubs:$PATH" NODE_LOG="$TMP/node.log" E2E_DOCKER="$TMP/stubs/docker" DOCKER_LOG="$TMP/docker.log" TMP_PW="$TMP/fixtures-pw" \
     E2E_WORK_ROOT="$REPO/work" bash e2e/run-e2e.sh --report-only "$@" 2>&1) || RC=$?
 }
 report_only --track llm
 check "report-only track: build call with track and reports dir" $([ "$RC" -eq 0 ] && grep -q 'report.mjs build' "$TMP/node.log" && grep -q -- '--track llm' "$TMP/node.log" && grep -qF -- "--out $REPO/reports" "$TMP/node.log" && echo 0 || echo 1)
 check "report-only track: work, env, session paths" $(grep -qF -- "--work $REPO/work --env-json $REPO/work/env.json --session $REPO/work/session.jsonl" "$TMP/node.log" && echo 0 || echo 1)
+check "report-only track: planned file lists the track ids" $(grep -qF -- "--planned $REPO/work/planned-llm.txt" "$TMP/node.log" && [ "$(sed -n 1p "$REPO/work/planned-llm.txt")" = 001 ] && grep -qx 'llm/virtual-api-keys' "$REPO/work/planned-llm.txt" && echo 0 || echo 1)
+check "report-only track: projects-now passed" $(grep -qF -- "--projects-now $REPO/work/projects-now.txt" "$TMP/node.log" && [ -f "$REPO/work/projects-now.txt" ] && echo 0 || echo 1)
+STUB_COMPOSE_LS='[{"Name":"agw-e2e-llm-x"},{"Name":"other"}]' report_only --track llm
+check "report-only track: projects-now holds only agw-e2e-* names" $([ "$(cat "$REPO/work/projects-now.txt")" = agw-e2e-llm-x ] && echo 0 || echo 1)
 report_only --custom demo
+check "report-only custom: no planned file" $(grep -q -- '--planned' "$TMP/node.log" && echo 1 || echo 0)
 check "report-only custom: build call with custom name, reports dir and spec" $([ "$RC" -eq 0 ] && grep -q -- '--custom demo' "$TMP/node.log" && grep -qF -- "--out $REPO/custom-labs/demo/reports" "$TMP/node.log" && grep -qF -- "--spec $REPO/custom-labs/demo/demo.spec.ts" "$TMP/node.log" && echo 0 || echo 1)
 report_only
 check "report-only with no target is a usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
