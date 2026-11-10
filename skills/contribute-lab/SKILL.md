@@ -227,7 +227,7 @@ node e2e/lib/promote.mjs <name> --record CHANGELOG.md
 
 ## 4. Conform
 
-Work through `style-guide.md` and its "Adding a lab" list. Change the lab only to conform it; never redesign its content. Edit only the promoted files and the files you recorded.
+Work through `style-guide.md` and its "Adding a lab" list. Change the lab only to conform it; never redesign its content. Edit only the promoted files and the files you recorded. Check the lab's prose, the CHANGELOG bullets, and `pr-body.md` against `skills/stop-slop/SKILL.md`.
 
 - README: add a row to the matching track's table in `README.md`, in the form `| [Lab Title](labs/<track>/<slug>.md) | <What you do> | <Needs> |`. In the LLM and MCP tracks, pick the sub-heading by topic, for example **Cost and limits** for a lab about rate limits or budgets. The platform track has one table. **Needs** names any key other than `OPENAI_API_KEY` and the helper profiles in code format, or stays empty.
 - The lab's **Before you start** links `../../001-set-up-standalone-agentgateway.md` and names every key and helper profile the lab uses.

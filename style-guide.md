@@ -82,7 +82,7 @@ Add only what the lab uses. Every lab's cleanup returns the config to `base`. Ma
 
 ## Prose
 
-- Follow the stop-slop rules: plain words, no filler, no em dashes, name the actor.
+- Follow `skills/stop-slop/SKILL.md`: plain words, no filler, no em dashes, name the actor.
 - Say what the reader does and what they will see. Explain why in one or two sentences where it helps.
 - Second person ("you").
 

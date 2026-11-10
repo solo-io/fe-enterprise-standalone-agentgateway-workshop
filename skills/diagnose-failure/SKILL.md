@@ -21,7 +21,7 @@ The harness has already finished the run and removed its Compose project. `<id>`
    e2e/lib/session-log.sh add failure <id> "<one-line explanation>"
    ```
 
-2. Explain in plain language what the UI did against what the lab expected: the page and control the test was on, what the screenshot shows, the error the gateway logged, and the most likely cause. A missing or rejected key, a provider outage, or a rate limit at the provider are common causes outside the lab. If the cause is a product question, you may ask `solo-knowledge` a generic question, following `skills/ask-the-docs/SKILL.md`. Never paste log lines, config, or screenshot text into that query.
+2. Explain in plain language, by `skills/stop-slop/SKILL.md`, what the UI did against what the lab expected: the page and control the test was on, what the screenshot shows, the error the gateway logged, and the most likely cause. A missing or rejected key, a provider outage, or a rate limit at the provider are common causes outside the lab. If the cause is a product question, you may ask `solo-knowledge` a generic question, following `skills/ask-the-docs/SKILL.md`. Never paste log lines, config, or screenshot text into that query.
 3. Offer exactly these options:
 
    - Retry the lab

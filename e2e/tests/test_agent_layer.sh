@@ -10,7 +10,7 @@ check() { # check <name> <condition-exit-code>
   else T_FAIL=$((T_FAIL+1)); printf 'FAIL %s\n' "$1"; fi
 }
 
-SKILLS="evaluate adapt-lab contribute-lab explain-lab diagnose-failure ask-the-docs detect-environment"
+SKILLS="evaluate adapt-lab contribute-lab explain-lab diagnose-failure ask-the-docs detect-environment stop-slop"
 COMMANDS="evaluate adapt-lab contribute-lab"
 
 # AGENTS.md

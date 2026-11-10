@@ -15,6 +15,8 @@ The harness runs Docker. Access to the Docker socket is root-equivalent on most 
 
 Before you state how a product feature behaves, ask the Solo docs server with a generic query, as `skills/ask-the-docs/SKILL.md` describes.
 
+Write all prose by `skills/stop-slop/SKILL.md`: what you tell the user, lab text, `CHANGES.md`, commit messages, and PR bodies.
+
 Labs that call a provider cost money. List them before a run starts.
 
 ## Outbound calls
@@ -62,6 +64,7 @@ In Claude Code, run `/evaluate`, `/adapt-lab`, or `/contribute-lab <name>` from 
 - `skills/detect-environment/SKILL.md`: check the workstation and read `e2e/.work/env.json`.
 - `skills/explain-lab/SKILL.md`: say what a lab proves before it runs.
 - `skills/diagnose-failure/SKILL.md`: what to do when a spec fails.
+- `skills/stop-slop/SKILL.md`: the rules for every piece of prose you write.
 - `skills/ask-the-docs/SKILL.md`: how to query the Solo docs server without sending anything about the user's gateway.
 
 ## Claude Code settings

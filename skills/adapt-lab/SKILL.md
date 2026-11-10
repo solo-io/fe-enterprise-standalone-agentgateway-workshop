@@ -219,7 +219,7 @@ Nothing needs removing: the throwaway gateways are gone, and the user's gateway 
 
 ## Writing the lab
 
-Follow `style-guide.md`. Write in second person, use no em dashes, no filler words, and no commentary about the lab itself.
+Follow `style-guide.md` and `skills/stop-slop/SKILL.md`. Write in second person, use no em dashes, no filler words, and no commentary about the lab itself.
 
 The skeleton, in this order:
 

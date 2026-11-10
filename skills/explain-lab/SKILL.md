@@ -12,4 +12,4 @@ Given a lab id such as `llm/virtual-api-keys` and its lab path from `e2e/run-e2e
 3. Say in three to five sentences what the user would click, on which UI pages, and what the lab proves. Use the user's own words for their goals if they gave any.
 4. Cite the lab path once so they can read it themselves, and name the screenshot folder `images/<track>/<slug>/` so they can see each step.
 
-Do not paste YAML, commands, or lab steps unless the user asks. If the lab calls a provider or needs a helper profile or another key, say so in the last sentence.
+Write the explanation by `skills/stop-slop/SKILL.md`. Do not paste YAML, commands, or lab steps unless the user asks. If the lab calls a provider or needs a helper profile or another key, say so in the last sentence.
