@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "solo-knowledge": {
+      "type": "http",
+      "url": "https://knowledge-base.soloio-field.com/mcp"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.84"]
+    }
+  }
+}
