@@ -1,5 +1,15 @@
 # Changelog
 
+0.1.2 - (11-9-26)
+---
+- Add an evaluation agent (Alpha): an AI agent (Claude Code or Codex) works the workshop on a throwaway gateway. `AGENTS.md` holds the rules and how to start; `skills/`, `.claude/commands/` and `.mcp.json` (the Solo docs server and a Playwright MCP limited to `http://localhost:15000`) back it; the README section `## Alpha: Evaluate with an agent` points at it
+  - `/evaluate`: runs the LLM, MCP or Platform track in order, explains each lab before it runs, stops on the first failure, cleans up, and writes a local report
+  - `/adapt-lab`: turns one or more shipped click-ops labs into a custom lab and Playwright spec under `custom-labs/<name>/` for the user's own requirements (extend, combine or reskin), regenerates its screenshots from the spec, proves it, and hands it off with a report
+  - `/contribute-lab`: promotes a custom lab that passed to a shipped lab, conforms it to the style guide, proves it as a shipped spec, scrubs it for leaks, commits it on a new version branch, and stops before the push
+- `e2e/`: the harness gains `--track`, `--list`, `--custom <name>` and `--report-only` in `run-e2e.sh`, environment and key detection, a session log, Markdown and JSON reports with `compare`, scrub and promote tools for custom labs, and lint checks that a lab's images match its spec's screenshots and every `@req` requirement has a test
+- `.gitignore`: `custom-labs/`, `reports/`, `e2e/.work/`, `e2e/custom/`
+- `images/platform/metrics-and-tracing/`: remove `08-explore-tempo`, `09-trace-search` and `10-trace-opened`, left over from the 0.0.4 renumbering
+
 0.1.1 - (10-28-26)
 ---
 - The three agentdesktop labs: add a component diagram (PNG) and a Mermaid sequence diagram to "Why this matters" that show where agentgateway sits between Claude Code, the identity provider and the model provider
