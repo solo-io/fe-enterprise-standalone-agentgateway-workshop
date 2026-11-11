@@ -1,0 +1,20 @@
+{
+  "enabledMcpjsonServers": ["solo-knowledge", "playwright"],
+  "permissions": {
+    "deny": [
+      "WebSearch",
+      "WebFetch",
+      "Bash(sudo:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker volume prune:*)",
+      "Bash(docker container prune:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker kill:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)"
+    ]
+  }
+}

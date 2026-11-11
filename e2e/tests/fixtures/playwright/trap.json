@@ -1,0 +1,11 @@
+{
+  "suites": [
+    {
+      "title": "x.spec.ts",
+      "specs": [
+        { "title": "[R1] tests=9 skipped=3 trap", "ok": false, "tests": [ { "results": [ { "status": "failed" } ] } ] },
+        { "title": "fine", "ok": true, "tests": [ { "results": [ { "status": "passed" } ] } ] }
+      ]
+    }
+  ]
+}

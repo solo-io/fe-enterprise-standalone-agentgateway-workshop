@@ -12,7 +12,7 @@ export const HAS_CLAUDE_OAUTH = process.env.HAS_CLAUDE_OAUTH === '1';
 
 /** Navigation and screenshot helpers bound to one lab's image folder. */
 export function lab(track: string, slug: string) {
-  const dir = `/repo/images/${track}/${slug}`;
+  const dir = process.env.LAB_IMAGES_DIR ?? `/repo/images/${track}/${slug}`;
 
   return {
     /** Opens a UI page, for example go(page, '/llm/models'), and waits for it to finish loading. */

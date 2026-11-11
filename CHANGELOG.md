@@ -1,5 +1,14 @@
 # Changelog
 
+0.1.2 - (11-11-26)
+---
+- Add an evaluation agent (Alpha): an AI agent in Claude Code or Codex runs the workshop labs on throwaway gateways, explains each one, and writes a local report. Your own gateway and `setup/config.yaml` stay as they are. Run `/evaluate` in Claude Code, or start from `AGENTS.md` and the README section `## Alpha: Evaluate with an agent`
+  - `/evaluate`: runs the LLM, MCP or Platform track, explains each lab before it runs, asks before labs that bill Anthropic, Bedrock or TypeSafe, stops on the first failure, and writes a local report
+  - `/adapt-lab`: builds a custom lab, its Playwright spec and its screenshots from one or more shipped labs for your own scenario, learns any new UI flow on a throwaway gateway, proves each requirement, and keeps the result in `custom-labs/<name>/` on your machine
+  - `/contribute-lab`: turns a custom lab that passed into a shipped lab and a pull request, from a clone of this repo or of your fork, and pushes only after you approve the diff
+  - The agent writes its prose, labs, and pull requests by `skills/stop-slop/SKILL.md`: plain words, no filler, no em dashes
+  - A custom lab keeps everything the harness writes for it in its own folder, under `custom-labs/<name>/.work/`: the learning phase in `learn/`, the last run in `run/`, failure screenshots and traces in `pw-results/`. Delete `custom-labs/<name>/` to remove all of it. `/contribute-lab` leaves `.work/` out of its staging copy
+
 0.1.1 - (10-28-26)
 ---
 - The three agentdesktop labs: add a component diagram (PNG) and a Mermaid sequence diagram to "Why this matters" that show where agentgateway sits between Claude Code, the identity provider and the model provider

@@ -1,0 +1,1 @@
+status=fail rc=2 duration=20 tests=3 skipped=0 fixture=base expect=base profiles=- leftover=1 config_mismatch=1 reason=config did not return to base

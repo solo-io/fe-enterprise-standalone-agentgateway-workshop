@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "solo-knowledge": {
+      "type": "http",
+      "url": "https://knowledge-base.soloio-field.com/mcp"
+    },
+    "playwright": {
+      "command": "bash",
+      "args": ["e2e/lib/playwright-mcp.sh"]
+    }
+  }
+}

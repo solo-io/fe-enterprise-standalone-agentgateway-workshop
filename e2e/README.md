@@ -4,7 +4,7 @@ Each lab has a spec in `labs/` that performs the lab through the UI, checks ever
 
 ## Run
 
-You need Docker and `setup/.env` with real keys. Each run first checks the keys against their providers. A missing or rejected Anthropic, TypeSafe or AWS key makes the tests that need it skip, with a line saying why; a rejected OpenAI key stops the run.
+You need Docker and `setup/.env` with real keys. Each run first checks the keys against their providers. A missing or rejected Anthropic, TypeSafe or AWS key makes the tests that need it skip, with a line saying why; a rejected OpenAI key stops the run. A result with a working OpenAI key is reused for 10 minutes (`e2e/.work/keys.cache`, which holds no key value) unless a key or `setup/.env` changes; `E2E_KEYS_TTL=<seconds>` sets the time and `E2E_KEYS_TTL=0` checks every run.
 
 ```bash
 e2e/run-e2e.sh 001                                  # one lab
@@ -23,7 +23,22 @@ e2e/lint.sh                                         # markdown checks
 
 A spec that restarts the gateway, such as `platform/postgres-backend`, sets `// @restarts gateway`. The run then adds `compose.e2e-restart.yaml`: a pause container holds the network namespace and the gateways join it, so Playwright keeps its network when the gateway container restarts.
 
-The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`.
+The final config of each run is saved to `e2e/.last/<lab>.yaml`. Failure screenshots and Playwright error context go to `e2e/.last/pw-results/<compose project>/`. A custom lab keeps these in its own folder instead: `custom-labs/<name>/.work/run/` (outcome, Playwright JSON, final `config.yaml`) and `custom-labs/<name>/.work/pw-results/`.
+
+`--skip <id>` (repeatable) records a lab as `SKIP (declined)` without running it, for example `e2e/run-e2e.sh --track llm --skip llm/connect-anthropic`. An id the run does not cover exits 64.
+
+## Learning gateway
+
+Adapt mode learns a new UI flow on a throwaway gateway, never on yours. `e2e/lib/playwright-mcp.sh` runs the Playwright MCP server in that gateway's network namespace.
+
+```bash
+e2e/run-e2e.sh --learn <name> --profiles <p1,p2>   # start agw-e2e-learn from base; ends with LEARN READY agw-e2e-learn
+e2e/run-e2e.sh --learn <name> --diff               # config changes since start: exit 0 none, 2 some, 1 error
+e2e/run-e2e.sh --learn <name> --restart            # restart the gateway; the netns container stays
+e2e/run-e2e.sh --learn <name> --stop               # save config.after.yaml and remove the project
+```
+
+The project uses the restart override, so its namespace container is `agw-e2e-learn-netns-1`. Files go to `custom-labs/<name>/.work/learn/`. A spec run never counts `agw-e2e-learn` as its own leftover; `detect-env.sh` still lists it.
 
 ## Fixtures
 
