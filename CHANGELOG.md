@@ -1,6 +1,6 @@
 # Changelog
 
-0.1.2 - (11-10-26)
+0.1.2 - (11-11-26)
 ---
 - Add an evaluation agent (Alpha): an AI agent in Claude Code or Codex runs the workshop labs on throwaway gateways, explains each one, and writes a local report. Your own gateway and `setup/config.yaml` stay as they are. Run `/evaluate` in Claude Code, or start from `AGENTS.md` and the README section `## Alpha: Evaluate with an agent`
   - `/evaluate`: runs the LLM, MCP or Platform track, explains each lab before it runs, asks before labs that bill Anthropic, Bedrock or TypeSafe, stops on the first failure, and writes a local report
