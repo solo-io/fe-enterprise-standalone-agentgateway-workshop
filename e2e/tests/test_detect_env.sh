@@ -53,13 +53,16 @@ new_repo() {
 }
 # run_detect <repo> <with-docker 1|0>: sets OUT and RC.
 run_detect() {
-  local d="$1" withdocker="$2" bin="$TMP/bin-$1"
-  rm -rf "$bin"; mkdir -p "$bin"; cp "$STUBS/curl" "$bin/curl"
+  local d="$1" withdocker="$2" bin="$TMP/bin-$(basename "$1")" f
+  rm -rf "$bin"; mkdir -p "$bin"
+  # Symlink the system tools except the ones under test: CI runners ship real docker and gh in /usr/bin.
+  for f in /usr/bin/* /bin/*; do case "$(basename "$f")" in curl|docker|gh|python3|jq) continue ;; esac; ln -sf "$f" "$bin/$(basename "$f")" 2>/dev/null; done
+  cp "$STUBS/curl" "$bin/curl"
   cp "$STUBS/python3" "$STUBS/jq" "$bin/"
   [ -z "${WITH_GH:-}" ] || cp "$STUBS/gh" "$bin/gh"
   [ "$withdocker" = 1 ] && cp "$TMP/docker.stub" "$bin/docker"
   RC=0
-  OUT=$(cd "$d" && PATH="$bin:/usr/bin:/bin" E2E_CURL="$bin/curl" bash e2e/lib/detect-env.sh 2>&1) || RC=$?
+  OUT=$(cd "$d" && PATH="$bin" E2E_CURL="$bin/curl" bash e2e/lib/detect-env.sh 2>&1) || RC=$?
 }
 has() { grep -qF -- "$2" "$1"; }
 

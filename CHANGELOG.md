@@ -1,5 +1,9 @@
 # Changelog
 
+0.1.3 - (11-11-26)
+---
+- Fix `e2e/tests/test_detect_env.sh` on CI
+
 0.1.2 - (11-11-26)
 ---
 - Add an evaluation agent (Alpha): an AI agent in Claude Code or Codex runs the workshop labs on throwaway gateways, explains each one, and writes a local report. Your own gateway and `setup/config.yaml` stay as they are. Run `/evaluate` in Claude Code, or start from `AGENTS.md` and the README section `## Alpha: Evaluate with an agent`
