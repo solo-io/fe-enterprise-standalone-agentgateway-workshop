@@ -68,7 +68,7 @@ The tiers and the question are in `setup/semantic-router-openai/profile.json`. T
 | `fallbackTier` | `mid` | The tier for prompts that the model is unsure about |
 | `question` | a `choice` question with a description and examples for each tier | What the model reads to decide |
 
-The gateway also has a **Callout** routing strategy for virtual models, which asks an HTTP service for the model name. The 2026.10.0 UI has no form for it, and the adapter in this lab speaks the External processor protocol (gRPC), so this lab uses the External processor policy.
+The gateway also has a **Callout** routing strategy for virtual models, which asks an HTTP service for the model name. The UI has no form for it, and the adapter in this lab speaks the External processor protocol (gRPC), so this lab uses the External processor policy.
 
 ## Set up
 
@@ -293,16 +293,15 @@ llm:
         responseHeaderMode: skip
         requestTrailerMode: skip
         responseTrailerMode: skip
-      requestAttributes: {}
-      responseAttributes: {}
   virtualModels:
-    - name: auto_model
-      routing:
+    - routing:
         weighted:
           targets:
-            - model: openai/gpt-5.6-luna
-              weight: 1
+          - model: openai/gpt-5.6-luna
+      name: auto_model
 ```
+
+The UI writes only the fields you changed. The target has no `weight` because you left **Weight** at its default, `1`.
 
 ## Clean up
 

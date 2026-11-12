@@ -60,14 +60,14 @@ function rawLine(page: Page, text: string | RegExp) {
   return page.locator('main .monaco-editor .view-line').filter({ hasText: text }).first();
 }
 
-/** Deletes one Raw Configuration editor line, the way a reader selects the line and presses Delete. */
-async function deleteLine(page: Page, text: string | RegExp): Promise<void> {
+/** Deletes `count` Raw Configuration editor lines from the one with `text`, the way a reader selects the lines and presses Delete. */
+async function deleteLines(page: Page, text: string | RegExp, count = 1): Promise<void> {
   const line = rawLine(page, text);
   await expect(line).toBeVisible();
   await line.click({ position: { x: 1, y: 5 } });
   await page.keyboard.press('Home');
   await page.keyboard.press('Home');
-  await page.keyboard.press('Shift+ArrowDown');
+  for (let i = 0; i < count; i++) await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('Delete');
   await expect(rawLine(page, text)).toHaveCount(0);
 }
@@ -259,6 +259,19 @@ echo "no password: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:808
   expect(out.trim()).toBe('alice: 200\nbob: 403\ncarol: 403\nno password: 401');
 });
 
+test('what the UI wrote', () => {
+  // The lab shows these sections in this order.
+  const cfg = readConfig();
+  expect(Object.keys(cfg.config).slice(-2)).toEqual(['modelCatalog', 'standardAttributes']);
+  expect(Object.keys(cfg).slice(-3)).toEqual(['gateways', 'ui', 'rbac']);
+  expect(cfg.ui).toEqual({
+    gateways: 'public',
+    policies: { basicAuth: { mode: 'strict', realm: 'agentgateway-ui', htpasswd: { file: '/config/ui-users.htpasswd' } } },
+  });
+  expect(Object.keys(cfg.rbac)).toEqual(['policies', 'mode']);
+  expect(cfg.rbac.mode).toBe('fine-grained');
+});
+
 test('clean up: keys, roles, Basic auth, UI gateway, public gateway', async ({ page }) => {
   const main = page.locator('main');
   await go(page, '/llm/keys');
@@ -286,7 +299,7 @@ test('clean up: keys, roles, Basic auth, UI gateway, public gateway', async ({ p
     await expect(row).toBeHidden();
   }
   await page.waitForTimeout(1000);
-  expect(readConfig().rbac?.policies ?? []).toEqual([]);
+  expect(readConfig().rbac).toEqual({ policies: [] });
 
   await go(page, '/settings/ui');
   await main.getByRole('button', { name: /Basic auth/ }).click();
@@ -306,20 +319,18 @@ test('clean up: keys, roles, Basic auth, UI gateway, public gateway', async ({ p
   await expect(main).toContainText('No gateways configured');
 
   await go(page, '/raw-config');
-  const attr = rawLine(page, 'standardAttributes:');
-  await expect(attr).toBeVisible();
-  await attr.click({ position: { x: 1, y: 5 } });
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Shift+ArrowDown');
-  await page.keyboard.press('Shift+ArrowDown');
-  await page.keyboard.press('Delete');
+  await deleteLines(page, 'standardAttributes:', 2);
   await expect(rawLine(page, 'user: basicAuth.username')).toBeHidden();
-  await deleteLine(page, /^gateways:\s\{\}/);
+  await deleteLines(page, /^gateways:\s\{\}/);
+  // Deleting the last role leaves `rbac:` with an empty `policies: []`.
+  await expect(rawLine(page, /^\s*policies:\s\[\]/)).toBeVisible();
+  await deleteLines(page, /^rbac:/, 2);
+  await expect(rawLine(page, /^\s*policies:\s\[\]/)).toHaveCount(0);
   await save(page, page.locator('main').getByRole('button', { name: 'Save', exact: true }));
   const confirm2 = page.getByRole('dialog').getByRole('button', { name: /Save/ });
   if (await confirm2.isVisible().catch(() => false)) await save(page, confirm2);
   // An empty `gateways: {}` keeps Traffic enabled, so the next lab's "Get started" would be missing.
   expect(readConfig().gateways).toBeUndefined();
+  expect(readConfig().rbac).toBeUndefined();
   expectMatchesFixture('base');
 });

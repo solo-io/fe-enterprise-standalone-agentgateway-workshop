@@ -31,10 +31,20 @@ export function fixturePath(root, name) {
   return name === 'base' ? `${root}/setup/config.yaml` : `${root}/e2e/fixtures/${name}.yaml`;
 }
 
+// The gateway writes a generated `config.session.key` into the file at startup unless SESSION_KEY is set.
+// The value differs on every run, so the comparison leaves it out.
+function withoutSessionKey(cfg) {
+  if (!cfg?.config?.session || !('key' in cfg.config.session)) return cfg;
+  const { key, ...session } = cfg.config.session;
+  return { ...cfg, config: { ...cfg.config, session } };
+}
+
 // Lists how the config a lab left behind differs from the one it must end in; empty means a match.
 // Empty values count as absent, except for top-level keys: the reader sees those in Raw Configuration,
 // and some change the UI (`gateways: {}` keeps Traffic on), so the lab's Clean up must remove them.
 export function configDiff(actual, expected) {
+  actual = withoutSessionKey(actual);
+  expected = withoutSessionKey(expected);
   const problems = [];
   for (const [key, value] of Object.entries(actual ?? {})) {
     if (normalize(value) === undefined && !(key in (expected ?? {}))) {

@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lab, labSh } from '../../lib/lab';
+import { readConfig } from '../../lib/config';
 import { mcpConnect } from '../../lib/mcp';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
@@ -68,6 +69,11 @@ test('turn on MCP authentication', async ({ page }) => {
   await save(page, 'Save policy');
   await go(page, '/mcp/policies');
   await expect(policyCard(page, 'MCP authentication')).toContainText('enabled');
+  // Validation mode stays on its default (Strict), so the UI writes no mode.
+  const a = readConfig().mcp.policies.mcpAuthentication;
+  expect(a.mode).toBeUndefined();
+  expect(a.issuer).toBe('solo-workshop');
+  expect(a.audiences).toEqual(['agentgateway']);
 });
 
 test('Tool Playground without a token gets 401', async ({ page }) => {
@@ -109,10 +115,15 @@ test('add the authorization rule', async ({ page }) => {
   await d.getByRole('button', { name: 'Add rule' }).first().click();
   await d.getByRole('combobox', { name: 'Rule 1 effect' }).click();
   await page.getByRole('option', { name: /^Deny/ }).click();
-  await pasteInto(page, d.locator('.monaco-editor').first(), RULE);
-  await expect(d).toContainText('- deny: mcp.tool.name == "search" && jwt.team == "marketing"');
+  const editor = d.locator('.monaco-editor').first();
+  // A new rule opens with sample text, which the lab replaces.
+  await expect(editor.locator('.view-lines')).toContainText('get_weather');
+  await pasteInto(page, editor, RULE);
+  await expect(editor.locator('.view-lines')).toContainText('"marketing"');
+  await expect(editor.locator('.view-lines')).not.toContainText('get_weather');
   await shot(page, '07-authz-rule', d.getByRole('button', { name: 'Save policy' }));
   await save(page, 'Save policy');
+  expect(readConfig().mcp.policies.mcpAuthorization).toEqual({ rules: [{ deny: RULE }] });
   await go(page, '/mcp/policies');
   await expect(policyCard(page, 'MCP authorization')).toContainText('enabled');
 });
@@ -137,7 +148,8 @@ test('bob does not see search, alice still does', async ({ page }) => {
   expect(bobTools).toEqual(expect.arrayContaining(['get_chunks', 'get_full_page']));
   expect(bobTools).not.toContain('search');
   const call = await bob.call('search', { query: 'agentgateway', product: 'solo-enterprise-for-agentgateway' });
-  expect(call.text).toContain('Unknown tool: search');
+  expect(call.isError).toBeTruthy();
+  expect(call.text).toContain('unknown resource');
 
   // The lab: reload the page, then repeat steps 2 to 5 with alice's token. Alice still sees all 3 tools.
   await page.reload();

@@ -110,9 +110,8 @@ test('route the gateway to the mock LLM', async ({ page }) => {
   await d.getByRole('textbox', { name: 'Host', exact: true }).fill('mock-llm:8000');
   await shot(page, '08-add-route', d.getByRole('button', { name: 'Save route' }));
   await save(page, 'Save route');
-  expect(readConfig().routes).toEqual([
-    { gateways: 'sni', matches: [{ path: { pathPrefix: '/' } }], backends: [{ host: 'mock-llm:8000' }], name: 'mock-llm' },
-  ]);
+  // Prefix / is the default match, so the UI writes no `matches`.
+  expect(readConfig().routes).toEqual([{ gateways: 'sni', backends: [{ host: 'mock-llm:8000' }], name: 'mock-llm' }]);
 });
 
 test('check it: each hostname gets its own certificate, and an unknown hostname fails', async () => {

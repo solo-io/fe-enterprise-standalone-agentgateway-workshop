@@ -228,7 +228,6 @@ ui:
       htpasswd:
         file: /config/ui-users.htpasswd
 rbac:
-  mode: fine-grained
   policies:
   - name: platform-admins
     subjects:
@@ -242,6 +241,7 @@ rbac:
     subjects:
     - user: carol
     preset: self-service
+  mode: fine-grained
 ```
 
 The UI calls the enforcement modes **Off** and **Role-based**. The config calls them `coarse` and `fine-grained`. Each API key also has an `agentgateway.dev/owner` entry in its `metadata`, set to the user who created it. The **Self-service** preset uses it to decide whose keys a user sees.
@@ -270,8 +270,9 @@ Do every clean-up step on `http://localhost:15000/ui`.
 12. In the **public** card, click the trash icon (**Delete gateway**).
 13. In the sidebar, click **Raw Configuration**.
 14. Delete the two lines you added in Step 1, `standardAttributes:` and `user: basicAuth.username`.
-15. Delete the line `gateways: {}` and click **Save**.
+15. Delete the line `gateways: {}`.
+16. Delete the two lines `rbac:` and `policies: []`, then click **Save**.
 
-Deleting the gateway leaves an empty `gateways: {}` line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
+Deleting the gateway leaves an empty `gateways: {}` line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**. Deleting the last role leaves `rbac:` with an empty `policies: []` list.
 
 The gateway is back to the state [001](../../001-set-up-standalone-agentgateway.md) left it in.

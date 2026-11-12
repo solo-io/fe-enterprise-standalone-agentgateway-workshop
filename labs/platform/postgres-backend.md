@@ -38,9 +38,9 @@ By default, the gateway keeps its request logs in a SQLite file, `setup/data.db`
 ## Step 1: Point the gateway at Postgres
 
 1. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-2. Select lines 3 and 4, `database:` and `url: sqlite:///config/data.db`: click at the left edge of line 3, before the spaces, and drag to the start of line 5.
+2. Select lines 5 and 6, `database:` and `url: sqlite:///config/data.db`: click at the left edge of line 5, before the spaces, and drag to the start of line 7.
 
-   ![Raw Configuration with lines 3 and 4 selected](../../images/platform/postgres-backend/01-raw-config-database.png)
+   ![Raw Configuration with lines 5 and 6 selected](../../images/platform/postgres-backend/01-raw-config-database.png)
 
 3. Paste this block over the selected lines:
 
@@ -51,7 +51,7 @@ By default, the gateway keeps its request logs in a SQLite file, `setup/data.db`
        mode: hybrid
    ```
 
-4. Check that `storage:` is on line 5, in line with `database:`, and `modelCatalog:` is on line 7. Click **Save**.
+4. Check that `storage:` is on line 7, in line with `database:`, and `modelCatalog:` is on line 9. Click **Save**.
 
    ![Raw Configuration with the Postgres database and hybrid storage](../../images/platform/postgres-backend/02-raw-config-postgres.png)
 
@@ -177,7 +177,7 @@ Expected output (your ID differs):
 ```
    kind    |                  id                  | revision
 -----------+--------------------------------------+----------
- llm.model | c3efc30d-78d2-41c4-8477-e48d2137763b |        1
+ llm.model | 0864aa69-662b-409b-9ec9-2925e3da0d35 |        1
 (1 row)
 ```
 
@@ -198,18 +198,18 @@ The first gateway has no models either. The second gateway deleted the model in 
 
 ## What the UI wrote
 
-In the sidebar, scroll down to **Tools** and click **Raw Configuration**. On the **File** tab, `config.yaml` has the two settings from Step 1. The UI sorted the keys when it saved and put `storage` below `modelCatalog`:
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. On the **File** tab, `config.yaml` has the two settings from Step 1:
 
 ```yaml
 config:
   adminAddr: 0.0.0.0:15000
   database:
     url: postgres://agentgateway:agentgateway@postgres:5432/agentgateway
-  modelCatalog:
-    - file: /config/base-costs.json
   storage:
     mode: hybrid
-...
+  modelCatalog:
+    - file: /config/base-costs.json
+  ...
 ```
 
 The file has no `models:` list. The `openai/*` model was in Postgres, on the **Database** tab, until you deleted it in Check it.

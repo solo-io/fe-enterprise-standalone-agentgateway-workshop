@@ -171,7 +171,6 @@ For each request, the gateway sends the incoming token to Keycloak's token endpo
        source:
          header:
            name: x-actor-token
-       tokenType: urn:ietf:params:oauth:token-type:access_token
    ```
 
 4. Click **Save**.
@@ -254,11 +253,21 @@ In this workshop, a fixed claim on the `agent-cli` client puts `may_act` in alic
    Expected output:
 
    ```
-   backend authentication failed: token exchange returned status 403 Forbidden
+   backend authentication failed
    HTTP 500
    ```
 
-   Keycloak refuses the exchange, and the gateway does not call the API.
+   Keycloak refuses the exchange, and the gateway does not call the API. The response does not tell the caller why. The reason is in the gateway log:
+
+   ```bash
+   docker compose logs agentgateway | grep 'backend authentication failed' | tail -1
+   ```
+
+   Expected output (trimmed):
+
+   ```
+   ... route=default/procurement-api ... http.status=500 protocol=http error="backend authentication failed: token exchange returned status 403 Forbidden" ...
+   ```
 
 ## What the UI wrote
 
@@ -270,9 +279,6 @@ gateways:
     port: 8080
 routes:
   - gateways: public
-    matches:
-      - path:
-          pathPrefix: /
     backends:
       - host: procurement-api:8000
         policies:
@@ -290,11 +296,12 @@ routes:
                 source:
                   header:
                     name: x-actor-token
-                tokenType: urn:ietf:params:oauth:token-type:access_token
     name: procurement-api
 ```
 
 The Step 4 version had `clientId: agentgateway`, its secret, and no `actorToken`.
+
+The UI writes only the fields you changed. The route matches every path, the default, so it has no `matches` field.
 
 The same `backendAuth` policy also works on an MCP server or a model.
 

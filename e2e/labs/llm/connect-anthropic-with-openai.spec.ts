@@ -69,14 +69,18 @@ test('Analytics splits tokens between the providers', async ({ page }) => {
   await expect(main.locator('tbody tr').filter({ hasText: 'anthropic/claude-haiku-5-5' }).first()).toBeVisible();
 
   await go(page, '/llm/analytics');
-  await main.getByRole('button', { name: 'Total', exact: true }).click();
+  const groupBy = main.getByText('Group by', { exact: true }).locator('..').getByRole('button');
+  await groupBy.click();
+  await expect(page.getByRole('checkbox', { name: 'Model', exact: true })).toBeChecked();
   await page.getByRole('checkbox', { name: 'Provider', exact: true }).check();
-  await page.keyboard.press('Escape');
-  const legend = main.getByText('anthropic', { exact: true }).first();
-  await expect(legend).toBeVisible();
-  await expect(main.getByText('openai', { exact: true }).first()).toBeVisible();
+  await main.getByRole('heading', { name: 'Analytics' }).click();
+  await expect(page.getByRole('checkbox', { name: 'Provider', exact: true })).toBeHidden();
+  await expect(main).toContainText('by model · provider');
+  // One Chat Playground request to Claude; one Chat Playground request and one curl to GPT.
+  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic 1 \d+ <\$0\.01 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^gpt-6-luna · openai 2 \d+ <\$0\.01 / })).toBeVisible();
   await page.waitForTimeout(1000);
-  await shot(page, '09-analytics-both', legend);
+  await shot(page, '09-analytics-both', groupBy);
 });
 
 test('clean up: delete the models and the provider', async ({ page }) => {

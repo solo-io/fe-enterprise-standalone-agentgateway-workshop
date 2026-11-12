@@ -110,7 +110,9 @@ test('step 1: add a Claude model with no provider key', async ({ page }) => {
   await d.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByRole('option', { name: 'Anthropic', exact: true }).click();
   await d.getByRole('textbox', { name: /Incoming model match/ }).fill('claude-*');
-  await expect(d.getByRole('button', { name: /^Provider API key/ })).toContainText('Unset');
+  // Provider API key is a row of four buttons; the chosen one has the class "active".
+  await expect(d.getByRole('button', { name: 'Unset', exact: true })).toHaveClass(/(^|\s)active(\s|$)/);
+  await expect(d).toContainText('No provider credential configured.');
   await d.getByRole('button', { name: 'Incoming model', exact: true }).click();
   await shot(page, '01-add-model', d.getByRole('button', { name: 'Save model' }));
   await save(page, 'Save model');
@@ -137,7 +139,9 @@ test('step 2: require a Keycloak token from the third part', async ({ page }) =>
   expect(jwt.mode).toBe('strict');
   expect(jwt.issuer).toBe(ISSUER);
   expect(jwt.audiences).toEqual(['agentgateway']);
-  expect(JSON.stringify(jwt.jwks)).toContain(JWKS_URL);
+  expect(jwt.jwks).toEqual({ url: JWKS_URL });
+  // Required claims stays on its default (exp), so the UI writes no requiredClaims.
+  expect(jwt.jwtValidationOptions).toEqual({});
   expect(jwt.location).toEqual({ expression: LOCATION });
 
   await page.waitForTimeout(2000);
@@ -146,7 +150,7 @@ test('step 2: require a Keycloak token from the third part', async ({ page }) =>
   -H 'anthropic-version: 2023-06-01' \\
   -d '{"model":"claude-haiku-5-5","max_tokens":50,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'`).stdout;
   expect(r).toMatch(/^HTTP\/1\.1 401 Unauthorized/);
-  expect(r.trimEnd().endsWith('authentication failure: no bearer token found')).toBeTruthy();
+  expect(r.trimEnd().endsWith('\nauthentication failed')).toBeTruthy();
 });
 
 test('step 3: send only the Claude token to Anthropic', async ({ page }) => {
@@ -158,10 +162,11 @@ test('step 3: send only the Claude token to Anthropic', async ({ page }) => {
   await d.getByRole('textbox', { name: 'header name' }).nth(1).fill('authorization');
   await d.getByRole('textbox', { name: 'CEL expression' }).nth(1).fill(UPSTREAM);
   await d.getByRole('button', { name: 'Add', exact: true }).nth(1).click();
-  await expect(d.getByRole('button', { name: 'Remove' })).toHaveCount(1);
+  await expect(d.getByRole('button', { name: 'Remove', exact: true })).toHaveCount(1);
   await shot(page, '04-transformations', d.getByRole('button', { name: 'Save policy' }));
   await save(page, 'Save policy');
-  expect(readConfig().llm.policies.transformations).toEqual({ request: { set: { authorization: UPSTREAM } }, response: {} });
+  // The response side is unchanged, so the UI writes no response key.
+  expect(readConfig().llm.policies.transformations).toEqual({ request: { set: { authorization: UPSTREAM } } });
 });
 
 test('step 6: Claude Code runs on the subscription through the gateway', async ({ page }) => {

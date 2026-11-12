@@ -148,14 +148,13 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 mcp:
   policies:
     mcpAuthentication:
-      mode: strict
-      issuer: http://localhost:8180/realms/workshop
       jwks:
         url: http://localhost:8180/realms/workshop/protocol/openid-connect/certs
       resourceMetadata: {}
+      issuer: http://localhost:8180/realms/workshop
 ```
 
-With `resourceMetadata` empty, the gateway builds its metadata from the issuer.
+With `resourceMetadata` empty, the gateway builds its metadata from the issuer. The UI writes only the fields you changed. You left **Validation mode** on its default, **Strict**, so the policy has no `mode` field.
 
 > **Note:** The gateway downloads Keycloak's keys when you save the policy. If you remove and recreate the Keycloak container while the policy exists, Keycloak gets new keys and the gateway rejects the new tokens: save the policy again. The gateway also downloads the keys when it starts, and Keycloak runs in the gateway's network, so Keycloak is not up yet at that moment. If the policy exists when you restart the Compose stack, the gateway exits. Delete the policy before you restart. **Clean up** deletes it when you turn off MCP.
 

@@ -12,7 +12,7 @@ The labs cover the same features as the [Kubernetes workshop](https://github.com
 
 A few labs need another API key or AWS credentials. The **Needs** column in each lab table lists them, with the helper services.
 
-The labs use gateway image `agentgateway-enterprise:2026.10.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab and `15100` and `4100` (second gateway) in the Postgres lab.
+The labs use gateway image `agentgateway-enterprise:2026.11.0` and ports `15000`, `4000`, `4001`, `8080`, `8443`, `8180` and `6274` on your computer, plus `3000` (Grafana) and `9090` (Prometheus) in the metrics lab and `15100` and `4100` (second gateway) in the Postgres lab.
 
 ## Start here
 

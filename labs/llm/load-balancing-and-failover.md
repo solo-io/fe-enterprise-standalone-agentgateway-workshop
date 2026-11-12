@@ -91,7 +91,7 @@ The first group has two models. The gateway picks between them for each request 
 3. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 4. Click **Send** four more times. After a failed request, your message stays in **User message**, so you can click **Send** again.
 
-One of the first requests may fail with **Playground request failed** and a `503`: the gateway sent it to `mock-llm-503`, and the health policy took that model out of rotation. The other requests get the mock's placeholder text from `mock-llm`.
+One of the requests may fail with **Playground request failed** and a `503`: the gateway sent it to `mock-llm-503`, and the health policy took that model out of rotation. The other requests get the mock's placeholder text from `mock-llm`.
 
 ![Chat Playground reply from the mock](../../images/llm/load-balancing-and-failover/06-playground-mock.png)
 
@@ -115,7 +115,7 @@ You may also see rows named `unknown model`. Those are the browser's preflight c
 3. In **Model**, select **resilient**.
 4. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
-After about 10 seconds, the playground shows **Playground request failed** with `upstream call failed: Connect: deadline has elapsed`. The gateway could not connect to `mock-llm`, and the default health check took it out of rotation. Now both models in the first group are out.
+After about 10 seconds, the playground shows **Playground request failed** with `connection timed out`. The gateway could not connect to `mock-llm`, and the default health check took it out of rotation. Now both models in the first group are out.
 
 ![Playground request failed with the connection error](../../images/llm/load-balancing-and-failover/08-connect-failed.png)
 
@@ -140,34 +140,33 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 llm:
   models:
-    - name: mock-llm
-      provider:
-        custom:
-          formats:
-            - type: completions
-      params:
+    - params:
         model: mock-gpt
         baseUrl: http://mock-llm:8000/v1
-    - name: mock-llm-503
+      name: mock-llm
       provider:
         custom:
           formats:
             - type: completions
-      params:
+    - params:
         model: mock-gpt
         baseUrl: http://mock-llm-503:8000/v1
+      name: mock-llm-503
+      provider:
+        custom:
+          formats:
+            - type: completions
       health:
         eviction:
           duration: 300s
           consecutiveFailures: 1
-    - name: openai-backup
-      provider: openai
-      params:
+    - params:
         model: gpt-6-luna
         apiKey: $OPENAI_API_KEY
+      name: openai-backup
+      provider: openai
   virtualModels:
-    - name: resilient
-      routing:
+    - routing:
         failover:
           targets:
             - model: mock-llm
@@ -176,6 +175,7 @@ llm:
               priority: 0
             - model: openai-backup
               priority: 1
+      name: resilient
 ```
 
 Targets with the same `priority` form one group. Lower `priority` values are tried first.

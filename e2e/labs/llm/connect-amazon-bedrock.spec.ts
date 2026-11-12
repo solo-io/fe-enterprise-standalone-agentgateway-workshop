@@ -28,8 +28,8 @@ test('add the Bedrock wildcard model', async ({ page }) => {
   await d.getByRole('textbox', { name: 'AWS region' }).fill('us-west-2');
   // Close the region suggestions (Escape would close the whole panel).
   await d.getByRole('heading', { name: 'Add model' }).click();
-  await d.getByRole('combobox', { name: 'Bedrock endpoint' }).click();
-  await page.getByRole('option', { name: 'Prefer Runtime', exact: true }).click();
+  // Prefer Runtime is the default; the lab leaves it.
+  await expect(d.getByRole('combobox', { name: 'Bedrock endpoint' })).toContainText('Prefer Runtime');
   await d.getByRole('button', { name: 'Strip bedrock/', exact: true }).click();
   await expect(d).not.toContainText('Model warnings');
   await shot(page, '02-add-bedrock-model', d.getByRole('button', { name: 'Save model' }));
@@ -41,7 +41,8 @@ test('add the Bedrock wildcard model', async ({ page }) => {
   expect(m).toEqual({
     name: 'bedrock/*',
     provider: 'bedrock',
-    params: { awsRegion: 'us-west-2', bedrockEndpointPreference: 'runtimePreferred' },
+    // Prefer Runtime is the default, so the UI does not write bedrockEndpointPreference.
+    params: { awsRegion: 'us-west-2' },
     transformation: { model: 'llmRequest.model.stripPrefix("bedrock/")' },
   });
 });
@@ -90,7 +91,6 @@ test('optional: switch the model to a Bedrock API key', async ({ page }) => {
   await expect.poll(() => readConfig().llm.models.find((x: any) => x.name === 'bedrock/*').params).toEqual({
     awsRegion: 'us-west-2',
     apiKey: '$BEDROCK_API_KEY',
-    bedrockEndpointPreference: 'runtimePreferred',
   });
   await page.waitForTimeout(2000);
 
@@ -102,7 +102,7 @@ test('optional: switch the model to a Bedrock API key', async ({ page }) => {
 test('clean up: delete the Bedrock model', async ({ page }) => {
   test.skip(!HAS_AWS, NO_AWS);
   await go(page, '/llm/models');
-  const row = page.locator('main').getByRole('row').filter({ has: page.getByText('bedrock/*', { exact: true }) });
+  const row = page.locator('main').getByRole('row').filter({ has: page.getByRole('cell', { name: /^bedrock\/\*(\s|$)/ }) });
   const del = row.getByRole('button', { name: /^Delete/ });
   await shot(page, '07-delete-model', del);
   await del.click();

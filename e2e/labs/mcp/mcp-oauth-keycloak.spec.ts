@@ -48,7 +48,8 @@ test('turn on MCP authentication with Keycloak', async ({ page }) => {
   await save(page, 'Save policy');
   const a = readConfig().mcp.policies.mcpAuthentication;
   console.log(JSON.stringify(a));
-  expect(a.issuer).toBe(ISSUER);
+  // Validation mode stays on its default (Strict), so the UI writes no mode.
+  expect(a).toEqual({ jwks: { url: JWKS_URL }, resourceMetadata: {}, issuer: ISSUER });
 });
 
 test('the Tool Playground has no token and gets 401', async ({ page }) => {
@@ -95,7 +96,7 @@ test('sign in through MCP Inspector', async ({ page }) => {
   await main.getByRole('button', { name: 'search', exact: true }).click();
   await main.getByRole('textbox', { name: 'query' }).fill('MCP authentication');
   await main.getByRole('textbox', { name: 'product' }).click();
-  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway' }).click();
+  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway', exact: true }).click();
   const run = main.getByRole('button', { name: 'Execute Tool' });
   await shot(page, '09-search-form', run);
   await run.click();

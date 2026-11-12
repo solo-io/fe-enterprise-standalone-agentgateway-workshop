@@ -2,6 +2,7 @@
 // @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { lab, labSh } from '../../lib/lab';
+import { readConfig } from '../../lib/config';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-rate-limiting');
@@ -30,11 +31,15 @@ test('add a local rate limit', async ({ page }) => {
   await save(page, 'Save policy');
   await go(page, '/mcp/policies');
   await expect(policyCard(page, 'Local rate limit')).toContainText('enabled');
+  // The UI writes only the fields changed from their defaults (the Requests limit type).
+  expect(readConfig().mcp.policies.localRateLimit).toEqual([{ fillInterval: '300s', maxTokens: 5, tokensPerFill: 5 }]);
 });
 
 test('Tool Playground hits the limit', async ({ page }) => {
   await page.waitForTimeout(2000);
   await go(page, '/mcp/playground');
+  // The playground calls the gateway's MCP address once the page has loaded the config.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
   await expect(main.getByRole('button', { name: 'Reset' })).toBeVisible({ timeout: 30_000 });
@@ -42,7 +47,7 @@ test('Tool Playground hits the limit', async ({ page }) => {
   await page.getByRole('option', { name: /^search/ }).first().click();
   await main.getByRole('textbox', { name: /query/ }).fill('rate limiting');
   await main.getByRole('combobox', { name: 'product' }).click();
-  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway' }).click();
+  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway', exact: true }).click();
   const call = main.getByRole('button', { name: 'Call tool' });
 
   // First call: search results (a score only appears in real results).
@@ -84,6 +89,7 @@ test('optional curl check', async () => {
   -H "Content-Type: application/json" \\
   -H "Accept: application/json, text/event-stream" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`);
+  console.log(r.stdout);
   expect(r.stdout).toMatch(/^HTTP\/1\.1 200 OK/);
   expect(r.stdout).toContain('x-ratelimit-limit: 5');
   expect(r.stdout).toContain('x-ratelimit-remaining: 0');

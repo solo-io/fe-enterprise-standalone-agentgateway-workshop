@@ -2,7 +2,7 @@ name: agentgateway-workshop
 
 services:
   agentgateway:
-    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.10.0
+    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.0
     user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     environment:
@@ -15,6 +15,9 @@ services:
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       BEDROCK_API_KEY: ${BEDROCK_API_KEY:-}
       # Encrypts the UI sign-in cookie for OIDC. Outside the workshop, set your own in .env (openssl rand -hex 32).
+      # Encodes session IDs. Without it the gateway generates a key and writes it into config.yaml.
+      # Outside the workshop, set your own in .env (openssl rand -hex 32).
+      SESSION_KEY: ${SESSION_KEY:-c716027a2f8c6aee8b9ea0be1dff4959972fc897cbdebde81c2bc07b241d2681}
       OIDC_COOKIE_SECRET: ${OIDC_COOKIE_SECRET:-8d1b5c0f6a3e47b2a9c4d7e1f0b3a6c58e2d4f7a1c9b0e3d6f8a2c5b7e4d1f03}
     volumes:
       - .:/config
@@ -292,7 +295,7 @@ services:
   # Restarting the first gateway disconnects it, so stop it first.
   agentgateway-2:
     profiles: [postgres]
-    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.10.0
+    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.0
     user: "${UID:-1000}:${GID:-1000}"
     network_mode: "service:agentgateway"
     command: ["-f", "/config/postgres/gateway-2.yaml"]
@@ -302,5 +305,7 @@ services:
     environment:
       ENTERPRISE_AGENTGATEWAY_LICENSE_KEY: ${ENTERPRISE_AGENTGATEWAY_LICENSE_KEY:?set ENTERPRISE_AGENTGATEWAY_LICENSE_KEY in .env}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
+      # The same key as the first gateway, so a session ID from one decodes on the other.
+      SESSION_KEY: ${SESSION_KEY:-c716027a2f8c6aee8b9ea0be1dff4959972fc897cbdebde81c2bc07b241d2681}
     volumes:
       - .:/config:ro

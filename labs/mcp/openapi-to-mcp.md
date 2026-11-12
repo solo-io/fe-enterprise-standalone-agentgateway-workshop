@@ -207,7 +207,7 @@ mcp:
   - name: open-meteo
     openapi:
       host: https://api.open-meteo.com
-      schema: |
+      schema: |-
         {
           "openapi": "3.0.0",
           ...

@@ -12,9 +12,10 @@ list_e2e_projects() {
 }
 
 # A key's value: exported in the shell first, then setup/.env, as in Docker Compose.
+# Like Compose, it accepts an `export ` prefix, as in lines pasted from an AWS SSO page.
 env_val() {
   local v="${!1:-}"
-  [ -n "$v" ] || v=$(grep -E "^$1=" "$ROOT/setup/.env" 2>/dev/null | tail -1 | cut -d= -f2- | sed -E "s/^['\"]//; s/['\"]$//")
+  [ -n "$v" ] || v=$(grep -E "^(export +)?$1=" "$ROOT/setup/.env" 2>/dev/null | tail -1 | cut -d= -f2- | sed -E "s/^['\"]//; s/['\"]$//")
   echo "$v"
 }
 
@@ -137,8 +138,11 @@ check_keys_live() {
   KEY_STATUS_AWS_ACCESS_KEY_ID=missing
   if [ -z "$(env_val AWS_ACCESS_KEY_ID)" ]; then say "AWS_ACCESS_KEY_ID: not set, Bedrock tests skip"
   elif ! command -v aws >/dev/null; then HAS_AWS=1; KEY_STATUS_AWS_ACCESS_KEY_ID=ok
-  elif AWS_ACCESS_KEY_ID=$(env_val AWS_ACCESS_KEY_ID) AWS_SECRET_ACCESS_KEY=$(env_val AWS_SECRET_ACCESS_KEY) \
-    AWS_SESSION_TOKEN=$(env_val AWS_SESSION_TOKEN) AWS_PROFILE='' AWS_REGION=us-east-1 \
+  # Unset the profile variables so the CLI uses these keys; an empty AWS_PROFILE makes AWS CLI v2 fail
+  # with "The config profile () could not be found".
+  elif env -u AWS_PROFILE -u AWS_DEFAULT_PROFILE \
+    AWS_ACCESS_KEY_ID="$(env_val AWS_ACCESS_KEY_ID)" AWS_SECRET_ACCESS_KEY="$(env_val AWS_SECRET_ACCESS_KEY)" \
+    AWS_SESSION_TOKEN="$(env_val AWS_SESSION_TOKEN)" AWS_REGION=us-east-1 \
     aws sts get-caller-identity >/dev/null 2>&1; then HAS_AWS=1; KEY_STATUS_AWS_ACCESS_KEY_ID=ok
   else KEY_STATUS_AWS_ACCESS_KEY_ID=rejected; say "AWS credentials: rejected or expired, Bedrock tests skip"
   fi

@@ -142,14 +142,15 @@ Some agents work better with short tool names. If no two servers have a tool wit
 
 1. In the sidebar, click **Servers**.
 2. Click **Settings**.
-3. In **Prefix mode**, select **Never**.
-4. Click **Save settings**.
+3. Click **MCP behavior** to open that section.
+4. In **Prefix mode**, select **Never**.
+5. Click **Save settings**.
 
    ![Settings panel with Prefix mode set to Never](../../images/mcp/local-mcp-and-federation/06-prefix-never.png)
 
-5. In the sidebar, click **Tool Playground**.
-6. Wait two seconds, then reload the page.
-7. Click **Initialize**.
+6. In the sidebar, click **Tool Playground**.
+7. Wait two seconds, then reload the page.
+8. Click **Initialize**.
 
 The **Result** panel still shows **16 tools discovered**, now with plain names such as `search` and `echo`.
 
@@ -175,22 +176,37 @@ The **State** of `broken` shows **ready**. That state tells you the gateway acce
 7. Wait two seconds, then reload the page.
 8. Click **Initialize**.
 
-The playground shows **MCP request failed** with `backends required DNS resolution which failed`. The default **Failure mode** is **Fail closed**: if one server fails, the whole session fails. The two healthy servers are not available either.
+The playground shows **MCP request failed** with `failed to send message`. The default **Failure mode** is **Fail closed**: if one server fails, the whole session fails. The two healthy servers are not available either.
 
 ![MCP request failed in the Tool Playground](../../images/mcp/local-mcp-and-federation/10-fail-closed.png)
+
+The gateway log has the reason. From the `setup/` folder, run:
+
+```bash
+docker compose logs agentgateway | grep 'failed to send message' | tail -1
+```
+
+Expected output (trimmed):
+
+```
+... http.status=500 protocol=mcp mcp.method.name=initialize error="mcp: failed to send message: http upstream error: http request failed: backends required DNS resolution which failed" ...
+```
+
+The gateway could not find the address of `does-not-exist`.
 
 ## Step 5: Keep serving the healthy servers
 
 1. In the sidebar, click **Servers**.
 2. Click **Settings**.
-3. In **Failure mode**, select **Fail open**.
-4. Click **Save settings**.
+3. Click **MCP behavior** to open that section.
+4. In **Failure mode**, select **Fail open**.
+5. Click **Save settings**.
 
    ![Settings panel with Failure mode set to Fail open](../../images/mcp/local-mcp-and-federation/11-fail-open.png)
 
-5. In the sidebar, click **Tool Playground**.
-6. Wait two seconds, then reload the page.
-7. Click **Initialize**.
+6. In the sidebar, click **Tool Playground**.
+7. Wait two seconds, then reload the page.
+8. Click **Initialize**.
 
 ## Check it
 
@@ -221,7 +237,7 @@ mcp:
   toolMode: standard
 ```
 
-**Save settings** writes every setting in the panel, including the ones you did not change.
+**Save settings** also writes **State mode** and **Tool mode**, which you did not change.
 
 ## Clean up
 

@@ -82,8 +82,9 @@ const SCHEMA = `{
   }
 }`;
 
-// The line the reader pastes in Raw Configuration, after a new line under "- name: stripe".
-const AUTH_LINE = '  policies: { backendAuth: { key: sk_test_123 } }';
+// The policy the reader pastes into Backend policies.
+const BACKEND_POLICIES = `backendAuth:
+  key: sk_test_123`;
 const LIMIT = '{"limit": 1}';
 const CUSTOMER = '{"customer": "cus_workshop"}';
 
@@ -99,6 +100,8 @@ async function pasteInto(page: Page, editor: Locator, text: string) {
 /** Opens the Tool Playground, initializes, and selects a stripe tool. */
 async function pickTool(page: Page, tool: string, screenshot?: string) {
   await go(page, '/mcp/playground');
+  // The playground reads the MCP address from the gateway config when the page loads.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
   await expect(main.getByText('3 tools discovered')).toBeVisible({ timeout: 30_000 });
@@ -160,14 +163,19 @@ test('add the Stripe mock as an MCP server', async ({ page }) => {
   await page.getByRole('button', { name: 'Add server' }).first().click();
   const d = page.getByRole('dialog');
   await d.getByRole('textbox', { name: 'Server name' }).fill('stripe');
-  await d.getByRole('radio', { name: 'OpenAPI' }).click();
+  await d.getByRole('button', { name: 'OpenAPI', exact: true }).click();
+  await expect(d.getByRole('button', { name: 'OpenAPI', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await d.getByRole('textbox', { name: /^URL/ }).fill('http://stripe-mock:12111');
-  await shot(page, '01-add-openapi-server', d.getByRole('radio', { name: 'Inline' }));
-  await d.getByRole('radio', { name: 'Inline' }).click();
-  await pasteInto(page, d.locator('.monaco-editor').first(), SCHEMA);
-  await expect(d.locator('.monaco-editor')).toContainText('A customer');
+  const inline = d.getByRole('group', { name: 'Schema source' }).getByRole('button', { name: 'Inline', exact: true });
+  await shot(page, '01-add-openapi-server', inline);
+  await inline.click();
+  await expect(inline).toHaveAttribute('aria-pressed', 'true');
+  // The dialog has two code editors: Schema, then Backend policies.
+  const schema = d.locator('.monaco-editor').first();
+  await pasteInto(page, schema, SCHEMA);
+  await expect(schema).toContainText('A customer');
   await page.keyboard.press('ControlOrMeta+Home');
-  await expect(d.locator('.monaco-editor')).toContainText('Stripe Mock API');
+  await expect(schema).toContainText('Stripe Mock API');
   await shot(page, '02-paste-schema', d.getByRole('button', { name: 'Save server' }));
   await save(page, 'Save server');
   const row = page.locator('main').getByRole('row', { name: /^stripe\b/ });
@@ -189,31 +197,25 @@ test('call a tool: the API asks for a key', async ({ page }) => {
   await shot(page, '05-needs-key', out);
 });
 
-test('give the gateway the API key in Raw Configuration', async ({ page }) => {
-  await go(page, '/raw-config');
-  const line = page.locator('.view-line', { hasText: '- name: stripe' });
-  // The reader scrolls the editor down to the stripe target.
-  await page.locator('.monaco-editor').first().hover();
-  for (let i = 0; i < 40 && !(await line.count()); i++) {
-    await page.mouse.wheel(0, 200);
-    await page.waitForTimeout(150);
-  }
-  await page.mouse.wheel(0, 100);
-  await page.waitForTimeout(800);
-  await line.click();
-  await page.keyboard.press('End');
-  await shot(page, '06-raw-config-line', line);
-  await page.keyboard.press('Enter');
-  // The reader pastes the line from the lab: it starts with two spaces, so it lines up with "name".
-  await page.keyboard.insertText(AUTH_LINE);
-  const edited = page.locator('.view-line', { hasText: 'backendAuth' });
-  await expect.poll(async () => (await edited.innerText()).replace(/ /g, ' ').trim()).toBe(AUTH_LINE.trim());
-  const saveBtn = page.locator('main').getByRole('button', { name: 'Save', exact: true });
-  await shot(page, '07-raw-config-key', saveBtn);
-  await saveBtn.click();
+test('give the gateway the API key in Backend policies', async ({ page }) => {
+  await go(page, '/mcp/servers');
+  const edit = page.locator('main').getByRole('row', { name: /^stripe\b/ }).getByRole('button', { name: 'Edit server' });
+  await shot(page, '06-edit-server', edit);
+  await edit.click();
+  const d = page.getByRole('dialog');
+  await expect(d.getByRole('heading', { name: 'Edit MCP server' })).toBeVisible();
+  // The code editor that follows the Backend policies label; the Schema editor comes before it.
+  const policies = d.getByText('Backend policies', { exact: true }).locator('xpath=following::div[contains(@class,"monaco-editor")][1]');
+  await policies.scrollIntoViewIfNeeded();
+  await pasteInto(page, policies, BACKEND_POLICIES);
+  await expect(policies).toContainText('sk_test_123');
+  // Click outside the editor, so its suggestion popup is not in the screenshot.
+  await d.getByRole('heading', { name: 'Edit MCP server' }).click();
+  await shot(page, '07-backend-policies', d.getByRole('button', { name: 'Save server' }));
+  await save(page, 'Save server');
   await expect
-    .poll(() => readConfig().mcp?.targets?.find((t: any) => t.name === 'stripe')?.policies)
-    .toEqual({ backendAuth: { key: 'sk_test_123' } });
+    .poll(() => readConfig().mcp?.targets)
+    .toEqual([{ name: 'stripe', openapi: { host: 'http://stripe-mock:12111', schema: SCHEMA }, policies: { backendAuth: { key: 'sk_test_123' } } }]);
 });
 
 test('check it: list products', async ({ page }) => {

@@ -109,10 +109,10 @@ Expected output:
 
 ```
 HTTP/1.1 200 OK
-content-type: application/json
 x-ratelimit-limit: 5
 x-ratelimit-remaining: 0
 x-ratelimit-reset: 280
+content-type: application/json
 ...
 
 {"jsonrpc":"2.0","id":1,"error":{"code":-32003,"message":"rate limit exceeded","data":{"limit":5,"remaining":0,"retryAfterSeconds":280}}}
@@ -128,11 +128,12 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 mcp:
   policies:
     localRateLimit:
-      - type: requests
-        fillInterval: 300s
+      - fillInterval: 300s
         maxTokens: 5
         tokensPerFill: 5
 ```
+
+The UI writes only the fields you changed. **Limit type** **Requests** is the default, so the entry has no `type` line.
 
 ## Clean up
 

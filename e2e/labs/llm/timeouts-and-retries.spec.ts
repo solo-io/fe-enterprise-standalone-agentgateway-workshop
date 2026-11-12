@@ -153,6 +153,8 @@ test('add a route to the flaky mock', async ({ page }) => {
   console.log(JSON.stringify(r));
   expect(r).toHaveLength(1);
   expect(r[0].name).toBe('flaky-llm');
+  // Prefix / is the default match, so the UI writes no `matches`.
+  expect(r[0].matches).toBeUndefined();
   expect(r[0].backends).toEqual([{ host: 'mock-llm-flaky:8000' }]);
 });
 
@@ -220,7 +222,8 @@ test('clean up', async ({ page }) => {
   await page.waitForTimeout(1500);
 
   await go(page, '/llm/models');
-  const m = page.locator('main').getByRole('row').filter({ has: page.getByText('mock-llm-slow', { exact: true }) });
+  // The name cell also holds the base URL, so match the start of the cell.
+  const m = page.locator('main').getByRole('row').filter({ has: page.getByRole('cell', { name: /^mock-llm-slow(\s|$)/ }) });
   await m.getByRole('button', { name: /^Delete/ }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: /^Delete model$/ }).click();
   await expect(m).toHaveCount(0);

@@ -19,9 +19,9 @@ async function startOfMinute(page: Page): Promise<void> {
   if (s > 35) await page.waitForTimeout((61 - s) * 1000);
 }
 
-/** Replaces the text of the first CEL editor in the panel. insertText skips the editor's auto-complete. */
+/** Replaces the text of the first entry's value box, the CEL editor next to its key. insertText skips the editor's auto-complete. */
 async function setValue(page: Page, cel: string): Promise<void> {
-  const ed = page.getByRole('dialog').locator('.monaco-editor:visible').first();
+  const ed = page.getByRole('dialog').getByPlaceholder('key').locator('xpath=following::div[contains(concat(" ", @class, " "), " monaco-editor ")][1]');
   await ed.click();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('Delete');
@@ -129,6 +129,7 @@ test('count tokens', async ({ page }) => {
   await card(page).click();
   const d = page.getByRole('dialog');
   await d.getByRole('combobox', { name: 'Descriptor 1 type' }).click();
+  await expect(page.getByRole('option', { name: /^Tokens/ })).toContainText('Count LLM token usage.');
   await page.getByRole('option', { name: /^Tokens/ }).click();
   await d.getByPlaceholder('key').fill('tokens');
   await setValue(page, '"all"');

@@ -177,12 +177,9 @@ mcp:
   policies:
     extAuthz:
       host: ext-authz-jwt:9000
-      failureMode: deny
-      protocol:
-        grpc:
-          context: {}
-          metadata: {}
 ```
+
+The UI writes only the fields you changed. **Protocol** **gRPC** and **Failure mode** **Deny** are the defaults, so they are not in the file.
 
 ## Clean up
 

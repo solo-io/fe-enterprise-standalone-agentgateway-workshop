@@ -188,15 +188,14 @@ gateways:
     port: 8443
 routes:
   - gateways: https
-    matches:
-      - path:
-          pathPrefix: /
     backends:
       - host: mock-llm:8000
     name: mock-llm
 ```
 
 The gateway has no `protocol: HTTPS` line, because a gateway with `tls` uses HTTPS unless you set another protocol.
+
+The UI writes only the fields you changed. **Path match** **Prefix** with **Path** `/` is the default, so the route has no `matches`.
 
 ## Clean up
 

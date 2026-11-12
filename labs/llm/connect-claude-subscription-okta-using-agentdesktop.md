@@ -200,7 +200,7 @@ Expected output:
 HTTP/1.1 401 Unauthorized
 ...
 
-authentication failure: no bearer token found
+authentication failed
 ```
 
 ## Step 4: Send only the Claude token to Anthropic
@@ -393,6 +393,7 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 llm:
   policies:
     jwtAuth:
+      jwtValidationOptions: {}
       mode: strict
       location:
         expression: request.headers["authorization"].split(":")[2]
@@ -401,22 +402,20 @@ llm:
       - <audience>
       jwks:
         url: <issuer>/v1/keys
-      jwtValidationOptions:
-        requiredClaims:
-        - exp
     transformations:
       request:
         set:
           authorization: '"Bearer " + request.headers["authorization"].split(":")[1]'
-      response: {}
     authorization:
       rules:
       - allow: '"platform-team" in jwt.groups'
   models:
-  - name: claude-*
+  - params: {}
+    name: claude-*
     provider: anthropic
-    params: {}
 ```
+
+The UI writes only the fields you changed. You left **Required claims** on its default, `exp`, so `jwtValidationOptions` is empty, and the gateway still rejects tokens that have no expiry time. The transformation changes only requests, so it has no `response` key.
 
 `params` has no `apiKey`, so the gateway sends the `authorization` header that the transformation set.
 

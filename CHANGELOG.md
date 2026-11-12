@@ -1,5 +1,26 @@
 # Changelog
 
+0.1.4 - (11-12-26)
+---
+- `/evaluate`: when the plan shows a missing key such as `ANTHROPIC_API_KEY` or `TYPESAFE_AI_API_KEY`, the agent names the variable and the labs it gates, then waits for you to add it to `setup/.env` or continue and skip those labs. A missing or rejected `OPENAI_API_KEY` stops the run with the fix. The agent never asks for a key in the chat
+- Bump the gateway image to `agentgateway-enterprise:2026.11.0`. Every lab with working keys was run on it, and all screenshots are regenerated
+- `001`: the version under the logo reads `2026.11.0`
+- `setup/docker-compose.yml` sets `SESSION_KEY` on both gateways, with a workshop default you can replace in `.env`. Without it the 2026.11.0 gateway generates a key and writes it into `config.yaml` at first start
+- "What the UI wrote" in most labs: the UI saves only the fields you changed, and key order changed. Each block shows the new file, with a sentence naming the defaults that are absent
+- **Breaking:** `virtual-api-keys`: **Validation mode** opens on **Optional**, which allows requests with no key. The lab selects **Strict**
+- **Breaking:** a failed API key or JWT check returns `authentication failed`. The reason is on the request's row in **Logs**. Updated `virtual-api-keys`, `jwt-auth-and-authorization` and the three agentdesktop SSO labs
+- Error text in `moderation-guardrails` (`failed to process LLM request`), `mcp-guardrails` (`guardrail check failed`), `mcp-auth-and-tool-authorization` (`unknown resource`) and `load-balancing-and-failover` (`connection timed out`)
+- `local-mcp-and-federation` and `obo-token-exchange`: the response no longer carries the reason for an unreachable server or a refused token exchange, so the labs read it from the gateway log
+- `local-mcp-and-federation` and `mcp-tool-modes`: open the **MCP behavior** section in **Settings** first
+- `openapi-to-mcp-local-service`: Step 3 adds the API key in **Backend policies** on the server panel instead of in Raw Configuration
+- `budgets-and-cost-tracking`, `virtual-api-keys` and `connect-anthropic`: Analytics has tabs, and **Group by** starts on **Model**
+- `connect-amazon-bedrock`: **Bedrock endpoint** opens on **Prefer Runtime**, so the lab leaves it
+- `routing-match-types` and `postgres-backend`: Raw Configuration shows the comment lines at the top of the file, so the steps name the new line numbers
+- `ui-access-control` and `ui-access-control-oidc`: Clean up deletes the empty `rbac:` block the UI leaves after the last role
+- `semantic-routing-jev` and `semantic-routing-openai-decisions`: the Callout sentence names no version
+- e2e: the Tool Playground helpers wait for the page to load its config, and `turnOffMcp` counts the comment lines
+- e2e: the key check reads `export NAME=value` lines in `setup/.env`, as Docker Compose does, and no longer reports valid AWS credentials as rejected with AWS CLI v2
+
 0.1.3 - (11-11-26)
 ---
 - Fix `e2e/tests/test_detect_env.sh` on CI

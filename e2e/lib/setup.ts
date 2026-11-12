@@ -9,6 +9,9 @@ async function open(page: Page, path: string): Promise<void> {
   await page.goto(UI + path);
   await expect(page.locator('main')).toBeVisible();
   await expect(page.locator('main')).not.toContainText('Loading permissions');
+  // The Tool Playground shows "No MCP servers" until it has loaded the config; a click on Initialize
+  // before that calls a default address and fails.
+  if (path.startsWith('/mcp/playground')) await page.waitForLoadState('networkidle');
 }
 
 async function saveButton(page: Page, name: string): Promise<void> {
@@ -96,9 +99,8 @@ export async function setUpSoloDocs(page: Page): Promise<void> {
  * `shot` runs with the lines selected, so a spec can capture the screenshot of that step.
  */
 export async function turnOffMcp(page: Page, shot?: (save: Locator) => Promise<void>): Promise<void> {
-  // The editor shows config.yaml without the comment lines at the top.
+  // The editor shows config.yaml as it is on disk, comment lines included.
   const lines = readFileSync('/work/config.yaml', 'utf8').replace(/\n+$/, '').split('\n');
-  while (lines.length && (lines[0].startsWith('#') || lines[0] === '')) lines.shift();
   const top = lines.map((l, i) => (/^[a-zA-Z]/.test(l) ? l.replace(/:.*/, '') : null)).filter(Boolean);
   expect(top.slice(-2), 'gateways and mcp must be the last top-level sections').toEqual(['gateways', 'mcp']);
   const start = lines.findIndex((l) => l.startsWith('gateways:'));

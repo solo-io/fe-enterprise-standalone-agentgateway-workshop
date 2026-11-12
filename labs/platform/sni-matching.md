@@ -178,6 +178,7 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 gateways:
   sni:
+    port: 8443
     listeners:
       - name: foo
         tls:
@@ -185,22 +186,20 @@ gateways:
           key: /config/tls/foo.example.com.key
         hostname: foo.example.com
       - name: bar
-        hostname: bar.example.com
         tls:
           cert: /config/tls/bar.example.com.crt
           key: /config/tls/bar.example.com.key
-    port: 8443
+        hostname: bar.example.com
 routes:
   - gateways: sni
-    matches:
-      - path:
-          pathPrefix: /
     backends:
       - host: mock-llm:8000
     name: mock-llm
 ```
 
 The listeners have no `protocol: HTTPS` line, because a listener with `tls` uses HTTPS unless you set another protocol.
+
+The UI writes only the fields you changed. **Path match** **Prefix** with **Path** `/` is the default, so the route has no `matches`.
 
 ## Clean up
 

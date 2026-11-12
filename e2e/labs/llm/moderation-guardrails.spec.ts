@@ -44,8 +44,7 @@ test('add the OpenAI Moderation request guard', async ({ page }) => {
   // The lab says: until Step 2, every LLM request fails with "prompt guard failed".
   await page.waitForTimeout(2000);
   const r = await chatRequest('openai/gpt-6-luna', BENIGN);
-  expect(r.status).not.toBe(200);
-  expect(r.text).toContain('prompt guard failed');
+  expect(r).toEqual({ status: 503, text: 'failed to process LLM request' });
 });
 
 /** In the Raw Configuration editor, selects the text of the line that contains `text`. */

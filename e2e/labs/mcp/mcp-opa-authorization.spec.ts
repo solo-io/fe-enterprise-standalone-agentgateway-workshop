@@ -43,6 +43,8 @@ function policyCard(page: Page, name: string) {
 /** Opens the Tool Playground, optionally pastes a token, and clicks Initialize. */
 async function initialize(page: Page, token?: string, shotName?: string) {
   await go(page, '/mcp/playground');
+  // The playground calls the gateway's MCP address once the page has loaded the config.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   if (token) {
     await main.getByText('Authorization header', { exact: true }).click();
@@ -98,9 +100,8 @@ test('add the External authz policy', async ({ page }) => {
 
   const p = readConfig().mcp.policies.extAuthz;
   console.log(JSON.stringify(p));
-  expect(p.host).toBe('opa:9000');
-  expect(p.failureMode).toBe('deny');
-  expect(p.includeRequestBody.maxRequestBytes).toBe(8192);
+  // The UI writes only the fields changed from their defaults (gRPC, Deny, 8192 bytes).
+  expect(p).toEqual({ host: 'opa:9000', includeRequestBody: {} });
 });
 
 test('Tool Playground without a token is denied', async ({ page }) => {
@@ -126,7 +127,7 @@ test('bob is denied get_full_page but can call search', async ({ page }) => {
   const s = await callTool(page, 'search', async (p) => {
     await main.getByRole('textbox', { name: /query/ }).fill('What is agentgateway?');
     await main.getByRole('combobox', { name: 'product' }).click();
-    await p.getByRole('option', { name: 'solo-enterprise-for-agentgateway' }).click();
+    await p.getByRole('option', { name: 'solo-enterprise-for-agentgateway', exact: true }).click();
   });
   expect(s.status).toBe(200);
   const hit = main.getByText(/Result 1 \(Score/).first();

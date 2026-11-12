@@ -107,7 +107,10 @@ test('step 5: add a Claude model with no provider key', async ({ page }) => {
   await d.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByRole('option', { name: 'Anthropic', exact: true }).click();
   await d.getByRole('textbox', { name: /Incoming model match/ }).fill('claude-*');
-  await expect(d.getByRole('button', { name: /^Provider API key/ })).toContainText('Unset');
+  // Provider API key is a row of four buttons; the chosen one has the class "active".
+  await expect(d.getByRole('button', { name: 'Unset', exact: true })).toHaveClass(/(^|\s)active(\s|$)/);
+  await expect(d.getByRole('button', { name: 'Env var', exact: true })).not.toHaveClass(/(^|\s)active(\s|$)/);
+  await expect(d).toContainText('No provider credential configured.');
   await d.getByRole('button', { name: 'Incoming model', exact: true }).click();
   await shot(page, '04-subscription-add-model', d.getByRole('button', { name: 'Save model' }));
   await save(page, 'Save model');

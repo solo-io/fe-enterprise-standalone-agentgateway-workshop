@@ -142,6 +142,8 @@ test('add the authorization processor', async ({ page }) => {
   const p = readConfig().mcp.policies.mcpGuardrails.processors[0];
   console.log(JSON.stringify(p));
   expect(p.host).toBe('extmcp-authz:9001');
+  // Failure mode stays on its default (Fail closed), so the UI writes no failureMode.
+  expect(p.failureMode).toBeUndefined();
   expect(p.methods).toEqual({ 'tools/call': 'request', 'tools/list': 'response' });
   expect(p.metadata).toEqual({ persona: 'jwt.persona', sub: 'jwt.sub' });
 });
@@ -213,7 +215,7 @@ test('compare failure modes', async ({ page }) => {
 
   helper('stop', 'extmcp-authz');
   text = await callTool(page, 'list_purchase_orders', {}, '16-authz-down');
-  expect(text).toContain('mcpGuardrails checkRequest failed');
+  expect(text).toContain('guardrail check failed');
 
   helper('start', 'extmcp-authz');
   helper('start', 'extmcp-redact');

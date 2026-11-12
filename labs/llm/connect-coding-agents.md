@@ -247,9 +247,9 @@ If you did Step 5, the UI also added this model. `params` has no `apiKey`, so th
 ```yaml
 llm:
   models:
-  - name: claude-*
+  - params: {}
+    name: claude-*
     provider: anthropic
-    params: {}
 ```
 
 ## Clean up
