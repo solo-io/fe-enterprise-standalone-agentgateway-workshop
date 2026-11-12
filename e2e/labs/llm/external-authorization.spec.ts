@@ -41,9 +41,8 @@ test('add the External authz policy', async ({ page }) => {
   await save(page, 'Save policy');
 
   const p = readConfig().llm.policies.extAuthz;
-  expect(p.host).toBe('ext-authz:9000');
-  expect(p.failureMode).toBe('deny');
-  expect(p.protocol.grpc).toBeTruthy();
+  // The UI writes only the fields changed from their defaults (gRPC, Deny).
+  expect(p).toEqual({ host: 'ext-authz:9000' });
 });
 
 test('the Chat Playground is denied without the header', async ({ page }) => {

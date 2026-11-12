@@ -62,14 +62,15 @@ Allow the Tool Playground to connect:
 
 1. In the sidebar, under **MCP**, click **Servers**.
 2. Click **Settings**.
-3. In **Tool mode**, select **Search**.
-4. Click **Save settings**.
+3. Click **MCP behavior** to open that section.
+4. In **Tool mode**, select **Search**.
+5. Click **Save settings**.
 
    ![Settings panel with Tool mode set to Search](../../images/mcp/mcp-tool-modes/01-tool-mode-search.png)
 
-5. In the sidebar, click **Tool Playground**.
-6. Wait two seconds, then reload the page.
-7. Click **Initialize**.
+6. In the sidebar, click **Tool Playground**.
+7. Wait two seconds, then reload the page.
+8. Click **Initialize**.
 
 The **Result** panel shows **2 tools discovered**: **get_tool** and **invoke_tool**. The `search`, `get_chunks` and `get_full_page` tools of `solo-docs` are not in the list. The description of `get_tool` names them.
 
@@ -109,22 +110,23 @@ The **Tool output** shows a search result from the Solo.io docs, starting with *
 
 1. In the sidebar, click **Servers**.
 2. Click **Settings**.
-3. In **Tool mode**, select **Code**.
-4. Click **Save settings**.
+3. Click **MCP behavior** to open that section.
+4. In **Tool mode**, select **Code**.
+5. Click **Save settings**.
 
    ![Settings panel with Tool mode set to Code](../../images/mcp/mcp-tool-modes/07-tool-mode-code.png)
 
-5. In the sidebar, click **Tool Playground**.
-6. Wait two seconds, then reload the page.
-7. Click **Initialize**. The **Result** panel shows **1 tools discovered**: **run_code**. Its description lists each real tool as a JavaScript function, for example `async function search(input: Input)`.
-8. In **Tool**, select **run_code**.
-9. In **code**, enter:
+6. In the sidebar, click **Tool Playground**.
+7. Wait two seconds, then reload the page.
+8. Click **Initialize**. The **Result** panel shows **1 tools discovered**: **run_code**. Its description lists each real tool as a JavaScript function, for example `async function search(input: Input)`.
+9. In **Tool**, select **run_code**.
+10. In **code**, enter:
 
-   ```js
-   await search({ query: "What is agentgateway?", product: "solo-enterprise-for-agentgateway", limit: 1 })
-   ```
+    ```js
+    await search({ query: "What is agentgateway?", product: "solo-enterprise-for-agentgateway", limit: 1 })
+    ```
 
-10. Click **Call tool**.
+11. Click **Call tool**.
 
     ![run_code with a call to search](../../images/mcp/mcp-tool-modes/08-run-code.png)
 
@@ -138,7 +140,7 @@ An agent in Code mode can call several tools in one script and return only the p
 
 ## What the UI wrote
 
-In the sidebar, scroll down to **Tools** and click **Raw Configuration**. **Save settings** writes every setting in the panel to the end of the `mcp` section:
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. **Save settings** writes **State mode**, **Failure mode** and **Tool mode** to the end of the `mcp` section:
 
 ```yaml
 mcp:

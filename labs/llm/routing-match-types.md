@@ -27,7 +27,7 @@ Your applications call one gateway address. Routes decide which model server get
 A route sends traffic to a backend. The UI has no page for traffic backends, so you add them in Raw Configuration. Each backend is an OpenAI-compatible LLM backend that fixes the model name and points at one mock server.
 
 1. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-2. Click in the editor, just before `config:` on line 1.
+2. Click in the editor at the start of line 1, before `# yaml-language-server`.
 3. Paste this block:
 
    ```yaml
@@ -48,7 +48,7 @@ A route sends traffic to a backend. The UI has no page for traffic backends, so 
          hostOverride: mock-llm-nano:8000
    ```
 
-4. Check that `backends:` starts at the left edge of line 1 and `config:` is on line 16, then click **Save**.
+4. Check that `backends:` starts at the left edge of line 1 and the `# yaml-language-server` line is on line 16, then click **Save**.
 
    ![Raw Configuration with the backends block on lines 1 to 15](../../images/llm/routing-match-types/01-raw-config-backends.png)
 
@@ -219,7 +219,7 @@ Only `?model=nano` matches the `nano-query` route. The other two requests fall t
 
 ## What the UI wrote
 
-In the sidebar, scroll down to **Tools** and click **Raw Configuration**. Step 1 added `backends`. The UI added a gateway and four routes, and moved `backends` near the end of the file:
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. Step 1 added `backends` at the top of the file. The UI added a gateway and four routes at the end:
 
 ```yaml
 backends:
@@ -237,14 +237,12 @@ backends:
         openAI:
           model: mock-nano
       hostOverride: mock-llm-nano:8000
+...
 gateways:
   public:
     port: 8080
 routes:
   - gateways: public
-    matches:
-      - path:
-          pathPrefix: /
     backends:
       - backend: mini
     name: default
@@ -283,6 +281,8 @@ routes:
     name: nano-query
 ```
 
+The UI writes only the fields you changed. **Path match** **Prefix** with **Path** `/` is the default, so the `default` route has no `matches`. A route with a header or query condition lists the path with it.
+
 ## Clean up
 
 1. In the sidebar, under **Traffic**, click **Routes**.
@@ -290,11 +290,11 @@ routes:
 3. In the sidebar, under **Traffic**, click **Gateways**.
 4. Next to `public`, click **Delete gateway**.
 5. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-6. Select the 15 lines from `backends:` to `hostOverride: mock-llm-nano:8000`, near the end of the file, and press **Delete**.
+6. Select the 15 lines from `backends:` to `hostOverride: mock-llm-nano:8000`, at the top of the file, and press **Delete**.
 
    ![The backends block selected in Raw Configuration](../../images/llm/routing-match-types/11-raw-config-delete.png)
 
-7. Delete the line `gateways: {}` and the line `routes: []`. While `gateways: {}` is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
+7. Delete the line `gateways: {}` and the line `routes: []` at the end of the file. While `gateways: {}` is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
 8. Click **Save**. If a confirmation appears, click **Save** again.
 9. Stop the mock servers. From the `setup/` folder, run:
 

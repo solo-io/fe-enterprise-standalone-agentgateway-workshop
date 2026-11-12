@@ -56,10 +56,11 @@ test('step 1: point the gateway at Postgres in Raw Configuration', async ({ page
   await go(page, '/raw-config');
   const editor = page.locator('main .monaco-editor').first();
   await expect(editor).toBeVisible();
-  // The editor shows config.yaml without the comment lines at the top.
+  // The editor shows config.yaml as it is on disk, comment lines included.
   const lines = readFileSync('/work/config.yaml', 'utf8').split('\n');
-  while (lines.length && (lines[0].startsWith('#') || lines[0] === '')) lines.shift();
   const start = lines.findIndex((l) => l === '  database:');
+  // The lab names these line numbers.
+  expect(start + 1).toBe(5);
   expect(lines[start + 1]).toBe('    url: sqlite:///config/data.db');
   await editor.locator('.view-lines').click();
   await page.keyboard.press('ControlOrMeta+Home');
@@ -82,6 +83,8 @@ test('step 1: point the gateway at Postgres in Raw Configuration', async ({ page
   const cfg = readConfig().config;
   expect(cfg.database.url).toBe('postgres://agentgateway:agentgateway@postgres:5432/agentgateway');
   expect(cfg.storage.mode).toBe('hybrid');
+  // The save keeps the keys in the order the reader pasted them, as the lab's "What the UI wrote" shows.
+  expect(Object.keys(cfg)).toEqual(['adminAddr', 'database', 'storage', 'modelCatalog']);
   // The gateway reads database and storage only at startup.
   expect((await runtime()).ui.configStoreMode).toBe('file');
 });
@@ -141,10 +144,11 @@ test('check it: the second gateway serves the model and shares the logs', async 
   expect(r.stdout).toContain('PONG-2');
 
   await go(page, '/llm/logs');
-  await expect.poll(async () => {
+  // The table fills in a moment after the page loads, so each try waits for the rows.
+  await expect(async () => {
     await page.reload();
-    return page.locator('main tbody tr').filter({ hasText: 'openai/gpt-6-luna' }).count();
-  }, { timeout: 30_000 }).toBe(2);
+    await expect(page.locator('main tbody tr').filter({ hasText: 'openai/gpt-6-luna' })).toHaveCount(2, { timeout: 5000 });
+  }).toPass({ timeout: 30_000 });
   await shot(page, '09-logs-both');
 
   const q = labExec(`docker compose exec postgres psql -U agentgateway -c "select completed_at, gen_ai_request_model, input_tokens, output_tokens from request_logs where gen_ai_request_model is not null order by completed_at"`);
@@ -153,6 +157,9 @@ test('check it: the second gateway serves the model and shares the logs', async 
   const res = labExec(`docker compose exec postgres psql -U agentgateway -c "select kind, id, revision from agw_config_resources"`);
   console.log(res.stdout);
   expect(res.stdout).toContain('llm.model');
+  // Both gateways get SESSION_KEY from Compose, so neither stores a generated key in Postgres.
+  expect(res.stdout).not.toContain('session.key');
+  expect(res.stdout).toContain('(1 row)');
 });
 
 test('check it: a change on one gateway reaches the other', async ({ page }) => {
@@ -165,10 +172,13 @@ test('check it: a change on one gateway reaches the other', async ({ page }) => 
   await expect(page.locator('main tbody tr').filter({ hasText: 'openai/*' })).toHaveCount(0);
 
   await go(page, '/llm/models');
-  await expect.poll(async () => {
+  // Wait for the page to finish loading its models before counting, or an empty table proves nothing.
+  await expect(async () => {
     await page.reload();
-    return page.locator('main tbody tr').filter({ hasText: 'openai/*' }).count();
-  }, { timeout: 15_000 }).toBe(0);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('main')).not.toContainText('Loading');
+    await expect(page.locator('main tbody tr').filter({ hasText: 'openai/*' })).toHaveCount(0, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
   await shot(page, '11-models-empty');
 });
 
@@ -176,7 +186,6 @@ test('clean up', async ({ page }) => {
   inLab('docker compose --profile postgres stop agentgateway-2');
   helper('stop', 'agentgateway-2');
   // The reader makes this change in a text editor: the UI does not save config.yaml in hybrid mode.
-  // The UI saved the keys in its own order, so storage is now below modelCatalog.
   const text = readFileSync('/work/config.yaml', 'utf8');
   expect(text).toContain(POSTGRES_URL);
   expect(text).toContain(STORAGE);

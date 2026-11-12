@@ -20,6 +20,9 @@ export function lab(track: string, slug: string) {
       await page.goto(UI + path);
       await expect(page.locator('main')).toBeVisible();
       await expect(page.locator('main')).not.toContainText('Loading permissions');
+      // The Tool Playground shows "No MCP servers" until it has loaded the config; a click on Initialize
+      // before that calls a default address and fails.
+      if (path.startsWith('/mcp/playground')) await page.waitForLoadState('networkidle');
     },
 
     /**

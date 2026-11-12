@@ -7,7 +7,7 @@ const { go, shot } = lab('setup', '001');
 
 test('gateway is licensed and running in standalone mode', async () => {
   const runtime = await (await fetch('http://localhost:15000/api/runtime')).json();
-  expect(runtime.build.version).toBe('v2026.10.0');
+  expect(runtime.build.version).toBe('2026.11.0');
   expect(runtime.ui.gatewayMode).toBe('standalone');
   expect(runtime.license.state).toBe('running');
   // The lab's optional curl check.
@@ -23,8 +23,8 @@ test('compose publishes the ports the labs use', () => {
 test('UI tour', async ({ page }) => {
   await go(page, '/');
   await expect(page.getByRole('heading', { name: 'Gateway Overview' })).toBeVisible();
-  await expect(page.getByText('v2026.10.0')).toBeVisible();
-  await shot(page, '01-home', page.getByText('v2026.10.0'));
+  await expect(page.getByText('2026.11.0')).toBeVisible();
+  await shot(page, '01-home', page.getByText('2026.11.0'));
 
   const nav = page.getByRole('navigation', { name: 'Primary' });
   for (const item of ['Models', 'Providers', 'Policies', 'Guardrails', 'Chat Playground', 'Raw Configuration']) {

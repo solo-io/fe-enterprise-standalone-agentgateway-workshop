@@ -24,6 +24,8 @@ function policyCard(page: Page, name: string) {
 /** Opens the Tool Playground, optionally pastes a token, and clicks Initialize. */
 async function initialize(page: Page, token?: string, shotName?: string) {
   await go(page, '/mcp/playground');
+  // The playground calls the gateway's MCP address once the page has loaded the config.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   if (token) {
     await main.getByText('Authorization header', { exact: true }).click();
@@ -57,9 +59,8 @@ test('add the External authz policy', async ({ page }) => {
 
   const p = readConfig().mcp.policies.extAuthz;
   console.log(JSON.stringify(p));
-  expect(p.host).toBe('ext-authz-jwt:9000');
-  expect(p.failureMode).toBe('deny');
-  expect(p.protocol.grpc).toBeTruthy();
+  // The UI writes only the fields changed from their defaults (gRPC, Deny).
+  expect(p).toEqual({ host: 'ext-authz-jwt:9000' });
 });
 
 test('Tool Playground without a token is denied', async ({ page }) => {

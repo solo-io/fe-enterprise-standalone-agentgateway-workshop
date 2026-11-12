@@ -27,7 +27,7 @@ test('add the Solo docs MCP server', async ({ page }) => {
   await page.getByRole('button', { name: 'Add server' }).first().click();
   const d = page.getByRole('dialog');
   await d.getByRole('textbox', { name: /Server name/ }).fill('solo-docs');
-  await expect(d.getByRole('radio', { name: 'Streamable HTTP' })).toBeVisible();
+  await expect(d.getByRole('button', { name: 'Streamable HTTP', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await d.getByRole('textbox', { name: /^URL/ }).fill('https://search.solo.io/mcp');
   await shot(page, '03-add-server', d.getByRole('button', { name: 'Save server' }));
   await save(page, 'Save server');
@@ -60,7 +60,7 @@ test('call a tool in the Tool Playground', async ({ page }) => {
   await page.getByRole('option', { name: /^search/ }).first().click();
   await main.getByRole('textbox', { name: /query/ }).fill('What is agentgateway?');
   await main.getByRole('combobox', { name: 'product' }).click();
-  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway' }).click();
+  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway', exact: true }).click();
   const call = main.getByRole('button', { name: 'Call tool' });
   await shot(page, '07-call-tool', call);
   await call.click();

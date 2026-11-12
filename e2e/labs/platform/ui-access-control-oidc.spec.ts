@@ -191,6 +191,15 @@ test('carol gets self-service plus the openai/* model', async ({ browser }) => {
   await shot(page, '12-carol-models', main.getByRole('button', { name: 'Edit model' }));
 });
 
+test('what the UI wrote', () => {
+  // The lab shows these sections and keys in this order.
+  const cfg = readConfig();
+  expect(Object.keys(cfg).slice(-3)).toEqual(['gateways', 'ui', 'rbac']);
+  expect(Object.keys(cfg.ui.policies.oidc)).toEqual(['issuer', 'clientId', 'clientSecret', 'redirectURI', 'scopes']);
+  expect(Object.keys(cfg.rbac)).toEqual(['policies', 'mode']);
+  expect(Object.keys(cfg.rbac.policies[3].grants[0])).toEqual(['resource', 'access', 'scope']);
+});
+
 test('clean up: roles, OIDC, UI gateway, public gateway', async ({ page }) => {
   const main = page.locator('main');
   await go(page, '/settings/access-control');
@@ -227,10 +236,22 @@ test('clean up: roles, OIDC, UI gateway, public gateway', async ({ page }) => {
   await page.keyboard.press('Home');
   await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('Delete');
+  // Deleting the last role leaves `rbac:` with an empty `policies: []`; the lab deletes both lines.
+  const lines = page.locator('main .monaco-editor .view-line');
+  await expect(lines.filter({ hasText: /^gateways:/ })).toHaveCount(0);
+  await expect(lines.filter({ hasText: /^\s*policies:\s\[\]/ })).toBeVisible();
+  await lines.filter({ hasText: /^rbac:/ }).first().click({ position: { x: 1, y: 5 } });
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Delete');
+  await expect(lines.filter({ hasText: /^\s*policies:\s\[\]/ })).toHaveCount(0);
   await save(page, main.getByRole('button', { name: 'Save', exact: true }));
   const confirm = page.getByRole('dialog').getByRole('button', { name: /Save/ });
   if (await confirm.isVisible().catch(() => false)) await save(page, confirm);
   expect(readConfig().gateways).toBeUndefined();
+  expect(readConfig().rbac).toBeUndefined();
 
   await deleteModel(page);
   expectMatchesFixture('base');

@@ -110,13 +110,13 @@ The gateway checks the budget before it sends a request. The first request start
    You may also see a row named `unknown model`. That is the browser's preflight check from the Chat Playground; you can ignore it.
 
 3. In the sidebar, click **Analytics**.
-4. In **Measure**, select **Cost**.
+4. Click the **Cost** tab.
 
-Under **Traffic over time**, the summary shows the total spend, tokens and calls in the form `$<spend> / <tokens> tokens / <calls> calls`. Your numbers depend on the reply. The chart bar is very small because one short request costs a fraction of a cent.
+The **Estimated spend** card shows `<$0.01`, because one short request costs a fraction of a cent. **Estimated spend over time** has one bar, for `gpt-6-luna`.
 
-![Analytics with Measure set to Cost](../../images/llm/budgets-and-cost-tracking/10-analytics-cost.png)
+![Analytics with the Cost tab open](../../images/llm/budgets-and-cost-tracking/10-analytics-cost.png)
 
-The call count includes the blocked request and the browser's preflight check. Only the request that reached OpenAI has tokens and cost.
+Scroll down to **Estimated spend by model**. The `gpt-6-luna` row has one request, the one that reached OpenAI. The `(none)` row has the blocked request and the browser's preflight check, with a spend of `$0.00`.
 
 <details>
 <summary>Optional: check with curl</summary>
@@ -165,13 +165,13 @@ The budget went into the `llm` section:
 ```yaml
 llm:
   budgets:
-  - name: workshop
-    limit:
-      unit: Tokens
-      amount: 10
-    window:
-      rolling: 1h
-    onBudgetExceeded: Block
+    - name: workshop
+      limit:
+        unit: Tokens
+        amount: 10
+      window:
+        rolling: 1h
+      onBudgetExceeded: Block
 ```
 
 ## Clean up

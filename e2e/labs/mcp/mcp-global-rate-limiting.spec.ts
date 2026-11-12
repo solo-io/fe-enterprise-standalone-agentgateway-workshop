@@ -25,7 +25,8 @@ test('add a remote rate limit', async ({ page }) => {
   await d.getByPlaceholder('agentgateway').fill('agentgateway');
   await d.getByPlaceholder('host:port or unix:/path/to/socket').fill('ratelimit:8081');
   await d.getByPlaceholder('key').fill('counter');
-  const ed = d.locator('.monaco-editor:visible').first();
+  // The entry's value box is the CEL editor next to its key. insertText skips the editor's auto-complete.
+  const ed = d.getByPlaceholder('key').locator('xpath=following::div[contains(concat(" ", @class, " "), " monaco-editor ")][1]');
   await ed.click();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('Delete');
@@ -45,6 +46,8 @@ test('add a remote rate limit', async ({ page }) => {
 test('Tool Playground hits the limit', async ({ page }) => {
   await page.waitForTimeout(2000);
   await go(page, '/mcp/playground');
+  // The playground calls the gateway's MCP address once the page has loaded the config.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
   await expect(main.getByRole('button', { name: 'Reset' })).toBeVisible({ timeout: 30_000 });
@@ -52,7 +55,7 @@ test('Tool Playground hits the limit', async ({ page }) => {
   await page.getByRole('option', { name: /^search/ }).first().click();
   await main.getByRole('textbox', { name: /query/ }).fill('rate limiting');
   await main.getByRole('combobox', { name: 'product' }).click();
-  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway' }).click();
+  await page.getByRole('option', { name: 'solo-enterprise-for-agentgateway', exact: true }).click();
   const call = main.getByRole('button', { name: 'Call tool' });
   const mcpPost = () => page.waitForResponse((r) => r.url().includes(':4001/mcp') && r.request().method() === 'POST', { timeout: 60_000 });
 

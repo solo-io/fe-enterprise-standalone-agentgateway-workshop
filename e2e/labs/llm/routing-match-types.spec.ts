@@ -67,6 +67,11 @@ async function addBackend(page: Page, d: Locator, backend: string) {
   await d.getByRole('textbox', { name: 'Backend reference' }).fill(backend);
 }
 
+/** The top-level keys of config.yaml, in file order. */
+function topKeys(): string[] {
+  return readFileSync('/work/config.yaml', 'utf8').split('\n').filter((l) => /^[a-zA-Z]/.test(l)).map((l) => l.replace(/:.*/, ''));
+}
+
 function route(name: string): any {
   return readConfig().routes.find((r: any) => r.name === name);
 }
@@ -85,7 +90,8 @@ test('add the two model backends in Raw Configuration', async ({ page }) => {
   await shot(page, '01-raw-config-backends', saveBtn);
   await saveBtn.click();
   await expect.poll(() => readConfig().backends?.map((b: any) => b.name)).toEqual(['mini', 'nano']);
-  console.log(readFileSync('/work/config.yaml', 'utf8').slice(0, 600));
+  // The block stays at the top of the file, where the reader pasted it.
+  expect(topKeys()[0]).toBe('backends');
   const b = readConfig().backends;
   expect(b[1]).toEqual({ name: 'nano', ai: { name: 'nano', provider: { openAI: { model: 'mock-nano' } }, hostOverride: 'mock-llm-nano:8000' } });
 });
@@ -109,7 +115,8 @@ test('add the default route to mini', async ({ page }) => {
   await save(page, 'Save route');
   const r = route('default');
   console.log(JSON.stringify(r));
-  expect(r.matches).toEqual([{ path: { pathPrefix: '/' } }]);
+  // Prefix / is the default match, so the UI writes no `matches`.
+  expect(r.matches).toBeUndefined();
   expect(r.backends).toEqual([{ backend: 'mini' }]);
 });
 
@@ -222,19 +229,19 @@ test('clean up', async ({ page }) => {
   await expect(gw).toHaveCount(0);
   await page.waitForTimeout(1000);
 
-  // The UI now keeps the backends block near the end of the file.
+  // The backends block is still on lines 1 to 15, where Step 1 pasted it.
+  expect(readFileSync('/work/config.yaml', 'utf8').split('\n').slice(0, 15).join('\n') + '\n').toBe(BACKENDS);
   await go(page, '/raw-config');
   const editor = page.locator('main .monaco-editor').first();
   const line = (re: RegExp) => editor.locator('.view-line', { hasText: re }).first();
   await editor.locator('.view-lines').click();
-  await page.keyboard.press('ControlOrMeta+End');
-  await line(/^backends:/).click();
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Home');
+  await page.keyboard.press('ControlOrMeta+Home');
   for (let i = 0; i < 15; i++) await page.keyboard.press('Shift+ArrowDown');
   await shot(page, '11-raw-config-delete', page.locator('main').getByRole('button', { name: 'Save', exact: true }));
   await page.keyboard.press('Delete');
-  // Deleting the last gateway leaves `gateways: {}` and `routes: []`; remove both lines.
+  await expect(line(/^backends:/)).toHaveCount(0);
+  // Deleting the last gateway leaves `gateways: {}` and `routes: []` at the end of the file; remove both lines.
+  await page.keyboard.press('ControlOrMeta+End');
   for (const re of [/^gateways:\s\{\}/, /^routes:\s\[\]/]) {
     await expect(line(re)).toBeVisible();
     await line(re).click({ position: { x: 1, y: 5 } });

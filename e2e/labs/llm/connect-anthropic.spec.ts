@@ -98,15 +98,24 @@ test('see the Anthropic requests in Logs and Analytics', async ({ page }) => {
   await shot(page, '06-logs', claude);
 
   await go(page, '/llm/analytics');
-  const groupBy = main.getByRole('button', { name: 'Total', exact: true });
+  const groupBy = main.getByText('Group by', { exact: true }).locator('..').getByRole('button');
   await groupBy.click();
+  // Group by starts on Model. The lab adds Provider.
+  await expect(page.getByRole('checkbox', { name: 'Model', exact: true })).toBeChecked();
   await page.getByRole('checkbox', { name: 'Provider', exact: true }).check();
-  await page.keyboard.press('Escape');
-  const legend = main.getByText('anthropic', { exact: true }).first();
-  await expect(legend).toBeVisible();
+  await main.getByRole('heading', { name: 'Analytics' }).click();
+  await expect(page.getByRole('checkbox', { name: 'Provider', exact: true })).toBeHidden();
+  await expect(main.getByRole('heading', { name: 'Requests over time' })).toBeVisible();
+  await expect(main).toContainText('by model · provider');
+  // The Chat Playground request and the two curls; the preflight has no model and no provider.
+  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic 3 \d+ <\$0\.01 0% / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^\(none\) · \(none\) 1 0 \$0\.00 / })).toBeVisible();
+  // The cards at the top: 4 requests in total, and a spend below one cent.
+  await expect(main.getByText('Estimated spend', { exact: true }).first().locator('..')).toContainText('<$0.01');
+  await expect(main).toContainText('4 total by model · provider');
   await page.waitForTimeout(1000);
   writeFileSync('/repo/e2e/.last/connect-anthropic-analytics.txt', await main.innerText());
-  await shot(page, '07-analytics', legend);
+  await shot(page, '07-analytics', groupBy);
 });
 
 test('clean up: delete the model and the provider', async ({ page }) => {

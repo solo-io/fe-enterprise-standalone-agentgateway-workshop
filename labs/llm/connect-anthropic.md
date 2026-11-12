@@ -110,9 +110,11 @@ You may also see a row named `unknown model`. That is the browser's preflight ch
 3. In the sidebar, click **Analytics**.
 4. In **Group by**, select **Provider**, then click outside the list to close it.
 
-The chart shows the tokens for `anthropic`. The line above the chart shows the total cost, tokens and calls:
+**Group by** starts on **Model**, so the page now groups the requests by model and provider. The cards at the top show the total requests, tokens and estimated spend. The legend of the **Requests over time** chart has `claude-haiku-5-5 · anthropic`. `(none) · (none)` is the browser's preflight check:
 
-![Analytics with tokens grouped by provider](../../images/llm/connect-anthropic/07-analytics.png)
+![Analytics grouped by model and provider](../../images/llm/connect-anthropic/07-analytics.png)
+
+Scroll down to **Breakdown by model · provider**. The `claude-haiku-5-5 · anthropic` row shows its requests, tokens and estimated spend.
 
 ## Optional: compare Claude with GPT
 
@@ -156,9 +158,11 @@ The answer is also a `chat.completion` object, with `"model":"gpt-6-luna"`.
 6. In the sidebar, click **Analytics**.
 7. In **Group by**, select **Provider**, then click outside the list to close it.
 
-The chart splits the tokens between `anthropic` and `openai`. The line above the chart shows the total cost, tokens and calls for both providers:
+The chart splits the requests between `claude-haiku-5-5 · anthropic` and `gpt-6-luna · openai`. The cards at the top show the totals for both providers:
 
-![Analytics with tokens for anthropic and openai](../../images/llm/connect-anthropic/09-analytics-both.png)
+![Analytics with requests for anthropic and openai](../../images/llm/connect-anthropic/09-analytics-both.png)
+
+Scroll down to **Breakdown by model · provider** for the tokens and estimated spend of each.
 
 ## What the UI wrote
 
@@ -167,10 +171,10 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 llm:
   providers:
-    - name: anthropic
-      provider: anthropic
+    - provider: anthropic
       params:
         apiKey: $ANTHROPIC_API_KEY
+      name: anthropic
   models:
     - name: anthropic/*
       provider:

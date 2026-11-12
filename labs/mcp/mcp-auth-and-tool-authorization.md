@@ -164,7 +164,7 @@ The **Result** panel lists **2 tools discovered**, and the **Tool** list has onl
 
 Reload the page, then repeat steps 2 to 5 with alice's token. The **Result** panel lists **3 tools discovered**, and the **Tool** list has `search`, `get_chunks` and `get_full_page`. Alice still sees all 3 tools, because her `team` claim is `platform`.
 
-If bob's client calls `search` anyway, the gateway rejects the call with `Unknown tool: search`.
+If bob's client calls `search` anyway, the gateway rejects the call with the error `unknown resource`.
 
 <details>
 <summary>Optional: check with curl</summary>
@@ -211,10 +211,6 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 mcp:
   policies:
     mcpAuthentication:
-      mode: strict
-      issuer: solo-workshop
-      audiences:
-      - agentgateway
       jwks: |-
         {
           "keys": [
@@ -225,10 +221,15 @@ mcp:
           ]
         }
       resourceMetadata: {}
+      issuer: solo-workshop
+      audiences:
+      - agentgateway
     mcpAuthorization:
       rules:
       - deny: mcp.tool.name == "search" && jwt.team == "marketing"
 ```
+
+The UI writes only the fields you changed. You left **Validation mode** on its default, **Strict**, so the policy has no `mode` field.
 
 ## Clean up
 

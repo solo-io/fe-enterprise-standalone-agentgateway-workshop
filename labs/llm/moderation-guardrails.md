@@ -53,7 +53,7 @@ The **Models** page lists `openai/*`.
 
    ![Guardrails page with the OpenAI Moderation guard](../../images/llm/moderation-guardrails/03-save-guardrails.png)
 
-The guard has no field for the OpenAI key yet, so the gateway calls the moderation API without one. Until you finish Step 2, every LLM request fails with `prompt guard failed`.
+The guard has no field for the OpenAI key yet, so the gateway calls the moderation API without one. Until you finish Step 2, every LLM request fails with `failed to process LLM request`.
 
 ## Step 2: Give the guard your OpenAI key
 
@@ -89,7 +89,7 @@ The playground shows **Playground request failed** with your rejection body:
 
 ![Chat Playground with the prompt blocked by OpenAI Moderation](../../images/llm/moderation-guardrails/06-blocked.png)
 
-If the reply arrives instead, or you see `prompt guard failed`, wait 2 seconds, reload the page and send the prompt again.
+If the reply arrives instead, or you see `failed to process LLM request`, wait 2 seconds, reload the page and send the prompt again.
 
 ### A normal prompt passes
 
@@ -130,9 +130,9 @@ llm:
   policies:
     guardrails:
       request:
-        - openAIModeration: { policies: { backendAuth: { key: $OPENAI_API_KEY } } }
-          rejection:
-            body: Request blocked by OpenAI Moderation.
+      - openAIModeration: { policies: { backendAuth: { key: $OPENAI_API_KEY } } }
+        rejection:
+          body: Request blocked by OpenAI Moderation.
 ```
 
 ## Clean up

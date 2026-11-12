@@ -51,7 +51,8 @@ test('turn on tracing', async ({ page }) => {
   await save(page, 'Save policy');
   const t = readConfig().frontendPolicies.tracing;
   console.log(JSON.stringify(t));
-  expect(t).toEqual({ host: 'tempo:4317', protocol: 'grpc', randomSampling: true });
+  // gRPC is the default protocol, so the UI writes no `protocol`.
+  expect(t).toEqual({ host: 'tempo:4317', randomSampling: true });
 });
 
 test('send chat requests', async ({ page }) => {
@@ -188,6 +189,7 @@ test('add a model that always fails', async ({ page }) => {
   console.log(JSON.stringify(m));
   expect(m.provider).toEqual({ custom: { formats: [{ type: 'completions' }] } });
   expect(m.params).toEqual({ model: 'mock-gpt', baseUrl: 'http://mock-llm-503:8000/v1' });
+  expect(Object.keys(m)).toEqual(['params', 'name', 'provider']);
 });
 
 test('send requests that fail', async ({ page }) => {
@@ -231,7 +233,7 @@ test('check it: the error-rate alert fires', async ({ page }) => {
 
 test('clean up', async ({ page }) => {
   await go(page, '/llm/models');
-  const m = page.locator('main').getByRole('row').filter({ has: page.getByText('mock-llm-503', { exact: true }) });
+  const m = page.locator('main').getByRole('row').filter({ has: page.getByRole('cell', { name: /^mock-llm-503(\s|$)/ }) });
   await m.getByRole('button', { name: /^Delete/ }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: /^Delete model$/ }).click();
   await expect(m).toHaveCount(0);

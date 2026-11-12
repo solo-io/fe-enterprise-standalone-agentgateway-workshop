@@ -207,22 +207,19 @@ llm:
     timeout:
       requestTimeout: 2s
   models:
-    - name: mock-llm-slow
+    - params:
+        model: mock-gpt
+        baseUrl: http://mock-llm-slow:8000/v1
+      name: mock-llm-slow
       provider:
         custom:
           formats:
             - type: completions
-      params:
-        model: mock-gpt
-        baseUrl: http://mock-llm-slow:8000/v1
 gateways:
   public:
     port: 8080
 routes:
   - gateways: public
-    matches:
-      - path:
-          pathPrefix: /
     backends:
       - host: mock-llm-flaky:8000
     name: flaky-llm
@@ -233,6 +230,8 @@ routes:
         codes:
           - 503
 ```
+
+The UI writes only the fields you changed. **Path match** **Prefix** with **Path** `/` is the default, so the route has no `matches`.
 
 ## Clean up
 

@@ -217,21 +217,22 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 llm:
   models:
     ...
-    - name: mock-llm-503
+    - params:
+        model: mock-gpt
+        baseUrl: http://mock-llm-503:8000/v1
+      name: mock-llm-503
       provider:
         custom:
           formats:
             - type: completions
-      params:
-        model: mock-gpt
-        baseUrl: http://mock-llm-503:8000/v1
 frontendPolicies:
   ...
   tracing:
     host: tempo:4317
-    protocol: grpc
     randomSampling: true
 ```
+
+The UI writes only the fields you changed. **Protocol** **gRPC** is the default, so `tracing` has no `protocol`.
 
 ## Clean up
 

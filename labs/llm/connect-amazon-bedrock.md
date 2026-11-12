@@ -47,7 +47,7 @@ Temporary credentials expire. When they do, Bedrock rejects requests through the
 3. In **Provider**, select **Amazon Bedrock**. The UI fills **Incoming model match** with `bedrock/*`.
 4. Under **AWS credentials**, click **Ambient**.
 5. In **AWS region**, enter `us-west-2`.
-6. In **Bedrock endpoint**, select **Prefer Runtime**.
+6. Leave **Bedrock endpoint** on **Prefer Runtime**.
 7. Under **Outgoing model**, click **Strip bedrock/**.
 8. Click **Save model**.
 
@@ -55,7 +55,7 @@ Temporary credentials expire. When they do, Bedrock rejects requests through the
 
 **Ambient** tells the gateway to use the AWS credentials in its environment, the ones from Step 1. **Static** would write the keys into `config.yaml`.
 
-Bedrock has two endpoints: Runtime and Mantle. This lab uses model IDs with a `us.` prefix, such as `us.anthropic.claude-haiku-4-5-20251001-v1:0`. These are cross-region inference profiles, and Runtime accepts them. With the default, **Prefer Mantle**, the gateway sends Claude Haiku 4.5 to Mantle, which answers `404 The model ... does not exist`.
+Bedrock has two endpoints: Runtime and Mantle. This lab uses model IDs with a `us.` prefix, such as `us.anthropic.claude-haiku-4-5-20251001-v1:0`. These are cross-region inference profiles, and Runtime accepts them. With **Prefer Mantle**, the gateway sends Claude Haiku 4.5 to Mantle, which answers `404 The model ... does not exist`.
 
 The model now appears in the list:
 
@@ -152,7 +152,6 @@ llm:
     - name: bedrock/*
       provider: bedrock
       params:
-        bedrockEndpointPreference: runtimePreferred
         awsRegion: us-west-2
       transformation:
         model: llmRequest.model.stripPrefix("bedrock/")

@@ -132,36 +132,36 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 ```yaml
 llm:
   models:
-    - name: mock-llm-429
+    - params:
+        model: mock-gpt
+        baseUrl: http://mock-llm-429:8000/v1
+      name: mock-llm-429
       provider:
         custom:
           formats:
             - type: completions
-      params:
-        model: mock-gpt
-        baseUrl: http://mock-llm-429:8000/v1
       health:
         unhealthyExpression: response.code == 429
         eviction:
           duration: 60s
           consecutiveFailures: 1
-    - name: mock-llm
+    - params:
+        model: mock-gpt
+        baseUrl: http://mock-llm:8000/v1
+      name: mock-llm
       provider:
         custom:
           formats:
             - type: completions
-      params:
-        model: mock-gpt
-        baseUrl: http://mock-llm:8000/v1
   virtualModels:
-    - name: mock-failover
-      routing:
+    - routing:
         failover:
           targets:
             - model: mock-llm-429
               priority: 0
             - model: mock-llm
               priority: 1
+      name: mock-failover
 ```
 
 Lower `priority` values are tried first.

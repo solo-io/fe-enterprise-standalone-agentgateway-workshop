@@ -113,7 +113,9 @@ test('step 1: require a Keycloak token', async ({ page }) => {
   expect(jwt.mode).toBe('strict');
   expect(jwt.issuer).toBe(ISSUER);
   expect(jwt.audiences).toEqual(['agentgateway']);
-  expect(JSON.stringify(jwt.jwks)).toContain(JWKS_URL);
+  expect(jwt.jwks).toEqual({ url: JWKS_URL });
+  // Required claims stays on its default (exp), so the UI writes no requiredClaims.
+  expect(jwt.jwtValidationOptions).toEqual({});
 
   await page.waitForTimeout(2000);
   const r = labSh(`curl -si http://localhost:4000/v1/messages \\
@@ -121,7 +123,7 @@ test('step 1: require a Keycloak token', async ({ page }) => {
   -H 'anthropic-version: 2023-06-01' \\
   -d '{"model":"openai/gpt-6-luna","max_tokens":50,"messages":[{"role":"user","content":"Reply with the single word: ready"}]}'`).stdout;
   expect(r).toMatch(/^HTTP\/1\.1 401 Unauthorized/);
-  expect(r.trimEnd().endsWith('authentication failure: no bearer token found')).toBeTruthy();
+  expect(r.trimEnd().endsWith('\nauthentication failed')).toBeTruthy();
 });
 
 test('step 3: sign in as alice, as agentdesktop does', async ({ page }) => {

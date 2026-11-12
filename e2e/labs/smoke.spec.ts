@@ -7,6 +7,6 @@ const { go } = lab('setup', 'smoke');
 
 test('UI loads and config is mounted', async ({ page }) => {
   await go(page, '/');
-  await expect(page.getByText('v2026.10.0')).toBeVisible();
+  await expect(page.getByText('2026.11.0')).toBeVisible();
   expect(readConfig().llm.port).toBe(4000);
 });

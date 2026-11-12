@@ -51,7 +51,7 @@ It runs nothing. Each lab is one tab-separated line: the id, the lab path, and t
 
 Show the labs grouped by the sub-headings of the track's table in `README.md`, in the order the list prints them. Name:
 
-- the labs whose tests will skip for a missing or rejected key: join the key-check lines against the **Needs** column of `README.md`
+- the labs whose tests will skip for a missing or rejected key: join the key-check lines against the **Needs** column of `README.md`. If any key is missing, stop and name the variable and the labs it gates, then offer two choices: the user adds it to `setup/.env` and says continue (run `--list` again), or the user continues and those labs skip. A missing or rejected `OPENAI_API_KEY` is different: the harness stops the run, so tell the user to fix it in `setup/.env` and run `--list` again. Never ask the user to paste a key into the chat, and never write a key yourself
 - the labs that cost money: every lab that calls a provider. Most call OpenAI with `gpt-6-luna`, which costs little (the README's Prerequisites note). Ask before running each lab that also bills Anthropic, Bedrock, or TypeSafe. For each one the user declines, log it and pass `--skip <id>` on every later `run-e2e.sh` call; the report shows it as `SKIP (declined)`:
 
   ```bash

@@ -1,19 +1,27 @@
 // labs/mcp/local-mcp-and-federation.md
 // @fixture base
 // @profiles mcp-everything
+// @docker yes
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, labSh, sh } from '../../lib/lab';
+import { helperLogs, inLab, lab, labSh, sh } from '../../lib/lab';
+import { readConfig } from '../../lib/config';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'local-mcp-and-federation');
 
 test.describe.configure({ mode: 'serial' });
 
-/** Opens MCP Servers > Settings and returns the dialog. */
+/** Opens MCP Servers > Settings, opens the MCP behavior section, and returns the dialog. */
 async function openSettings(page: Page): Promise<Locator> {
   await go(page, '/mcp/servers');
   await page.locator('main').getByRole('button', { name: 'Settings' }).click();
-  return page.getByRole('dialog');
+  const d = page.getByRole('dialog');
+  // The section is closed each time the panel opens.
+  const section = d.getByRole('button', { name: /^MCP behavior/ });
+  await expect(section).toHaveAttribute('aria-expanded', 'false');
+  await section.click();
+  await expect(section).toHaveAttribute('aria-expanded', 'true');
+  return d;
 }
 
 /** Picks an option in a Settings dropdown. Options read "<label> <description>". */
@@ -34,6 +42,8 @@ async function initialize(page: Page, opts: { reload?: boolean; shotName?: strin
     await page.waitForTimeout(2000);
     await page.reload();
   }
+  // The playground reads the MCP address from the gateway config when the page loads.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   const init = main.getByRole('button', { name: 'Initialize' });
   if (shotName) await shot(page, shotName, init);
@@ -126,8 +136,13 @@ test('fail closed: one unreachable server breaks the session', async ({ page }) 
   await shot(page, '09-broken-state');
   const text = await initialize(page, { reload: true });
   expect(text).toContain('MCP request failed');
-  expect(text).toContain('DNS resolution');
+  expect(text).toContain('"message":"failed to send message"');
   await shot(page, '10-fail-closed');
+  // The response does not say why. The lab reads the reason from the gateway log.
+  inLab(`docker compose logs agentgateway | grep 'failed to send message' | tail -1`);
+  const line = helperLogs('agentgateway').split('\n').filter((l) => l.includes('failed to send message')).pop() ?? '';
+  console.log(`gateway log: ${line}`);
+  expect(line).toMatch(/http\.status=500 protocol=mcp mcp\.method\.name=initialize error="mcp: failed to send message: http upstream error: http request failed: backends required DNS resolution which failed"/);
 });
 
 test('fail open: the healthy servers keep working', async ({ page }) => {
@@ -139,6 +154,19 @@ test('fail open: the healthy servers keep working', async ({ page }) => {
   const main = page.locator('main');
   await expect(main).toContainText('16 tools discovered');
   await shot(page, '12-fail-open-tools', main.getByText('16 tools discovered'));
+});
+
+test('what the UI wrote', () => {
+  const mcp = readConfig().mcp;
+  expect(mcp.targets).toEqual([
+    { name: 'solo-docs', mcp: { host: 'https://search.solo.io/mcp' } },
+    { name: 'everything', mcp: { host: 'http://mcp-everything:3001/mcp' } },
+    { name: 'broken', mcp: { host: 'http://does-not-exist:3001/mcp' } },
+  ]);
+  const { statefulMode, prefixMode, failureMode, toolMode } = mcp;
+  expect({ statefulMode, prefixMode, failureMode, toolMode })
+    .toEqual({ statefulMode: 'stateless', prefixMode: 'never', failureMode: 'failOpen', toolMode: 'standard' });
+  expect(Object.keys(mcp)).toEqual(['gateways', 'targets', 'policies', 'statefulMode', 'prefixMode', 'failureMode', 'toolMode']);
 });
 
 test('clean up: turn off MCP', async ({ page }) => {

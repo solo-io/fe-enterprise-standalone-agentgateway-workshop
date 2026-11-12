@@ -212,7 +212,6 @@ ui:
       - profile
       - email
 rbac:
-  mode: fine-grained
   policies:
   - name: platform-admins
     subjects:
@@ -230,18 +229,19 @@ rbac:
     subjects:
     - user: carol@example.com
     grants:
-    - access: manage
-      resource: llm.model
+    - resource: llm.model
+      access: manage
       scope:
         names:
         - openai/*
+  mode: fine-grained
 ```
 
 The gateway encrypts the sign-in cookie with the `OIDC_COOKIE_SECRET` variable that `setup/docker-compose.yml` passes to the gateway. The workshop sets a default value. Outside the workshop, generate your own with `openssl rand -hex 32` and set it in `.env`.
 
 ## Clean up
 
-Do steps 1 to 13 on `http://localhost:15000/ui`.
+Do steps 1 to 14 on `http://localhost:15000/ui`.
 
 1. In the sidebar, click **Settings**, then **Access Control**.
 2. In **Access control**, select **Off** and click **Save**.
@@ -253,11 +253,12 @@ Do steps 1 to 13 on `http://localhost:15000/ui`.
 8. In the sidebar, under **Traffic**, click **Gateways**.
 9. In the **public** card, click the trash icon (**Delete gateway**).
 10. In the sidebar, click **Raw Configuration**.
-11. Delete the line `gateways: {}` and click **Save**. Deleting the gateway leaves this empty line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
-12. In the sidebar, click **Models**.
-13. In the `openai/*` row, click the trash icon, then click **Delete model**.
-14. Close all private windows.
-15. From the `setup/` folder, stop Keycloak:
+11. Delete the line `gateways: {}`. Deleting the gateway leaves this empty line. While it is there, the sidebar shows **Gateways** and **Routes** under **Traffic** instead of **Get started**.
+12. Delete the two lines `rbac:` and `policies: []`, then click **Save**. Deleting the last role leaves them.
+13. In the sidebar, click **Models**.
+14. In the `openai/*` row, click the trash icon, then click **Delete model**.
+15. Close all private windows.
+16. From the `setup/` folder, stop Keycloak:
 
     ```bash
     docker compose stop keycloak

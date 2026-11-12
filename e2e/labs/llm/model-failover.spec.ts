@@ -132,7 +132,8 @@ test('clean up: delete the virtual model and both mock models', async ({ page })
   await go(page, '/llm/models');
   const main = page.locator('main');
   for (const [name, n] of [['mock-failover', '10'], ['mock-llm-429', ''], ['mock-llm', '']] as const) {
-    const row = main.getByRole('row').filter({ has: page.getByText(name, { exact: true }) });
+    // The name cell also holds the base URL, so match the start of the cell.
+    const row = main.getByRole('row').filter({ has: page.getByRole('cell', { name: new RegExp(`^${name}(\\s|$)`) }) });
     const del = row.getByRole('button', { name: /^Delete/ });
     if (n) await shot(page, `${n}-delete-virtual-model`, del);
     await del.click();

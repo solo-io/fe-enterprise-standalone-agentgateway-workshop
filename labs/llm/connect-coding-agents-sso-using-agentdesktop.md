@@ -113,7 +113,7 @@ Expected output:
 HTTP/1.1 401 Unauthorized
 ...
 
-authentication failure: no bearer token found
+authentication failed
 ```
 
 ## Step 2: Install agentdesktop
@@ -317,19 +317,19 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 llm:
   policies:
     jwtAuth:
+      jwtValidationOptions: {}
       mode: strict
       issuer: http://localhost:8180/realms/workshop
       audiences:
       - agentgateway
       jwks:
         url: http://localhost:8180/realms/workshop/protocol/openid-connect/certs
-      jwtValidationOptions:
-        requiredClaims:
-        - exp
     authorization:
       rules:
       - allow: '"platform-team" in jwt.groups'
 ```
+
+The UI writes only the fields you changed. You left **Required claims** on its default, `exp`, so `jwtValidationOptions` is empty, and the gateway still rejects tokens that have no expiry time.
 
 agentdesktop wrote these keys to `~/.claude/settings.json`:
 

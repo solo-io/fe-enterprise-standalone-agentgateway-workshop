@@ -85,13 +85,13 @@ Expected output:
 
 ```
 NAME                                  IMAGE                                                                                       ...   STATUS
-agentgateway-workshop-agentgateway-1  us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.10.0   ...   Up 10 seconds
+agentgateway-workshop-agentgateway-1  us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.0   ...   Up 10 seconds
 ```
 
 ## Step 5: Open the UI
 
 1. Open [http://localhost:15000/ui](http://localhost:15000/ui) in your browser.
-2. Check the version under the logo reads **v2026.10.0**.
+2. Check the version under the logo reads **2026.11.0**.
 
 ![Gateway Overview page with the version under the logo](images/setup/001/01-home.png)
 

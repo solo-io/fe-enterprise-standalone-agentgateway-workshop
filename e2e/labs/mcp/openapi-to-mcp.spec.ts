@@ -2,6 +2,7 @@
 // @fixture base
 import { expect, test } from '@playwright/test';
 import { lab, labSh } from '../../lib/lab';
+import { readConfig } from '../../lib/config';
 import { applyMcpCors, enableMcp, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'openapi-to-mcp');
@@ -105,29 +106,38 @@ test('add the Open-Meteo API as an MCP server', async ({ page }) => {
   await page.getByRole('button', { name: 'Add server' }).first().click();
   const d = page.getByRole('dialog');
   await d.getByRole('textbox', { name: 'Server name' }).fill('open-meteo');
-  await d.getByRole('radio', { name: 'OpenAPI' }).click();
+  await d.getByRole('button', { name: 'OpenAPI', exact: true }).click();
+  await expect(d.getByRole('button', { name: 'OpenAPI', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await d.getByRole('textbox', { name: /^URL/ }).fill('https://api.open-meteo.com');
-  await shot(page, '01-add-openapi-server', d.getByRole('radio', { name: 'Inline' }));
-  await d.getByRole('radio', { name: 'Inline' }).click();
+  const inline = d.getByRole('group', { name: 'Schema source' }).getByRole('button', { name: 'Inline', exact: true });
+  await shot(page, '01-add-openapi-server', inline);
+  await inline.click();
+  await expect(inline).toHaveAttribute('aria-pressed', 'true');
+  // The dialog has two code editors: Schema, then Backend policies.
+  const schema = d.locator('.monaco-editor').first();
   // The schema editor is a code editor: paste like the reader does, so brackets are not auto-closed.
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.evaluate((t) => navigator.clipboard.writeText(t), SCHEMA);
-  await d.locator('.monaco-editor .view-lines').first().click();
+  await schema.locator('.view-lines').click();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.press('ControlOrMeta+V');
-  await expect(d.locator('.monaco-editor')).toContainText('Weather forecast data');
+  await expect(schema).toContainText('Weather forecast data');
   await page.keyboard.press('ControlOrMeta+Home');
-  await expect(d.locator('.monaco-editor')).toContainText('Open-Meteo');
+  await expect(schema).toContainText('Open-Meteo');
   await shot(page, '02-paste-schema', d.getByRole('button', { name: 'Save server' }));
   await save(page, 'Save server');
   const row = page.locator('main').getByRole('row', { name: /^open-meteo\b/ });
   await expect(row).toContainText('OpenAPI');
   await expect(row).toContainText('ready', { timeout: 30_000 });
   await shot(page, '03-server-ready');
+  // What the UI wrote: the pasted schema, stored inline.
+  expect(readConfig().mcp.targets).toEqual([{ name: 'open-meteo', openapi: { host: 'https://api.open-meteo.com', schema: SCHEMA } }]);
 });
 
 test('call the generated tool', async ({ page }) => {
   await go(page, '/mcp/playground');
+  // The playground reads the MCP address from the gateway config when the page loads.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
   await expect(main.getByText('1 tools discovered')).toBeVisible({ timeout: 30_000 });

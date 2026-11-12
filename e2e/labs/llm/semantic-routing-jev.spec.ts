@@ -142,7 +142,7 @@ test('step 1: add the auto_model virtual model', async ({ page }) => {
   await shot(page, '02-add-virtual-model', d.getByRole('button', { name: 'Save virtual model' }));
   await save(page, 'Save virtual model');
   expect(readConfig().llm.virtualModels).toEqual([
-    { name: 'auto_model', routing: { weighted: { targets: [{ model: 'openai/gpt-5.6-luna', weight: 1 }] } } },
+    { name: 'auto_model', routing: { weighted: { targets: [{ model: 'openai/gpt-5.6-luna' }] } } },
   ]);
 });
 

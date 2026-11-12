@@ -233,7 +233,7 @@ The **Result** panel lists **3 tools discovered**. The requester cannot email su
 2. In the Tool Playground, reload the page, paste the buyer's token in **Bearer token**, and click **Initialize**.
 3. Call **get_supplier** with **id** `SUP-001`.
 
-The call works, and the **Tool output** shows the real bank account and tax ID. The masking processor is **Fail open**, so the gateway skipped it: the agent keeps working, and the payment data goes through unmasked.
+After about 10 seconds, the call works, and the **Tool output** shows the real bank account and tax ID. The masking processor is **Fail open**, so the gateway skipped it: the agent keeps working, and the payment data goes through unmasked.
 
 ![Tool output with the real bank account after the masking server stopped](../../images/mcp/mcp-guardrails/15-redact-down.png)
 
@@ -245,9 +245,9 @@ The call works, and the **Tool output** shows the real bank account and tax ID. 
 
 5. In **Tool**, select **list_purchase_orders** and click **Call tool**.
 
-After about 10 seconds, the **Result** panel shows an error with `mcpGuardrails checkRequest failed: upstream call timeout`. The authorization processor is **Fail closed**, so no call reaches the MCP server while the policy server is down, even calls the policy would allow.
+After about 10 seconds, the **Result** panel shows an error with `guardrail check failed`. The authorization processor is **Fail closed**, so no call reaches the MCP server while the policy server is down, even calls the policy would allow.
 
-![Result panel with the mcpGuardrails checkRequest failed error](../../images/mcp/mcp-guardrails/16-authz-down.png)
+![Result panel with the guardrail check failed error](../../images/mcp/mcp-guardrails/16-authz-down.png)
 
 | Processor | Failure mode | With its policy server stopped |
 |---|---|---|
@@ -283,25 +283,19 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 
 ```yaml
 mcp:
-  targets:
-  - name: procurement
-    mcp:
-      host: http://procurement-mcp:8000/mcp
   policies:
     ...
     mcpAuthentication:
-      mode: strict
-      issuer: solo-workshop
-      audiences:
-      - agentgateway
       jwks: |-
         { "keys": [ ... ] }
       resourceMetadata: {}
+      issuer: solo-workshop
+      audiences:
+      - agentgateway
     mcpGuardrails:
       processors:
       - kind: remote
         host: extmcp-authz:9001
-        failureMode: failClosed
         methods:
           tools/call: request
           tools/list: response
@@ -313,7 +307,13 @@ mcp:
         failureMode: failOpen
         methods:
           tools/call: response
+  targets:
+  - name: procurement
+    mcp:
+      host: http://procurement-mcp:8000/mcp
 ```
+
+The UI writes only the fields you changed. Processor 1 has no `failureMode` because **Fail closed** is the default, and `mcpAuthentication` has no `mode` because **Strict** is the default.
 
 ## Clean up
 

@@ -163,7 +163,7 @@ A request without an `x-user` header sends no `user` value, and the service lets
 ## Step 4: Count tokens
 
 1. In the sidebar, click **Policies**, then click the **Remote rate limit** card.
-2. Under **Descriptors**, in **Type**, select **Tokens**. The description says it evaluates the descriptors after the LLM response completes.
+2. Under **Descriptors**, in **Type**, select **Tokens**. The description says **Count LLM token usage.**
 3. Under **Entries**, in the first box, replace `user` with `tokens`.
 4. In the second box, select the text and replace it with `"all"`.
 5. Click **Save policy**.
@@ -252,14 +252,14 @@ llm:
   policies:
     remoteRateLimit:
       host: ratelimit:8081
-      domain: agentgateway
       descriptors:
-        - entries:
-            - key: counter
-              value: '"all"'
+      - entries:
+        - key: counter
+          value: '"all"'
+      domain: agentgateway
 ```
 
-Step 4 adds `type: tokens` to the descriptor, and Step 5 adds `failureMode: failOpen` under `remoteRateLimit`.
+The UI writes only the fields you changed, so the defaults are absent: **Fail closed** has no `failureMode` line, and the **Requests** type has no `type` line. Step 4 adds `type: tokens` to the descriptor, and Step 5 adds `failureMode: failOpen` under `remoteRateLimit`.
 
 ## Clean up
 

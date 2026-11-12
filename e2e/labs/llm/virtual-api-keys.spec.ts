@@ -2,7 +2,7 @@
 // @fixture base
 import { expect, test, type Page } from '@playwright/test';
 import { chat, chatRequest, lab } from '../../lib/lab';
-import { expectMatchesFixture } from '../../lib/config';
+import { expectMatchesFixture, readConfig } from '../../lib/config';
 import { addOpenAIModel, deleteModel } from '../../lib/setup';
 
 const { go, shot } = lab('llm', 'virtual-api-keys');
@@ -43,10 +43,17 @@ test('enable API key authentication', async ({ page }) => {
   await enable.click();
   const d = page.getByRole('dialog');
   const confirm = d.getByRole('button', { name: 'Enable API key auth' });
-  await expect(d.getByRole('combobox', { name: 'Validation mode' })).toHaveText(/Strict/);
+  // The form opens on Optional, which lets requests without a key through. The lab selects Strict.
+  const mode = d.getByRole('combobox', { name: 'Validation mode' });
+  await expect(mode).toHaveText(/Optional/);
+  await mode.click();
+  await page.getByRole('option', { name: /^Strict/ }).click();
+  await expect(mode).toHaveText(/Strict/);
   await shot(page, '02-enable-dialog', confirm);
   await confirm.click();
   await expect(page.locator('main').getByRole('button', { name: 'New key' }).first()).toBeVisible();
+  await page.waitForTimeout(1000);
+  expect(readConfig().llm.policies.apiKey.mode).toBe('strict');
 });
 
 test('create keys for alice and bob', async ({ page }) => {
@@ -65,11 +72,19 @@ test('a request without a key is rejected', async ({ page }) => {
   await main.getByPlaceholder('Select or type a model').fill('gpt-6-luna');
   await main.getByPlaceholder('Ask a test question...').fill('Reply with the single word: pong');
   await main.getByRole('button', { name: 'Send' }).click();
-  await expect(main).toContainText('api key authentication failure: no API Key found', { timeout: 30_000 });
+  const banner = main.getByText('Playground request failed').locator('..');
+  await expect(banner).toContainText('authentication failed', { timeout: 30_000 });
   await shot(page, '07-no-key-rejected', main.getByPlaceholder('Optional Bearer token'));
 
   const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway');
   expect(r.status).toBe(401);
+  expect(r.text.trim()).toBe('authentication failed');
+
+  await go(page, '/llm/logs');
+  // The response does not say why. The lab sends the reader to Logs for the reason.
+  const row = main.locator('tbody tr').first();
+  await expect(row).toContainText('401', { timeout: 30_000 });
+  await expect(row).toContainText('api key authentication failure: no API Key found');
 });
 
 test("alice's key is accepted", async ({ page }) => {
@@ -105,12 +120,15 @@ test('Logs and Analytics show the user', async ({ page }) => {
   await shot(page, '10-log-detail');
 
   await go(page, '/llm/analytics');
-  await main.getByRole('button', { name: 'Total' }).click();
+  await main.getByText('Group by', { exact: true }).locator('..').getByRole('button').click();
+  // Group by starts on Model. The lab adds User.
+  await expect(page.getByRole('checkbox', { name: 'Model', exact: true })).toBeChecked();
   await page.getByRole('checkbox', { name: 'User', exact: true }).check();
   await main.getByRole('heading', { name: 'Analytics' }).click();
   await expect(page.getByRole('checkbox', { name: 'User', exact: true })).toBeHidden();
-  await expect(main).toContainText('alice');
-  await expect(main).toContainText('bob');
+  await expect(main).toContainText('by model · user');
+  await expect(main).toContainText('gpt-6-luna · alice');
+  await expect(main).toContainText('gpt-6-luna · bob');
   await shot(page, '11-analytics-by-user');
 });
 

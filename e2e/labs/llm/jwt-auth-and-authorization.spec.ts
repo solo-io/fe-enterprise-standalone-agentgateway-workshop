@@ -67,6 +67,8 @@ test('add a JWT auth policy', async ({ page }) => {
   await card.click();
 
   const d = page.getByRole('dialog');
+  // The form opens on Optional. The lab clicks Strict.
+  await expect(d.getByRole('button', { name: /^Optional/ })).toHaveClass(/active/);
   await d.getByRole('button', { name: /^Strict/ }).click();
   await d.getByRole('button', { name: /^Inline JSON/ }).click();
   await pasteInto(page, d.locator('.monaco-editor').first(), JWKS, 'workshop-1');
@@ -84,17 +86,25 @@ test('add a JWT auth policy', async ({ page }) => {
   expect(jwt.issuer).toBe('solo-workshop');
   expect(jwt.audiences).toEqual(['agentgateway']);
   expect(jwt.jwks).toContain('workshop-1');
+  // Required claims stays on its default (exp), so the UI writes no requiredClaims.
+  expect(jwt.jwtValidationOptions).toEqual({});
 });
 
 test('no token gets 401, alice gets 200', async ({ page }) => {
   await page.waitForTimeout(2000);
   await go(page, '/llm/playground');
   const denied = await chatError(page, '');
-  await expect(denied).toContainText('authentication failure: no bearer token found');
+  await expect(denied).toContainText('authentication failed');
   await shot(page, '04-playground-no-token', page.locator('main').getByPlaceholder('Optional Bearer token'));
   const r = curl();
   expect(r).toMatch(/^HTTP\/1\.1 401 Unauthorized/);
-  expect(r.trimEnd().endsWith('authentication failure: no bearer token found')).toBeTruthy();
+  expect(r.trimEnd().endsWith('\nauthentication failed')).toBeTruthy();
+  // The response does not say why. The lab sends the reader to Logs for the reason.
+  await go(page, '/llm/logs');
+  const row = page.locator('main tbody tr').first();
+  await expect(row).toContainText('401', { timeout: 30_000 });
+  await expect(row).toContainText('authentication failure: no bearer token found');
+  await go(page, '/llm/playground');
 
   const ok = await chat(page, { ...MODEL, apiKey: ALICE, prompt: PROMPT });
   expect(ok).toContain('OK');

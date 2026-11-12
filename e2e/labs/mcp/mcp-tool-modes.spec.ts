@@ -2,6 +2,7 @@
 // @fixture base
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { lab } from '../../lib/lab';
+import { readConfig } from '../../lib/config';
 import { setUpSoloDocs, turnOffMcp } from '../../lib/setup';
 
 const { go, shot, save } = lab('mcp', 'mcp-tool-modes');
@@ -13,11 +14,16 @@ const PRODUCT = 'solo-enterprise-for-agentgateway';
 const ARGS = `{"query": "${QUESTION}", "product": "${PRODUCT}", "limit": 1}`;
 const CODE = `await search({ query: "${QUESTION}", product: "${PRODUCT}", limit: 1 })`;
 
-/** Opens MCP Servers > Settings, sets Tool mode, and saves. */
+/** Opens MCP Servers > Settings and the MCP behavior section, sets Tool mode, and saves. */
 async function setToolMode(page: Page, mode: string, shotName: string): Promise<void> {
   await go(page, '/mcp/servers');
   await page.locator('main').getByRole('button', { name: 'Settings' }).click();
   const d = page.getByRole('dialog');
+  // The section is closed each time the panel opens.
+  const section = d.getByRole('button', { name: /^MCP behavior/ });
+  await expect(section).toHaveAttribute('aria-expanded', 'false');
+  await section.click();
+  await expect(section).toHaveAttribute('aria-expanded', 'true');
   await d.getByRole('combobox', { name: 'Tool mode' }).click();
   await page.getByRole('option', { name: new RegExp(`^${mode}\\s+[A-Z]`) }).click();
   await expect(d.getByRole('combobox', { name: 'Tool mode' })).toContainText(mode);
@@ -29,6 +35,8 @@ async function setToolMode(page: Page, mode: string, shotName: string): Promise<
 /** Opens the Tool Playground fresh and clicks Initialize. */
 async function initialize(page: Page, tools: number): Promise<Locator> {
   await go(page, '/mcp/playground');
+  // The playground reads the MCP address from the gateway config when the page loads.
+  await page.waitForLoadState('networkidle');
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Initialize' }).click();
   await expect(main.getByText(`${tools} tools discovered`)).toBeVisible({ timeout: 30_000 });
@@ -55,6 +63,7 @@ test('set up', async ({ page }) => {
 
 test('Search mode: two tools replace the tool list', async ({ page }) => {
   await setToolMode(page, 'Search', '01-tool-mode-search');
+  expect(readConfig().mcp.toolMode).toBe('search');
   const main = await initialize(page, 2);
   await expect(main.getByText(/^get_tool$/)).toBeVisible();
   await expect(main.getByText(/^invoke_tool$/)).toBeVisible();
@@ -100,6 +109,14 @@ test('Code mode: one run_code tool', async ({ page }) => {
   await expect(hit).toBeVisible({ timeout: 60_000 });
   await expect(main).toContainText('Source: https://docs.solo.io');
   await shot(page, '09-run-code-result', hit);
+});
+
+test('what the UI wrote', () => {
+  const mcp = readConfig().mcp;
+  console.log(JSON.stringify(mcp));
+  const { gateways, targets, policies, ...settings } = mcp;
+  expect(settings).toEqual({ statefulMode: 'stateless', failureMode: 'failClosed', toolMode: 'code' });
+  expect(Object.keys(mcp).slice(-3)).toEqual(['statefulMode', 'failureMode', 'toolMode']);
 });
 
 test('clean up: turn off MCP', async ({ page }) => {

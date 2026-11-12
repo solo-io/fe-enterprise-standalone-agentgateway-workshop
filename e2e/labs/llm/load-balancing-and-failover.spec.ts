@@ -118,8 +118,9 @@ test('check it: the first group serves the requests', async ({ page }) => {
   const statuses: number[] = [];
   for (let i = 0; i < 5; i++) statuses.push(await send(page));
   console.log(statuses.join(' '));
+  // The gateway picks between the two group-1 models at random, so the one 503 that evicts
+  // mock-llm-503 can land on any of the five requests, or on none.
   expect(statuses.filter((s) => s !== 200).length).toBeLessThanOrEqual(1);
-  expect(statuses.slice(-3)).toEqual([200, 200, 200]);
   await shot(page, '06-playground-mock', page.locator('.chat-message.assistant').last());
 
   await go(page, '/llm/logs');
@@ -141,6 +142,7 @@ test('fail over to OpenAI when the first group is down', async ({ page }) => {
   const main = page.locator('main');
   const banner = main.getByText('Playground request failed').locator('..');
   console.log(await banner.innerText());
+  await expect(banner).toContainText('connection timed out');
   await shot(page, '08-connect-failed', banner);
   expect(await send(page)).toBe(200);
   const reply = page.locator('.chat-message.assistant').last();
@@ -162,7 +164,8 @@ test('clean up', async ({ page }) => {
   await go(page, '/llm/models');
   const main = page.locator('main');
   for (const name of ['resilient', 'mock-llm', 'mock-llm-503', 'openai-backup']) {
-    const row = main.getByRole('row').filter({ has: page.getByText(name, { exact: true }) });
+    // The name cell also holds the base URL, so match the start of the cell.
+    const row = main.getByRole('row').filter({ has: page.getByRole('cell', { name: new RegExp(`^${name}(\\s|$)`) }) });
     await row.getByRole('button', { name: /^Delete/ }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: /^Delete (virtual )?model$/ }).click();
     await expect(row).toHaveCount(0);

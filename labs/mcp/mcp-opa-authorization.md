@@ -247,14 +247,10 @@ mcp:
   policies:
     extAuthz:
       host: opa:9000
-      failureMode: deny
-      includeRequestBody:
-        maxRequestBytes: 8192
-      protocol:
-        grpc:
-          context: {}
-          metadata: {}
+      includeRequestBody: {}
 ```
+
+The UI writes only the fields you changed. **Protocol** **gRPC**, **Failure mode** **Deny** and **Max request bytes** `8192` are the defaults, so they are not in the file. `includeRequestBody: {}` turns the request body on with the default size.
 
 ## Clean up
 

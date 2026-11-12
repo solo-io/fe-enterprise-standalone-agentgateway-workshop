@@ -85,9 +85,11 @@ The JWKS (JSON Web Key Set) is the public half of the key that signed the tokens
 4. Leave **Raw API key** empty.
 5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
-The gateway rejects the request with HTTP status `401`. The playground shows **Playground request failed** with **authentication failure: no bearer token found**:
+The gateway rejects the request with HTTP status `401`. The playground shows **Playground request failed** with **authentication failed**:
 
 ![Chat Playground showing the authentication failure](../../images/llm/jwt-auth-and-authorization/04-playground-no-token.png)
+
+The response does not tell the caller why. The reason is in **Logs**: the request's row has status `401` and the message `authentication failure: no bearer token found`.
 
 6. In **Raw API key**, paste alice's token:
 
@@ -185,7 +187,7 @@ Expected output:
 HTTP/1.1 401 Unauthorized
 ...
 
-authentication failure: no bearer token found
+authentication failed
 ```
 
 With bob's token:
@@ -234,6 +236,7 @@ In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI
 llm:
   policies:
     jwtAuth:
+      jwtValidationOptions: {}
       mode: strict
       issuer: solo-workshop
       audiences:
@@ -247,15 +250,12 @@ llm:
             }
           ]
         }
-      jwtValidationOptions:
-        requiredClaims:
-        - exp
     authorization:
       rules:
       - allow: jwt.team == "platform"
 ```
 
-`requiredClaims: [exp]` is the default: the gateway rejects tokens that have no expiry time.
+The UI writes only the fields you changed. You left **Required claims** on its default, `exp`, so `jwtValidationOptions` is empty, and the gateway still rejects tokens that have no expiry time.
 
 ## Clean up
 

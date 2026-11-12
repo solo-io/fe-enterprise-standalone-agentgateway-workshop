@@ -41,12 +41,12 @@ The **Models** page lists `openai/*`.
 
    ![Virtual API Keys page with API key authentication disabled](../../images/llm/virtual-api-keys/01-keys-disabled.png)
 
-3. Leave **Validation mode** on **Strict**.
+3. In **Validation mode**, select **Strict**.
 4. Click **Enable API key auth**.
 
    ![Enable API key auth panel](../../images/llm/virtual-api-keys/02-enable-dialog.png)
 
-**Strict** means every request to port `4000` must carry a valid key. From now on, a request without a key gets HTTP `401`.
+**Strict** means every request to port `4000` must carry a valid key. From now on, a request without a key gets HTTP `401`. The panel opens on **Optional**, which checks a key when a request has one but lets a request without a key through.
 
 ## Step 2: Create a key for alice
 
@@ -87,9 +87,11 @@ The list shows both keys. The **Key** column shows only the start and the last f
 4. Leave **Raw API key** empty.
 5. In **User message**, enter `Reply with the single word: pong` and click **Send**.
 
-The gateway rejects the request. A red box shows **Playground request failed** with the message `api key authentication failure: no API Key found`:
+The gateway rejects the request. A red box shows **Playground request failed** with the message `authentication failed`:
 
-![Chat Playground showing the API key authentication failure](../../images/llm/virtual-api-keys/07-no-key-rejected.png)
+![Chat Playground showing the authentication failure](../../images/llm/virtual-api-keys/07-no-key-rejected.png)
+
+The response does not tell the caller why. The reason is in **Logs**: the request's row has status `401` and the message `api key authentication failure: no API Key found`.
 
 ## Step 5: Send a request with alice's key
 
@@ -116,7 +118,7 @@ The gateway took the user name from the key. The caller cannot change it, becaus
 4. In the sidebar, click **Analytics**.
 5. In **Group by**, select **User**, then click an empty part of the page to close the list.
 
-The chart splits the token count by user. If you also sent a request with bob's key (see the curl check below), you see `alice` and `bob` in the legend:
+**Group by** starts on **Model**, so the chart now splits the requests by model and user. If you also sent a request with bob's key (see the curl check below), you see `gpt-6-luna · alice` and `gpt-6-luna · bob` in the legend. `(none) · (none)` is the requests the gateway rejected:
 
 ![Analytics grouped by user](../../images/llm/virtual-api-keys/11-analytics-by-user.png)
 
@@ -168,12 +170,13 @@ llm:
       keys:
       - keyHash: sha256:c7ced9a1022889370d0a515c62f87e930c3d49af9a6da27e69242cc6703b3756
         metadata:
-          name: alice
           agentgateway.dev/keyHint: agw_sk_...eXLg
+          name: alice
           agentgateway.dev/id: ea731c50-06f7-4760-bb0a-c64f48af3068
           agentgateway.dev/createdAt: 1792185709
       - keyHash: sha256:...
         metadata:
+          agentgateway.dev/keyHint: agw_sk_...
           name: bob
           ...
 ```

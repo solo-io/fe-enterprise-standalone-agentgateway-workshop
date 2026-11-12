@@ -1,9 +1,10 @@
 // labs/mcp/obo-token-exchange.md
 // @fixture base
 // @profiles keycloak,obo
+// @docker yes
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { lab, labSh } from '../../lib/lab';
+import { helperLogs, inLab, lab, labSh } from '../../lib/lab';
 import { readConfig } from '../../lib/config';
 
 const { go, shot, save } = lab('mcp', 'obo-token-exchange');
@@ -31,8 +32,7 @@ const DELEGATION = `oauthTokenExchange:
   actorToken:
     source:
       header:
-        name: x-actor-token
-    tokenType: urn:ietf:params:oauth:token-type:access_token`;
+        name: x-actor-token`;
 
 // The lab's commands, as written.
 const GET_TOKEN = `TOKEN=$(curl -s http://localhost:8180/realms/workshop/protocol/openid-connect/token \\
@@ -178,7 +178,7 @@ test('Part B: switch the exchange to delegation', async ({ page }) => {
   await save(page, 'Save route');
   const x = readConfig().routes[0].backends[0].policies.backendAuth.oauthTokenExchange;
   expect(x.clientAuth.clientId).toBe('procurement-agent');
-  expect(x.actorToken).toEqual({ source: { header: { name: 'x-actor-token' } }, tokenType: 'urn:ietf:params:oauth:token-type:access_token' });
+  expect(x.actorToken).toEqual({ source: { header: { name: 'x-actor-token' } } });
 });
 
 test('Part B check it: the API gets a delegated token', async () => {
@@ -200,7 +200,12 @@ test('Part B check it: the API gets a delegated token', async () => {
   // An actor alice did not authorize: Keycloak refuses the exchange.
   const other = labSh(GET_USER_TOKEN, CALL_OTHER_ACTOR).stdout;
   console.log(`other actor: ${other}`);
-  expect(other).toContain('token exchange returned status 403 Forbidden\nHTTP 500');
+  expect(other.trim()).toBe('backend authentication failed\nHTTP 500');
+  // The response does not say why. The lab reads the reason from the gateway log.
+  inLab(`docker compose logs agentgateway | grep 'backend authentication failed' | tail -1`);
+  const line = helperLogs('agentgateway').split('\n').filter((l) => l.includes('backend authentication failed')).pop() ?? '';
+  console.log(`gateway log: ${line}`);
+  expect(line).toMatch(/route=default\/procurement-api .*http\.status=500 .*error="backend authentication failed: token exchange returned status 403 Forbidden/);
 });
 
 /**
@@ -209,8 +214,8 @@ test('Part B check it: the API gets a delegated token', async () => {
  * Deleting the route and the gateway in the UI leaves `gateways: {}` and `routes: []`, and Traffic stays on.
  */
 async function turnOffTraffic(page: Page) {
+  // The editor shows config.yaml as it is on disk, comment lines included.
   const lines = readFileSync('/work/config.yaml', 'utf8').replace(/\n+$/, '').split('\n');
-  while (lines.length && (lines[0].startsWith('#') || lines[0] === '')) lines.shift();
   const top = lines.map((l) => (/^[a-zA-Z]/.test(l) ? l.replace(/:.*/, '') : null)).filter(Boolean);
   expect(top.slice(-2), 'gateways and routes must be the last top-level sections').toEqual(['gateways', 'routes']);
   const start = lines.findIndex((l) => l.startsWith('gateways:'));

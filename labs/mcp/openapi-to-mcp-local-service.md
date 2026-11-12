@@ -163,25 +163,23 @@ The gateway reached the API, but the API refused the call because it had no key.
 
 ## Step 3: Give the gateway the API key
 
-The **Add MCP server** panel has no field for credentials, so you add the key in Raw Configuration. stripe-mock accepts any key that starts with `sk_test_`. This lab uses `sk_test_123`.
+You give the gateway the key in the **Backend policies** field of the server. stripe-mock accepts any key that starts with `sk_test_`. This lab uses `sk_test_123`.
 
-1. In the sidebar, scroll down to **Tools** and click **Raw Configuration**.
-2. Scroll down in the editor to `mcp`, then `targets`. Click at the end of the line `- name: stripe`.
+1. In the sidebar, under **MCP**, click **Servers**.
+2. In the `stripe` row, click **Edit server** (the pencil icon).
 
-   ![Raw Configuration with the cursor at the end of the stripe line](../../images/mcp/openapi-to-mcp-local-service/06-raw-config-line.png)
+   ![MCP Servers list with the Edit server button](../../images/mcp/openapi-to-mcp-local-service/06-edit-server.png)
 
-3. Press **Enter**. The editor starts the new line under the `-`.
-4. Copy this line, with its two leading spaces, and paste it:
+3. Click in **Backend policies** and paste:
 
    ```yaml
-     policies: { backendAuth: { key: sk_test_123 } }
+   backendAuth:
+     key: sk_test_123
    ```
 
-   Check that `policies` lines up with `name` on the line above and that the line ends with three `}` characters. If you type the line instead, the editor can add extra closing braces.
+4. Click **Save server**.
 
-5. Click **Save**.
-
-   ![Raw Configuration with the policies line under the stripe target](../../images/mcp/openapi-to-mcp-local-service/07-raw-config-key.png)
+   ![Edit MCP server panel with the backendAuth policy in Backend policies](../../images/mcp/openapi-to-mcp-local-service/07-backend-policies.png)
 
 `backendAuth` with a `key` makes the gateway send `Authorization: Bearer sk_test_123` on each call to this server. The policy applies only to the `stripe` target. For a real API, keep the key out of `config.yaml`: write `key: $STRIPE_API_KEY` and set the environment variable on the gateway container, the same way the `openai/*` model reads `$OPENAI_API_KEY`.
 
@@ -257,7 +255,7 @@ data: {"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\"dat
 
 ## What the UI wrote
 
-In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI added a target with an `openapi` section to `mcp.targets`, and your edit added `policies` to it. When the UI saves, it writes `policies` after `openapi` in block style:
+In the sidebar, scroll down to **Tools** and click **Raw Configuration**. The UI added a target with an `openapi` section to `mcp.targets`. The `policies` section holds what you entered in **Backend policies**:
 
 ```yaml
 mcp:

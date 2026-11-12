@@ -123,11 +123,11 @@ mcp:
   policies:
     remoteRateLimit:
       host: ratelimit:8081
-      domain: agentgateway
       descriptors:
-        - entries:
-            - key: counter
-              value: '"mcp"'
+      - entries:
+        - key: counter
+          value: '"mcp"'
+      domain: agentgateway
 ```
 
 ## Clean up

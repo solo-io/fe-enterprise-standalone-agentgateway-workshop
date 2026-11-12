@@ -96,11 +96,15 @@ test('see usage on the budget and spend in Analytics', async ({ page }) => {
   await shot(page, '09-logs-429', rows.nth(0).getByText('Budget exceeded'));
 
   await go(page, '/llm/analytics');
-  await main.getByRole('combobox', { name: 'Measure' }).click();
-  await page.getByRole('option', { name: 'Cost' }).click();
-  const summary = main.getByText(/^\$0\.0000\d+ \/ \d+ tokens \/ \d+ calls$/);
-  await expect(summary).toBeVisible();
-  await shot(page, '10-analytics-cost', summary);
+  const cost = main.getByRole('tab', { name: 'Cost', exact: true });
+  await cost.click();
+  await expect(cost).toHaveAttribute('aria-selected', 'true');
+  await expect(main.getByText('Estimated spend', { exact: true }).first().locator('..')).toContainText('<$0.01');
+  await expect(main.getByRole('heading', { name: 'Estimated spend over time' })).toBeVisible();
+  // Only the request that reached OpenAI has a cost; the blocked request and the preflight are under (none).
+  await expect(main.getByRole('row', { name: /^gpt-6-luna <\$0\.01 1 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^\(none\) \$0\.00 2 / })).toBeVisible();
+  await shot(page, '10-analytics-cost', cost);
 
   // The optional curl, after the screenshots so it does not change them.
   const r = await chatRequest('openai/gpt-6-luna', 'Hello from agentgateway');

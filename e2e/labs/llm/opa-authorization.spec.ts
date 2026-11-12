@@ -51,9 +51,8 @@ test('add the External authz policy', async ({ page }) => {
   await save(page, 'Save policy');
 
   const p = readConfig().llm.policies.extAuthz;
-  expect(p.host).toBe('opa:9000');
-  expect(p.failureMode).toBe('deny');
-  expect(p.includeRequestBody.maxRequestBytes).toBe(8192);
+  // The UI writes only the fields changed from their defaults (gRPC, Deny, 8192 bytes).
+  expect(p).toEqual({ host: 'opa:9000', includeRequestBody: {} });
 });
 
 test('the Chat Playground is denied without a token', async ({ page }) => {
