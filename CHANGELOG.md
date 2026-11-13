@@ -1,5 +1,9 @@
 # Changelog
 
+0.1.6 - (11-13-26)
+---
+- Fix static-tests flake
+
 0.1.5 - (11-13-26)
 ---
 - README update - reformat the Evaluate with an Agent section
