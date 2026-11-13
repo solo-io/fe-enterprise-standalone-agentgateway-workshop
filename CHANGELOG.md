@@ -1,5 +1,11 @@
 # Changelog
 
+0.1.5 - (11-13-26)
+---
+- README update - reformat the Evaluate with an Agent section
+- README: add "Set your keys first" to the Evaluate with an Agent section. It says to put the keys in `setup/.env`, that a missing or rejected `OPENAI_API_KEY` stops `/evaluate`, and that labs needing another key skip their tests
+- `mcp-guardrails`: fix test flake
+
 0.1.4 - (11-12-26)
 ---
 - `/evaluate`: when the plan shows a missing key such as `ANTHROPIC_API_KEY` or `TYPESAFE_AI_API_KEY`, the agent names the variable and the labs it gates, then waits for you to add it to `setup/.env` or continue and skip those labs. A missing or rejected `OPENAI_API_KEY` stops the run with the fix. The agent never asks for a key in the chat

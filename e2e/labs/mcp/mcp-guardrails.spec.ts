@@ -213,12 +213,13 @@ test('compare failure modes', async ({ page }) => {
   let text = await callTool(page, 'get_supplier', { id: 'SUP-001' }, '15-redact-down');
   expect(text).toContain('004815162342');
 
+  // Start each server before the next stop, so Docker returns its own address.
+  helper('start', 'extmcp-redact');
   helper('stop', 'extmcp-authz');
   text = await callTool(page, 'list_purchase_orders', {}, '16-authz-down');
   expect(text).toContain('guardrail check failed');
 
   helper('start', 'extmcp-authz');
-  helper('start', 'extmcp-redact');
   await page.waitForTimeout(3000);
   await page.reload();
   await connect(page, BUYER);

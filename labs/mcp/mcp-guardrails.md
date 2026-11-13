@@ -237,13 +237,19 @@ After about 10 seconds, the call works, and the **Tool output** shows the real b
 
 ![Tool output with the real bank account after the masking server stopped](../../images/mcp/mcp-guardrails/15-redact-down.png)
 
-4. Stop the authorization policy server:
+4. Start the masking policy server again. Do this before you stop the next server: if both are stopped, Docker can give each one the other's address when it restarts, and the gateway keeps calling the old address.
+
+   ```bash
+   docker compose --profile mcp-guardrails start extmcp-redact
+   ```
+
+5. Stop the authorization policy server:
 
    ```bash
    docker compose --profile mcp-guardrails stop extmcp-authz
    ```
 
-5. In **Tool**, select **list_purchase_orders** and click **Call tool**.
+6. In **Tool**, select **list_purchase_orders** and click **Call tool**.
 
 After about 10 seconds, the **Result** panel shows an error with `guardrail check failed`. The authorization processor is **Fail closed**, so no call reaches the MCP server while the policy server is down, even calls the policy would allow.
 
@@ -254,13 +260,13 @@ After about 10 seconds, the **Result** panel shows an error with `guardrail chec
 | `extmcp-authz` | Fail closed | Every tool call fails. No unchecked call reaches the MCP server. |
 | `extmcp-redact` | Fail open | Tool calls work. Payment data is not masked. |
 
-6. Start both policy servers again:
+7. Start the authorization policy server again:
 
    ```bash
-   docker compose --profile mcp-guardrails start extmcp-authz extmcp-redact
+   docker compose --profile mcp-guardrails start extmcp-authz
    ```
 
-7. Wait a few seconds. Reload the Tool Playground, connect with the buyer's token, and call **get_supplier** with **id** `SUP-001`. The **Tool output** shows `<BANK_ACCOUNT>` again.
+8. Wait a few seconds. Reload the Tool Playground, connect with the buyer's token, and call **get_supplier** with **id** `SUP-001`. The **Tool output** shows `<BANK_ACCOUNT>` again.
 
 ## Step 7: Change a limit without touching the gateway
 

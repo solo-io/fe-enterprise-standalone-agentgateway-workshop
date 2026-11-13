@@ -137,12 +137,23 @@ env UID=$(id -u) GID=$(id -g) docker compose --profile <helper> up -d
 
 ## Alpha: Evaluate with an agent
 
-An AI agent can run the LLM, MCP or Platform track for you, explain each lab, and write a local report. It runs every lab on a throwaway gateway that Docker Compose starts and removes, so the gateway you set up in 001 is untouched. To start it from the repo root, run `/evaluate` in Claude Code, or tell Codex to read `AGENTS.md` and run the evaluate skill. See [AGENTS.md](AGENTS.md) for prerequisites and the hard rules the agent follows.
+An AI agent can run the workshop labs for you, build a custom lab for your scenario, and contribute it back. It runs every lab on a throwaway gateway that Docker Compose starts and removes, so the gateway you set up in 001 is untouched. Start it from the repo root in Claude Code with the slash command, or tell Codex to read `AGENTS.md` and run the named skill. See [AGENTS.md](AGENTS.md) for prerequisites and the hard rules the agent follows.
 
-The same agent can also build a custom lab for your own scenario. Run `/adapt-lab` in Claude Code, or tell Codex to read `AGENTS.md` and run the adapt-lab skill, then name the labs to start from or describe what you need. The agent writes a proposal, waits for your approval, then writes a lab, a Playwright spec, and the screenshots the spec takes under `custom-labs/<name>/`, and runs the spec on a throwaway gateway until every requirement passes. The folder is gitignored and stays on your machine.
+| Skill | Claude Code | What it does |
+|-------|-------------|--------------|
+| `evaluate` | `/evaluate` | Runs the LLM, MCP or Platform track, explains each lab, and writes a local report |
+| `adapt-lab` | `/adapt-lab` | Builds a custom lab for your scenario. Name the labs to start from or describe what you need. The agent writes a proposal, waits for your approval, then writes a lab, a Playwright spec, and the screenshots the spec takes under `custom-labs/<name>/`, and runs the spec on a throwaway gateway until every requirement passes. The folder is gitignored and stays on your machine |
+| `contribute-lab` | `/contribute-lab <name>` | Promotes a custom lab on a new version branch, shows you the diff, and pushes only when you say yes. Works from a clone of this repo or of your fork |
 
-To contribute a custom lab back to the workshop, run `/contribute-lab <name>` in Claude Code, or tell Codex to read `AGENTS.md` and run the contribute-lab skill. The agent promotes the lab on a new version branch, shows you the diff, and pushes only when you say yes. It works from a clone of this repo or of your fork.
+### Set your keys first
 
+The agent cannot prompt for keys, so put them in `setup/.env` before you start it. If you have not set up the gateway yet, copy the template and fill it in:
+
+```bash
+cp setup/.env.example setup/.env
+```
+
+`/evaluate` stops when `OPENAI_API_KEY` is missing or rejected. Labs that need another key, such as `ANTHROPIC_API_KEY`, `TYPESAFE_AI_API_KEY` or AWS credentials, skip their tests when the key is missing or rejected. Before the run, the agent names each missing key and the labs it gates. `setup/.env` is gitignored.
 
 ## For workshop authors
 
