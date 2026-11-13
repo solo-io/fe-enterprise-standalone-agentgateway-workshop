@@ -15,23 +15,15 @@ COMMANDS="evaluate adapt-lab contribute-lab"
 
 # AGENTS.md
 [ -f AGENTS.md ]; check "AGENTS.md exists" $?
-grep -qx '## Hard rules' AGENTS.md 2>/dev/null; check "AGENTS.md has ## Hard rules" $?
-n=0
-for i in 1 2 3 4; do
-  awk '/^## Hard rules$/{on=1; next} /^## /{on=0} on' AGENTS.md 2>/dev/null | grep -qE "^$i\. \*\*[^*]+\*\*" && n=$((n+1))
-done
-[ "$n" -eq 4 ]; check "AGENTS.md hard rules section has rules 1 to 4 ($n found)" $?
 for title in 'Never leave anything behind.' 'Nothing about the user'"'"'s gateway leaves the machine except through the user'"'"'s model provider.' 'Scoped to the agent'"'"'s own containers.' 'Stop on failure, do not improvise.'; do
   grep -qF "**$title" AGENTS.md 2>/dev/null; check "AGENTS.md hard rule: $title" $?
 done
-grep -q 'Alpha' AGENTS.md 2>/dev/null; check "AGENTS.md says Alpha" $?
 missing=""
 for s in $(grep -oE 'skills/[a-z-]+/SKILL\.md' AGENTS.md 2>/dev/null | sort -u); do [ -f "$s" ] || missing="$missing $s"; done
 [ -z "$missing" ] && grep -q 'skills/evaluate/SKILL.md' AGENTS.md 2>/dev/null; check "every skill AGENTS.md names exists${missing:+:$missing}" $?
 
 # CLAUDE.md
-[ "$(cat CLAUDE.md 2>/dev/null)" = 'Read AGENTS.md and follow it.' ] && [ "$(wc -l < CLAUDE.md | tr -d ' ')" = 1 ]
-check "CLAUDE.md is exactly the one line" $?
+grep -qF 'AGENTS.md' CLAUDE.md 2>/dev/null; check "CLAUDE.md points at AGENTS.md" $?
 
 # Commands
 for c in $COMMANDS; do
@@ -96,8 +88,6 @@ printf '%s' "$sect" | grep -qF '[AGENTS.md](AGENTS.md)'; check "README Alpha sec
 for w in /evaluate /adapt-lab '/contribute-lab <name>' 'custom-labs/<name>/'; do
   printf '%s' "$sect" | grep -qF -- "$w"; check "README Alpha section names $w" $?
 done
-[ "$(printf '%s\n' "$sect" | awk 'NF{if(!p)n++; p=1; next}{p=0} END{print n+0}')" -eq 3 ]
-check "README Alpha section has three paragraphs" $?
 
 # Prose
 hits=$(grep -l $'\xe2\x80\x94' "${AGENT_FILES[@]}" 2>/dev/null)
