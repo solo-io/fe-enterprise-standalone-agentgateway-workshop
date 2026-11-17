@@ -56,6 +56,15 @@ test('track all includes every track and no custom lab', () => withTmp((out) => 
   assert.ok(!ids.some((i) => i.startsWith('custom/')));
 }));
 
+test('track adhoc reports every outcome under the selected-labs title', () => withTmp((out) => {
+  const [md, jsonPath] = build(['--track', 'adhoc'], out);
+  assert.equal(md, join(out, '20261109-101500-standalone-adhoc.md'));
+  assert.match(readFileSync(md, 'utf8'), /^# Agentgateway standalone report: selected labs$/m);
+  const ids = JSON.parse(readFileSync(jsonPath, 'utf8')).results.map((r) => r.lab);
+  assert.ok(ids.includes('mcp/y') && ids.includes('001'));
+  assert.ok(!ids.some((i) => i.startsWith('custom/')));
+}));
+
 test('no key value appears, keys print present or missing', () => withTmp((out) => {
   const text = readFileSync(build(['--track', 'llm'], out)[0], 'utf8');
   assert.ok(!text.includes('sk-secret-123'));

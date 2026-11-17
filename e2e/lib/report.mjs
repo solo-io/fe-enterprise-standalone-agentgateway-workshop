@@ -8,6 +8,7 @@
 //   --projects-now: agw-e2e-* projects Docker lists now, one per line; absent means "not recorded".
 //   node lib/report.mjs compare <a.json> <b.json>
 //
+//   --track adhoc: every shipped-lab outcome of this session, for a run of named labs; takes no --planned.
 // build writes <stamp>-standalone-<track>.md/.json (or <stamp>-standalone-custom-<name>.md/.json) into --out and prints
 // both paths. A missing env.json or session.jsonl is not an error; those sections say "not recorded".
 // When <work>/session-start exists (session-log.sh start writes it), an outcome file older than it belongs to an
@@ -130,7 +131,7 @@ function loadRuns(work, opts) {
     if (name === 'custom') continue;
     const id = idOfDir(name);
     const track = id.includes('/') ? id.split('/')[0] : null;
-    const wanted = opts.track === 'all'
+    const wanted = opts.track === 'all' || opts.track === 'adhoc'
       || track === opts.track
       || (id === '001' && opts.track === 'llm');
     if (!wanted) continue;
@@ -270,7 +271,7 @@ function build(argv) {
   const a = args(argv);
   for (const k of ['work', 'env-json', 'session', 'out']) if (!a[k]) throw new Error(`missing --${k}`);
   if (!a.track === !a.custom) throw new Error('give exactly one of --track and --custom');
-  if (a.track && ![...TRACKS, 'all'].includes(a.track)) throw new Error(`unknown track: ${a.track}`);
+  if (a.track && ![...TRACKS, 'all', 'adhoc'].includes(a.track)) throw new Error(`unknown track: ${a.track}`);
   const custom = a.custom;
   const label = custom ? `custom-${custom}` : a.track;
   const { runs, stale } = loadRuns(a.work, { track: a.track, custom, run: a.run });
@@ -288,7 +289,8 @@ function build(argv) {
   const ids = new Set([...runs.map((r) => r.id), ...(planned ?? [])]);
   const mine = events === null ? null : events.filter((ev) => !ev.lab || ev.lab === '-' || ids.has(ev.lab) || (custom && ev.lab === custom));
   const rep = {
-    title: custom ? `Agentgateway standalone custom lab report: ${custom}` : `Agentgateway standalone ${a.track} report`,
+    title: custom ? `Agentgateway standalone custom lab report: ${custom}`
+      : a.track === 'adhoc' ? 'Agentgateway standalone report: selected labs' : `Agentgateway standalone ${a.track} report`,
     generated: new Date().toISOString(),
     track: a.track ?? null,
     custom: custom ?? null,

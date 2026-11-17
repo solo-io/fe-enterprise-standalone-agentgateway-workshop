@@ -8,6 +8,7 @@
 #                                             run (or only lint) custom-labs/<name>/, a lab you wrote
 #   e2e/run-e2e.sh --report-only (--track <t> | --custom <name>)
 #                                             rebuild the report from the last run into reports/ (or custom-labs/<name>/reports/)
+#   e2e/run-e2e.sh --report-only              report only the labs run in this session, as <stamp>-standalone-adhoc
 #   e2e/run-e2e.sh <id> --skip <id>  |  --track <t> --skip <id> [--skip <id>...]
 #                                             do not run these ids; each gets outcome status=skip reason=declined
 #   e2e/run-e2e.sh --learn <name> [--profiles <p1,p2>] | --learn <name> (--diff | --restart | --stop)
@@ -35,7 +36,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.64.1-noble"
 
-usage() { echo "usage: $0 <id>|all [--update-screenshots] [--skip <id>...] | --track <llm|mcp|platform|all> [--skip <id>...] | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only (--track <t> | --custom <name>) | --learn <name> [--profiles <p1,p2> | --diff | --restart | --stop]" >&2; exit 64; }
+usage() { echo "usage: $0 <id>|all [--update-screenshots] [--skip <id>...] | --track <llm|mcp|platform|all> [--skip <id>...] | --list [--track <t>] | --custom <name> [--update-screenshots] [--lint] | --report-only [--track <t> | --custom <name>] | --learn <name> [--profiles <p1,p2> | --diff | --restart | --stop]" >&2; exit 64; }
 CUSTOM_ROOT="${E2E_CUSTOM_ROOT:-$ROOT/custom-labs}"
 CUSTOM=""; LINT=0
 E2E_DOCKER="${E2E_DOCKER:-docker}"
@@ -122,7 +123,7 @@ order_ids() {
 }
 
 if [ "$REPORT_ONLY" = 1 ]; then
-  [ -z "$TARGET" ] && [ "$LIST" = 0 ] && { [ -n "$TRACK" ] || [ -n "$CUSTOM" ]; } || usage
+  [ -z "$TARGET" ] && [ "$LIST" = 0 ] || usage
   RWORK="${E2E_WORK_ROOT:-$ROOT/e2e/.work}"
   RWORK="$(cd "$RWORK" 2>/dev/null && pwd || echo "$RWORK")"
   # The host runs node when it has it; otherwise the Playwright image does, with the repo at /repo and the work dir at /work.
@@ -140,11 +141,13 @@ if [ "$REPORT_ONLY" = 1 ]; then
     rargs+=(--out "$rcustom/$CUSTOM/reports" --custom "$CUSTOM" --spec "$rcustom/$CUSTOM/$CUSTOM.spec.ts" --run "$rcustom/$CUSTOM/.work/run")
   else
     mkdir -p "$ROOT/reports"
-    rargs+=(--out "$rbase/reports" --track "$TRACK")
-    # The ids the track covers, so a lab that never ran still gets a row.
-    mkdir -p "$RWORK"
-    order_ids "$TRACK" > "$RWORK/planned-$TRACK.txt"
-    rargs+=(--planned "$rwork/planned-$TRACK.txt")
+    rargs+=(--out "$rbase/reports" --track "${TRACK:-adhoc}")
+    if [ -n "$TRACK" ]; then
+      # The ids the track covers, so a lab that never ran still gets a row.
+      mkdir -p "$RWORK"
+      order_ids "$TRACK" > "$RWORK/planned-$TRACK.txt"
+      rargs+=(--planned "$rwork/planned-$TRACK.txt")
+    fi
   fi
   # Re-list the projects now: the session-start list in env.json can be out of date. A failed listing records nothing.
   mkdir -p "$RWORK"

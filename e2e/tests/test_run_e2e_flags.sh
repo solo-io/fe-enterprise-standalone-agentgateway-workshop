@@ -258,7 +258,9 @@ check "report-only custom: no planned file" $(grep -q -- '--planned' "$TMP/node.
 check "report-only custom: build call with custom name, reports dir and spec" $([ "$RC" -eq 0 ] && grep -q -- '--custom demo' "$TMP/node.log" && grep -qF -- "--out $REPO/custom-labs/demo/reports" "$TMP/node.log" && grep -qF -- "--spec $REPO/custom-labs/demo/demo.spec.ts" "$TMP/node.log" && echo 0 || echo 1)
 check "report-only custom: run dir is the lab's .work/run" $(grep -qF -- "--run $REPO/custom-labs/demo/.work/run" "$TMP/node.log" && echo 0 || echo 1)
 report_only
-check "report-only with no target is a usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
+check "report-only with no target: adhoc build call with no planned file" $([ "$RC" -eq 0 ] && grep -q -- '--track adhoc' "$TMP/node.log" && grep -qF -- "--out $REPO/reports" "$TMP/node.log" && ! grep -q -- '--planned' "$TMP/node.log" && echo 0 || echo 1)
+report_only llm/virtual-api-keys
+check "report-only with a lab id is a usage error" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
 report_only --track nope
 check "report-only unknown track fails" $([ "$RC" -eq 64 ] && echo 0 || echo 1)
 

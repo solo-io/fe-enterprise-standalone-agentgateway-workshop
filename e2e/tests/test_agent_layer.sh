@@ -77,6 +77,17 @@ for p in e2e/lib/detect-env.sh e2e/lib/session-log.sh e2e/lib/scrub.mjs e2e/lib/
   grep -qF "$p" skills/*/SKILL.md 2>/dev/null; check "a skill uses $p" $?
 done
 
+# Evaluate runs named labs
+named=$(awk '/^### Named labs$/{on=1} on' skills/evaluate/SKILL.md)
+ok=0
+for w in 'add decision - "labs=<id>[,<id>...] mode=enablement"' 'e2e/run-e2e.sh --list --track all' '-standalone-adhoc'; do
+  printf '%s' "$named" | grep -qF -- "$w" || ok=1
+done
+printf '%s' "$named" | grep -qx 'e2e/run-e2e.sh --report-only' || ok=1
+check "evaluate has a Named labs flow with its plan and report commands" $ok
+grep -qF '/evaluate llm/virtual-api-keys' AGENTS.md && grep -qF '/evaluate llm/virtual-api-keys' README.md
+check "AGENTS.md and README show /evaluate with a lab id" $?
+
 # README
 alpha=$(grep -n '^## Alpha: Evaluate with an agent$' README.md | cut -d: -f1)
 helpers=$(grep -n '^## Helper services$' README.md | cut -d: -f1)
