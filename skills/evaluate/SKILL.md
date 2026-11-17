@@ -1,6 +1,6 @@
 ---
 name: evaluate
-description: Run the shipped labs of a track on a throwaway standalone gateway, explain each one, stop on failure, and write a local report. Use when the user asks to evaluate, try, or test standalone Enterprise Agentgateway with the workshop labs.
+description: Run the shipped labs of a track, or only the labs the user names, on a throwaway standalone gateway, explain each one, stop on failure, and write a local report. Use when the user asks to evaluate, try, or test standalone Enterprise Agentgateway with the workshop labs.
 ---
 
 # Evaluate standalone Enterprise Agentgateway
@@ -28,6 +28,8 @@ Apply `skills/detect-environment/SKILL.md`. Continue only when detection exits 0
 
 ## 3. Choose track and mode
 
+If the user named one or more labs, in the arguments or in the request, go to "Named labs" at the end of this step. A track name is not a lab.
+
 Ask which track to run if the user has not said: `llm`, `mcp`, `platform`, or `all`. Offer this heuristic: the LLM track if their interest is model access, cost, and guardrails; the MCP track if it is tools and agents; the platform track for UI access, TLS, Postgres, and metrics. The `llm` and `all` tracks start with `001`.
 
 Ask for the mode:
@@ -40,6 +42,26 @@ Record the answer, with `<t>` as the track and `<m>` as the mode:
 ```bash
 e2e/lib/session-log.sh add decision - "track=<t> mode=<m>"
 ```
+
+### Named labs
+
+Run only the labs the user named, in the order given. The mode is `enablement`, and you skip the track question.
+
+Match each name to a lab id from the first column of this list, such as `llm/virtual-api-keys` or `001`:
+
+```bash
+e2e/run-e2e.sh --list --track all
+```
+
+If a name matches several labs or none, show the closest ids and ask. A lab under `labs/` that the list leaves out has no spec: say so, link the lab markdown for the user to follow by hand, and drop it. If no lab is left, stop here.
+
+Record the labs:
+
+```bash
+e2e/lib/session-log.sh add decision - "labs=<id>[,<id>...] mode=enablement"
+```
+
+Steps 4, 5, and 6 each have a "Named labs" variant.
 
 ## 4. Show the plan
 
@@ -58,6 +80,8 @@ Show the labs grouped by the sub-headings of the track's table in `README.md`, i
   e2e/lib/session-log.sh add decision <id> declined
   ```
 - the helper profiles each lab starts, from the third column
+
+Named labs: use the `--list --track all` output from step 3 and show only the lines of the named ids. Apply the key check and the cost question to those labs alone.
 
 Outcomes from earlier sessions stay in `e2e/.work/`, but the report leaves out every outcome older than the `session-log.sh start` of step 2, so it holds only this session's labs.
 
@@ -91,6 +115,8 @@ The run ends with `ALL PASS (<n> labs)` or `FAILED: <ids>`. For each id under `F
 
 After the last lab of each README sub-heading, pause and invite questions. Answer product questions with `skills/ask-the-docs/SKILL.md`.
 
+Named labs: follow the `enablement` steps for each named id, in the order the user gave, and invite questions after the last one.
+
 In both modes, every `LEFTOVER PROJECT: <name>` line is a project the run did not remove. Name it to the user and offer `docker compose -p <name> down -v`. A `PRE-EXISTING PROJECT: <name>` line is a project that was there before the run; it is informational.
 
 Never edit a shipped lab under `labs/` or a shipped spec under `e2e/labs/`.
@@ -105,6 +131,12 @@ It runs nothing and prints two paths: `reports/<YYYYMMDD-HHMMSS>-standalone-<t>.
 
 ```bash
 node e2e/lib/report.mjs compare <older.json> <newer.json>
+```
+
+Named labs: leave `--track` out. The report then holds only the labs run in this session, and its file name ends in `-standalone-adhoc`:
+
+```bash
+e2e/run-e2e.sh --report-only
 ```
 
 There is no base install to remove. Tell the user their own gateway was never touched, and confirm that no `agw-e2e-*` project remains:

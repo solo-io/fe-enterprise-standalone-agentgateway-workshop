@@ -1,5 +1,10 @@
 # Changelog
 
+0.1.7 - (11-17-26)
+---
+- `/evaluate`: name one or more labs, for example `/evaluate llm/virtual-api-keys`, and the agent runs only those in enablement mode and reports them alone
+- `e2e/run-e2e.sh --report-only` with no `--track` builds `reports/<stamp>-standalone-adhoc`, a report of the labs run in this session. It was a usage error before
+
 0.1.6 - (11-13-26)
 ---
 - Fix static-tests flake

@@ -49,7 +49,7 @@ For adapt mode only: the Playwright MCP image `mcr.microsoft.com/playwright/mcp:
 
 ## Modes
 
-Evaluate (`skills/evaluate/SKILL.md`, `/evaluate`) runs the shipped labs of one track, or all of them, on a throwaway gateway and writes a local report. Enablement mode explains each lab before it runs and stops on the first failure. Rig mode runs the whole track and reports every failure at the end.
+Evaluate (`skills/evaluate/SKILL.md`, `/evaluate`) runs the shipped labs of one track, or all of them, on a throwaway gateway and writes a local report. Enablement mode explains each lab before it runs and stops on the first failure. Rig mode runs the whole track and reports every failure at the end. Name one or more labs, for example `/evaluate llm/virtual-api-keys`, and it runs only those and reports them alone.
 
 Adapt (`skills/adapt-lab/SKILL.md`, `/adapt-lab`) turns one or more shipped labs into a custom lab for the user's scenario. It writes a proposal and waits for approval, learns any new UI flow on the `agw-e2e-learn` throwaway gateway, then writes a lab, a Playwright spec, and the spec's screenshots under `custom-labs/<name>/`, which is gitignored. It proves the lab on a throwaway gateway from the `base` fixture and reviews every screenshot. Adapt never edits a shipped lab or spec.
 
@@ -88,7 +88,7 @@ Codex starts MCP servers when it starts, so in adapt's learning phase restart Co
 
 ## Output
 
-- Track reports: `reports/<YYYYMMDD-HHMMSS>-standalone-<track>.md` and `.json`, time in UTC, with `-1`, `-2` appended when the name exists. `reports/` is gitignored. A paid lab the user declined shows as `SKIP (declined)`.
+- Track reports: `reports/<YYYYMMDD-HHMMSS>-standalone-<track>.md` and `.json`, time in UTC, with `-1`, `-2` appended when the name exists. `reports/` is gitignored. A paid lab the user declined shows as `SKIP (declined)`. A report for named labs ends in `-standalone-adhoc`.
 - Custom labs: `custom-labs/<name>/` with `<name>.md`, `<name>.spec.ts`, `images/`, `CHANGES.md`, and reports in `custom-labs/<name>/reports/`. `custom-labs/` is gitignored. Everything the harness writes for a custom lab stays in its folder, under `custom-labs/<name>/.work/`: the learning phase in `learn/`, the last run in `run/`, failure screenshots and traces in `pw-results/`. Deleting `custom-labs/<name>/` removes all of it.
 - Per-run work files for a shipped lab: `e2e/.work/<id with / as ->/` (`outcome`, `playwright.json`, and `gateway.log` on a failure). Failure screenshots and traces: `e2e/.last/pw-results/<compose project>/`.
 - Session log: `e2e/.work/session.jsonl`. Environment: `e2e/.work/env.json`.

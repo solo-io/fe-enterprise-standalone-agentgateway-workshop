@@ -141,7 +141,7 @@ An AI agent can run the workshop labs for you, build a custom lab for your scena
 
 | Skill | Claude Code | What it does |
 |-------|-------------|--------------|
-| `evaluate` | `/evaluate` | Runs the LLM, MCP or Platform track, explains each lab, and writes a local report |
+| `evaluate` | `/evaluate` | Runs the LLM, MCP or Platform track, explains each lab, and writes a local report. To run only some labs, name them: `/evaluate llm/virtual-api-keys` |
 | `adapt-lab` | `/adapt-lab` | Builds a custom lab for your scenario. Name the labs to start from or describe what you need. The agent writes a proposal, waits for your approval, then writes a lab, a Playwright spec, and the screenshots the spec takes under `custom-labs/<name>/`, and runs the spec on a throwaway gateway until every requirement passes. The folder is gitignored and stays on your machine |
 | `contribute-lab` | `/contribute-lab <name>` | Promotes a custom lab on a new version branch, shows you the diff, and pushes only when you say yes. Works from a clone of this repo or of your fork |
 
