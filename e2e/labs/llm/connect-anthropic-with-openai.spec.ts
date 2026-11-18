@@ -77,8 +77,8 @@ test('Analytics splits tokens between the providers', async ({ page }) => {
   await expect(page.getByRole('checkbox', { name: 'Provider', exact: true })).toBeHidden();
   await expect(main).toContainText('by model · provider');
   // One Chat Playground request to Claude; one Chat Playground request and one curl to GPT.
-  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic 1 \d+ <\$0\.01 / })).toBeVisible();
-  await expect(main.getByRole('row', { name: /^gpt-6-luna · openai 2 \d+ <\$0\.01 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic Pin claude-haiku-5-5 · anthropic 1 \d+ <\$0\.01 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^gpt-6-luna · openai Pin gpt-6-luna · openai 2 \d+ <\$0\.01 / })).toBeVisible();
   await page.waitForTimeout(1000);
   await shot(page, '09-analytics-both', groupBy);
 });

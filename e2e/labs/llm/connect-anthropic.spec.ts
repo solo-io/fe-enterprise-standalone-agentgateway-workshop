@@ -108,8 +108,8 @@ test('see the Anthropic requests in Logs and Analytics', async ({ page }) => {
   await expect(main.getByRole('heading', { name: 'Requests over time' })).toBeVisible();
   await expect(main).toContainText('by model · provider');
   // The Chat Playground request and the two curls; the preflight has no model and no provider.
-  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic 3 \d+ <\$0\.01 0% / })).toBeVisible();
-  await expect(main.getByRole('row', { name: /^\(none\) · \(none\) 1 0 \$0\.00 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^claude-haiku-5-5 · anthropic Pin claude-haiku-5-5 · anthropic 3 \d+ <\$0\.01 0% / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^\(none\) · \(none\) Pin \(none\) · \(none\) 1 0 \$0\.00 / })).toBeVisible();
   // The cards at the top: 4 requests in total, and a spend below one cent.
   await expect(main.getByText('Estimated spend', { exact: true }).first().locator('..')).toContainText('<$0.01');
   await expect(main).toContainText('4 total by model · provider');

@@ -1,5 +1,11 @@
 # Changelog
 
+0.1.8 - (11-18-26)
+---
+- Bump the gateway image to `agentgateway-enterprise:2026.11.1`( LTS)
+- `001`: the version under the logo reads `v2026.11.1`. The gateway now reports its version with a leading `v`, in the UI and in `/api/runtime`
+- Analytics rows have a **Pin** button. The specs for `budgets-and-cost-tracking` and `connect-anthropic` match the new row text, and both labs' screenshots are regenerated
+
 0.1.7 - (11-17-26)
 ---
 - `/evaluate`: name one or more labs, for example `/evaluate llm/virtual-api-keys`, and the agent runs only those in enablement mode and reports them alone

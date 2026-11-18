@@ -2,7 +2,7 @@ name: agentgateway-workshop
 
 services:
   agentgateway:
-    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.0
+    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.1
     user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     environment:
@@ -295,7 +295,7 @@ services:
   # Restarting the first gateway disconnects it, so stop it first.
   agentgateway-2:
     profiles: [postgres]
-    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.0
+    image: us-docker.pkg.dev/solo-public/enterprise-agentgateway/agentgateway-enterprise:2026.11.1
     user: "${UID:-1000}:${GID:-1000}"
     network_mode: "service:agentgateway"
     command: ["-f", "/config/postgres/gateway-2.yaml"]
