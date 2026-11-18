@@ -102,8 +102,8 @@ test('see usage on the budget and spend in Analytics', async ({ page }) => {
   await expect(main.getByText('Estimated spend', { exact: true }).first().locator('..')).toContainText('<$0.01');
   await expect(main.getByRole('heading', { name: 'Estimated spend over time' })).toBeVisible();
   // Only the request that reached OpenAI has a cost; the blocked request and the preflight are under (none).
-  await expect(main.getByRole('row', { name: /^gpt-6-luna <\$0\.01 1 / })).toBeVisible();
-  await expect(main.getByRole('row', { name: /^\(none\) \$0\.00 2 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^gpt-6-luna Pin gpt-6-luna <\$0\.01 1 / })).toBeVisible();
+  await expect(main.getByRole('row', { name: /^\(none\) Pin \(none\) \$0\.00 2 / })).toBeVisible();
   await shot(page, '10-analytics-cost', cost);
 
   // The optional curl, after the screenshots so it does not change them.
